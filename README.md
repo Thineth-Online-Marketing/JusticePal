@@ -42,4 +42,3 @@ npm run dev
 cd ai_service
 uvicorn main:app --reload
 ```
-.
