@@ -37,9 +37,9 @@ cd backend
 npm run dev
 ```
 
+
 - **AI Service**:
 ```bash
 cd ai_service
 uvicorn main:app --reload
 ```
-.
