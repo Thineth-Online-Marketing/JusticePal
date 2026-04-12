@@ -1,40 +1,78 @@
-import { Request, Response, NextFunction } from 'express';
-import User from '../models/User';
+import { Response, NextFunction } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthRequest } from '../middleware/authMiddleware';
 
-// @desc    Get all users
-// @route   GET /api/users
-// @access  Public (Admin in future)
-export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
+const prisma = new PrismaClient();
+
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
+export const getProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const users = await User.find();
-    res.status(200).json(users);
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, name: true, email: true, role: true, createdAt: true },
+    });
+
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404);
+      throw new Error('User not found');
+    }
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Create a user
-// @route   POST /api/users
-// @access  Public
-export const createUser = async (req: Request, res: Response, next: NextFunction) => {
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+export const updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { firebaseUid, email, name, role } = req.body;
-
-    const userExists = await User.findOne({ email });
-
-    if (userExists) {
-      res.status(400);
-      throw new Error('User already exists');
-    }
-
-    const user = await User.create({
-      firebaseUid,
-      email,
-      name,
-      role
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
     });
 
-    res.status(201).json(user);
+    if (user) {
+      const updatedUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          name: req.body.name || user.name,
+          email: req.body.email || user.email,
+          role: req.body.role || user.role,
+        },
+        select: { id: true, name: true, email: true, role: true },
+      });
+
+      res.json(updatedUser);
+    } else {
+      res.status(404);
+      throw new Error('User not found');
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete user profile
+// @route   DELETE /api/users/profile
+// @access  Private
+export const deleteProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
+    if (user) {
+      await prisma.user.delete({
+        where: { id: req.user.id },
+      });
+      res.json({ message: 'User removed' });
+    } else {
+      res.status(404);
+      throw new Error('User not found');
+    }
   } catch (error) {
     next(error);
   }

@@ -1,0 +1,5 @@
+﻿src/controllers/appointmentController.ts(2,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
+src/controllers/authController.ts(2,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
+src/controllers/lawyerController.ts(2,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
+src/controllers/userController.ts(2,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
+src/middleware/authMiddleware.ts(3,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
