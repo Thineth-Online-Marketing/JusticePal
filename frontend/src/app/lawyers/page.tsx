@@ -1,77 +1,86 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, MapPin, BriefcaseBusiness, Star, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import LawyersNavbar from "../components/LawyersNavbar";
+import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useLanguage } from "../context/LanguageContext";
+import { getLawyers } from "../../data/lawyers";
 
 export default function LawyersPage() {
-  const lawyers = [
-    {
-      name: "Kavinda Perera",
-      specialization: "Criminal Defense Specialist",
-      location: "Colombo, Sri Lanka",
-      experience: "15+ Years Experience",
-      rating: 4.9,
-      reviews: 120,
-      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80",
+  const { lang } = useLanguage();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("All");
+  const router = useRouter();
+
+  const translations = {
+    en: {
+      title: "Verified Lawyers",
+      subtitle: "Find the right legal expertise for your needs across Sri Lanka.",
+      searchPlaceholder: "Search by name, specialization, or city...",
+      allSpecializations: "All Specializations",
+      filters: ["Criminal Law", "Family Law", "Corporate", "Property Law", "Civil Litigation"],
+      verifiedPartner: "Verified Partner",
+      viewProfile: "View Profile",
     },
-    {
-      name: "Anjali Wijesekara",
-      specialization: "Family & Divorce Law",
-      location: "Kandy, Sri Lanka",
-      experience: "8+ Years Experience",
-      rating: 4.8,
-      reviews: 85,
-      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      name: "Ruwan Fernando",
-      specialization: "Corporate & Intellectual Property",
-      location: "Colombo, Sri Lanka",
-      experience: "12+ Years Experience",
-      rating: 5.0,
-      reviews: 42,
-      image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      name: "Lasantha Gunawardena",
-      specialization: "Real Estate & Land Disputes",
-      location: "Galle, Sri Lanka",
-      experience: "20+ Years Experience",
-      rating: 4.7,
-      reviews: 156,
-      image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      name: "Tharushi Senaratne",
-      specialization: "Human Rights & Civil Law",
-      location: "Jaffna, Sri Lanka",
-      experience: "5+ Years Experience",
-      rating: 4.9,
-      reviews: 28,
-      image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      name: "Malani De Silva",
-      specialization: "Labour & Employment Law",
-      location: "Negombo, Sri Lanka",
-      experience: "10+ Years Experience",
-      rating: 4.6,
-      reviews: 92,
-      image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=800&q=80",
-    },
-  ];
+    si: {
+      title: "තහවුරු කළ නීතිඥයින්",
+      subtitle: "ශ්‍රී ලංකාව පුරා ඔබේ අවශ්‍යතා සඳහා සුදුසු නීතිඥ සහාය ලබාගන්න.",
+      searchPlaceholder: "නම, විශේෂත්වය හෝ නගරය අනුව සොයන්න...",
+      allSpecializations: "සියලුම විශේෂත්වයන්",
+      filters: ["අපරාධ නීතිය", "පවුල් නීතිය", "වාණිජ නීතිය", "දේපළ නීතිය", "සිවිල් නඩු"],
+      verifiedPartner: "තහවුරු කළ සහකරු",
+      viewProfile: "පැතිකඩ බලන්න",
+    }
+  };
+
+  const t = translations[lang as keyof typeof translations] || translations.en;
+
+  const allLawyers = getLawyers(lang);
+
+  const filteredLawyers = allLawyers.filter((lawyer) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = 
+      lawyer.name.toLowerCase().includes(query) ||
+      lawyer.specialization.toLowerCase().includes(query) ||
+      lawyer.location.toLowerCase().includes(query);
+
+    const isAll = selectedFilter === "All" || selectedFilter === translations.si.allSpecializations || selectedFilter === translations.en.allSpecializations;
+    const filterIndex = t.filters.indexOf(selectedFilter);
+    const engFilter = filterIndex !== -1 ? translations.en.filters[filterIndex].toLowerCase() : selectedFilter.toLowerCase();
+
+    const matchesFilter = isAll || 
+      lawyer.specialization.toLowerCase().includes(selectedFilter.toLowerCase()) ||
+      lawyer.tags.some(tag => tag.toLowerCase().includes(engFilter)) ||
+      (engFilter === "civil litigation" && lawyer.tags.some(tag => tag.toLowerCase().includes("civil")));
+
+    return matchesSearch && matchesFilter;
+  });
+
+  const lawyersPerPage = 6;
+  const totalPages = Math.ceil(filteredLawyers.length / lawyersPerPage);
+  const indexOfLastLawyer = currentPage * lawyersPerPage;
+  const indexOfFirstLawyer = indexOfLastLawyer - lawyersPerPage;
+  const currentLawyers = filteredLawyers.slice(indexOfFirstLawyer, indexOfLastLawyer);
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <>
-      <LawyersNavbar />
+      <Navbar />
       <main className="min-h-screen bg-[#F8FAFC] pt-32 pb-20">
         <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-[#111827] mb-3">Verified Lawyers</h1>
-          <p className="text-base text-gray-500">Find the right legal expertise for your needs across Sri Lanka.</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#111827] mb-3">{t.title}</h1>
+          <p className="text-base text-gray-500">{t.subtitle}</p>
         </div>
 
         {/* Search Bar */}
@@ -81,28 +90,42 @@ export default function LawyersPage() {
           </div>
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             className="block w-full pl-11 pr-4 py-4 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B] focus:border-transparent transition-shadow"
-            placeholder="Search by name, specialization, or city..."
+            placeholder={t.searchPlaceholder}
           />
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-10">
-          <button className="px-5 py-2.5 bg-[#1B3A6B] text-white rounded-full text-xs font-semibold hover:bg-[#112549] transition-colors shadow-sm">
-            All Specializations
+          <button 
+            onClick={() => { setSelectedFilter(t.allSpecializations); setCurrentPage(1); }}
+            className={`px-5 py-2.5 rounded-full text-xs font-semibold transition-colors shadow-sm ${selectedFilter === "All" || selectedFilter === t.allSpecializations ? 'bg-[#1B3A6B] text-white hover:bg-[#112549]' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+          >
+            {t.allSpecializations}
           </button>
 
-          {["Criminal Law", "Family Law", "Corporate", "Property Law", "Civil Litigation"].map((filter) => (
-            <button key={filter} className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-full text-xs font-medium hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-2">
-              {filter}
-              <ChevronDown className="h-4 w-4 text-gray-400" />
-            </button>
-          ))}
+          {t.filters.map((filter) => {
+            const isSelected = selectedFilter === filter;
+            return (
+              <button 
+                key={filter} 
+                onClick={() => { setSelectedFilter(filter); setCurrentPage(1); }}
+                className={`px-4 py-2.5 rounded-full text-xs font-medium transition-colors shadow-sm ${isSelected ? 'bg-[#1B3A6B] text-white border border-[#1B3A6B]' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+              >
+                {filter}
+              </button>
+            );
+          })}
         </div>
 
         {/* Lawyer Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {lawyers.map((lawyer, index) => (
+          {currentLawyers.map((lawyer, index) => (
             <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-100 flex flex-col">
               {/* Image Section */}
               <div className="relative h-64 w-full">
@@ -123,7 +146,7 @@ export default function LawyersPage() {
               <div className="p-6 flex flex-col flex-grow">
                 <div className="flex items-start mb-4">
                   <span className="inline-block bg-blue-50 text-blue-700 text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded">
-                    Verified Partner
+                    {t.verifiedPartner}
                   </span>
                 </div>
 
@@ -141,8 +164,18 @@ export default function LawyersPage() {
                   </div>
                 </div>
 
-                <button className="w-full bg-[#1B3A6B] text-white font-semibold py-3 rounded-lg hover:bg-[#112549] transition-colors mt-auto">
-                  View Profile
+                <button 
+                  onClick={() => {
+                    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+                    if (isLoggedIn) {
+                      router.push(`/lawyers/${lawyer.id}`);
+                    } else {
+                      router.push("/login");
+                    }
+                  }}
+                  className="w-full mt-auto bg-[#1B3A6B] text-white font-semibold py-3 rounded-lg hover:bg-[#112549] transition-colors"
+                >
+                  {t.viewProfile}
                 </button>
               </div>
             </div>
@@ -150,29 +183,38 @@ export default function LawyersPage() {
         </div>
 
         {/* Pagination */}
-        <div className="flex justify-center items-center gap-2 mt-16">
-          <button className="w-10 h-10 rounded-xl flex items-center justify-center border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#1B3A6B] text-white font-semibold shadow-md">
-            1
-          </button>
-          <button className="w-10 h-10 rounded-xl flex items-center justify-center border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-            2
-          </button>
-          <button className="w-10 h-10 rounded-xl flex items-center justify-center border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-            3
-          </button>
-          <span className="w-8 h-10 flex items-center justify-center text-gray-400">
-            ...
-          </span>
-          <button className="w-10 h-10 rounded-xl flex items-center justify-center border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-            12
-          </button>
-          <button className="w-10 h-10 rounded-xl flex items-center justify-center border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors">
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-16">
+            <button 
+              onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+              disabled={currentPage === 1}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center border border-gray-200 transition-colors ${currentPage === 1 ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            
+            {Array.from({ length: totalPages }).map((_, index) => {
+              const pageNumber = index + 1;
+              return (
+                <button 
+                  key={pageNumber}
+                  onClick={() => handlePageChange(pageNumber)}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors font-medium ${currentPage === pageNumber ? 'bg-[#1B3A6B] text-white shadow-md' : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+            
+            <button 
+              onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center border border-gray-200 transition-colors ${currentPage === totalPages ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        )}
         </div>
       </main>
       <Footer />
