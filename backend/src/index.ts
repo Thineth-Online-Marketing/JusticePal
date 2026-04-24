@@ -46,8 +46,12 @@ app.use('/api/appointments', appointmentRoutes);
 // Error Handling Middleware
 app.use(errorHandler);
 
-// Database connection
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
+// Start server locally — Vercel handles this automatically in production
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`Server is running at http://localhost:${port}`);
+  });
+}
 
+// Export for Vercel serverless
+export default app;
