@@ -35,7 +35,7 @@ export default function Footer() {
   const { lang, toggle } = useLanguage();
   return (
     <footer className="bg-[#050B14] text-white pt-20 px-6 pb-8 border-t border-gray-800">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1400px] mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8 pb-16 border-b border-white/10">
 
           {/* Brand Info Area */}

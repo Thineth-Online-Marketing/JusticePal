@@ -95,7 +95,7 @@ export default function TrustBadges() {
 
   return (
     <section className="bg-white py-16 px-6 relative z-10 -mt-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-[1300px] mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {tx.badges.map((badge) => (
             <div
@@ -108,8 +108,8 @@ export default function TrustBadges() {
                 {badge.type === "doc" && <DocIcon className={`w-6 h-6 ${badge.iconColor}`} />}
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">{badge.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{badge.desc}</p>
+                <h3 className="text-base font-bold text-gray-900 mb-1">{badge.title}</h3>
+                <p className="text-xs text-gray-600 leading-relaxed">{badge.desc}</p>
               </div>
             </div>
           ))}

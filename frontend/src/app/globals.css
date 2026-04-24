@@ -27,6 +27,7 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    font-size: 85%; /* Scales down all rem-based sizes (fonts, padding, margins) */
   }
 
   body {

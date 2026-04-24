@@ -37,18 +37,18 @@ export default function HeroSection() {
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 transform translate-x-1/3 -translate-y-1/4 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-80 h-80 bg-orange-100/60 rounded-full mix-blend-multiply filter blur-3xl opacity-70 transform -translate-x-1/2 translate-y-1/4 pointer-events-none" />
 
-      <div className="relative max-w-5xl mx-auto px-6 text-center z-10 flex flex-col items-center">
+      <div className="relative max-w-[1200px] mx-auto px-6 text-center z-10 flex flex-col items-center">
         
         {/* Trust Pill */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-900/5 border border-blue-900/10 mb-8 backdrop-blur-sm animate-fade-in-up">
-          <span className="text-[14px]">⚖️</span>
-          <span className="text-sm font-medium tracking-wide text-blue-900">
+          <span className="text-xs">⚖️</span>
+          <span className="text-xs font-medium tracking-wide text-blue-900">
             {tx.pill}
           </span>
         </div>
 
         {/* Dynamic Title */}
-        <h1 className="text-4xl md:text-6xl lg:text-[72px] font-extrabold text-gray-900 tracking-tight leading-[1.1] mb-6 animate-fade-in-up animation-delay-100">
+        <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight leading-[1.1] mb-6 animate-fade-in-up animation-delay-100">
           {tx.title1}{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-900 to-blue-600 inline-block px-1">
             {tx.title2}
@@ -56,7 +56,7 @@ export default function HeroSection() {
         </h1>
 
         {/* Subtitle */}
-        <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up animation-delay-200">
+        <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up animation-delay-200">
           {tx.subtitle}
         </p>
 

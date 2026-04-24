@@ -83,16 +83,16 @@ export default function LegalCategories() {
 
   return (
     <section className="bg-gray-50/50 py-24 px-6 border-t border-b border-gray-100">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-[1300px] mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
           <div className="max-w-2xl">
-            <p className="text-sm font-bold text-orange-500 uppercase tracking-widest mb-3">
+            <p className="text-xs font-bold text-orange-500 uppercase tracking-widest mb-3">
               {tx.label}
             </p>
-            <h2 className="text-3xl md:text-[40px] font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
               {tx.heading}
             </h2>
-            <p className="text-lg text-gray-600 leading-relaxed">
+            <p className="text-base text-gray-600 leading-relaxed">
               {tx.subheading}
             </p>
           </div>
@@ -114,7 +114,7 @@ export default function LegalCategories() {
               className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300"
             >
               <div className={`h-48 ${cat.bg} relative flex items-center justify-center overflow-hidden`}>
-                <div className="text-[72px] filter drop-shadow-md transform group-hover:scale-110 transition-transform duration-500">
+                <div className="text-5xl filter drop-shadow-md transform group-hover:scale-110 transition-transform duration-500">
                   {cat.emoji}
                 </div>
                 
@@ -126,10 +126,10 @@ export default function LegalCategories() {
               </div>
 
               <div className="p-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-blue-900 transition-colors">
+                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-900 transition-colors">
                   {cat.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed mb-6">
+                <p className="text-sm text-gray-600 leading-relaxed mb-6">
                   {cat.desc}
                 </p>
                 <Link
