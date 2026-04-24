@@ -2,7 +2,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "../lib/firebase";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 const content = {
   en: {
@@ -13,6 +18,7 @@ const content = {
     password: "Password",
     confirm: "Confirm Password",
     signUp: "Sign Up",
+    signingUp: "Creating account...",
     already: "Already have an account?",
     signIn: "Sign in here",
     brandTitle: "JusticePal",
@@ -28,6 +34,7 @@ const content = {
     password: "මුරපදය",
     confirm: "මුරපදය තහවුරු කරන්න",
     signUp: "ලියාපදිංචි වන්න",
+    signingUp: "ගිණුම සාදමින්...",
     already: "දැනටමත් ගිණුමක් තිබේද?",
     signIn: "මෙහි පිවිසෙන්න",
     brandTitle: "JusticePal",
@@ -42,17 +49,74 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const { lang } = useLanguage();
   const tx = content[lang as keyof typeof content] || content.en;
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      setError("Passwords do not match.");
       return;
     }
-    // TODO: Implement registration logic
-    console.log({ name, email, password });
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Step 1: Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      // Step 2: Set display name in Firebase
+      await updateProfile(firebaseUser, { displayName: name });
+
+      // Step 3: Get the Firebase ID token
+      const idToken = await firebaseUser.getIdToken();
+
+      // Step 4: Sync user to PostgreSQL backend
+      const res = await fetch(`${BACKEND_URL}/api/auth/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ email: firebaseUser.email, name }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to sync user with server");
+      }
+
+      // Step 5: Redirect on success
+      router.push("/lawyers");
+    } catch (err: unknown) {
+      const firebaseError = err as { code?: string; message?: string };
+      switch (firebaseError.code) {
+        case "auth/email-already-in-use":
+          setError("An account with this email already exists. Please sign in.");
+          break;
+        case "auth/weak-password":
+          setError("Password is too weak. Please use at least 6 characters.");
+          break;
+        case "auth/invalid-email":
+          setError("Please enter a valid email address.");
+          break;
+        default:
+          setError(firebaseError.message || "An unexpected error occurred.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,6 +138,12 @@ export default function RegisterPage() {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-2">{tx.welcome}</h1>
             <p className="text-gray-500 text-sm sm:text-base">{tx.subtitle}</p>
           </div>
+
+          {error && (
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
@@ -125,10 +195,17 @@ export default function RegisterPage() {
             </div>
 
             <button 
-              type="submit" 
-              className="w-full py-3.5 mt-2 bg-[#1B3A6B] hover:bg-[#112549] text-white rounded-xl font-semibold shadow-lg shadow-[#1B3A6B]/20 transform hover:-translate-y-0.5 transition-all duration-200"
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 mt-2 bg-[#1B3A6B] hover:bg-[#112549] disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-[#1B3A6B]/20 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
             >
-              {tx.signUp}
+              {loading && (
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+              )}
+              {loading ? tx.signingUp : tx.signUp}
             </button>
           </form>
 

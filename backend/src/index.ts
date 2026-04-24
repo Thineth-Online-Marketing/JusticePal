@@ -12,8 +12,26 @@ dotenv.config();
 const app: Express = express();
 const port = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// CORS — allow Vercel frontend + localhost for dev
+const allowedOrigins = [
+  'https://justice-pal.vercel.app',
+  'http://localhost:3000',
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. curl, Postman, server-to-server)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS policy: origin ${origin} not allowed`));
+      }
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 // Routes

@@ -37,3 +37,20 @@
     -webkit-font-smoothing: antialiased;
   }
 }
+
+@layer utilities {
+  .animate-pulse-slow {
+    animation: pulse-slow 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% {
+      opacity: 1;
+      filter: drop-shadow(0 0 40px rgba(201, 162, 39, 0.5));
+    }
+    50% {
+      opacity: 0.88;
+      filter: drop-shadow(0 0 60px rgba(201, 162, 39, 0.8));
+    }
+  }
+}

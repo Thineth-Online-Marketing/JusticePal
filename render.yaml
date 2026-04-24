@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: justicepal-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build && npx prisma db push
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false          # Set manually in Render dashboard (Neon URL)
+      - key: FIREBASE_SERVICE_ACCOUNT_BASE64
+        sync: false          # Set manually in Render dashboard (base64 of firebase-key.json)
+      - key: ALLOWED_ORIGIN
+        value: https://justice-pal.vercel.app
