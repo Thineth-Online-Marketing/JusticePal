@@ -46,6 +46,7 @@ const content = {
 };
 
 export default function LoginPage() {
+  const [role, setRole] = useState<"client" | "lawyer">("client");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -84,7 +85,8 @@ export default function LoginPage() {
       const idToken = await firebaseUser.getIdToken();
 
       // Step 3: Sync user to PostgreSQL backend
-      const res = await fetch(`${BACKEND_URL}/api/auth/sync`, {
+      const endpoint = role === "client" ? "/api/auth/login/client" : "/api/auth/login/lawyer";
+      const res = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -123,8 +125,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex text-gray-900 bg-white">
       {/* Viewport Split - Left Side Form */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 relative pointer-events-auto">
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className="absolute top-8 left-8 flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-[#1B3A6B] transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -132,7 +134,7 @@ export default function LoginPage() {
           </svg>
           {tx.backToHome}
         </Link>
-        
+
         <div className="w-full max-w-md animate-fade-in-up">
           <div className="mb-10 text-center lg:text-left">
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-2">{tx.welcome}</h1>
@@ -159,10 +161,10 @@ export default function LoginPage() {
               </svg>
             ) : (
               <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
             )}
             {googleLoading ? "Signing in..." : "Sign in with Google"}
@@ -176,10 +178,34 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Role Selection Toggle */}
+            <div className="flex p-1 bg-gray-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setRole("client")}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${role === "client"
+                    ? "bg-white text-[#1B3A6B] shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                  }`}
+              >
+                Client
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("lawyer")}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${role === "lawyer"
+                    ? "bg-white text-[#1B3A6B] shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                  }`}
+              >
+                Lawyer
+              </button>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">{tx.email}</label>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -187,11 +213,11 @@ export default function LoginPage() {
                 placeholder="you@example.com"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">{tx.password}</label>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -208,7 +234,7 @@ export default function LoginPage() {
               <a href="#" className="font-semibold text-[#1B3A6B] hover:text-orange-500 transition-colors">{tx.forgot}</a>
             </div>
 
-            <button 
+            <button
               type="submit"
               disabled={loading}
               className="w-full py-3.5 bg-[#1B3A6B] hover:bg-[#112549] disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-[#1B3A6B]/20 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
@@ -233,7 +259,7 @@ export default function LoginPage() {
       <div className="hidden lg:flex w-1/2 bg-[#1B3A6B] flex-col justify-center items-center relative overflow-hidden p-12">
         <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-blue-400/20 rounded-full blur-[80px]" />
         <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-orange-500/20 rounded-full blur-[80px]" />
-        
+
         <div className="relative z-10 w-full max-w-lg text-center backdrop-blur-md bg-white/5 border border-white/10 p-12 rounded-3xl shadow-2xl">
           <div className="relative w-32 h-32 mx-auto mb-6 flex items-center justify-center rounded-2xl overflow-hidden">
             <Image
