@@ -511,9 +511,8 @@ export default function LawyerDashboard() {
                 
               </div>
             </div>
-            
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );
