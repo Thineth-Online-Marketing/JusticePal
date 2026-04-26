@@ -29,9 +29,19 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
   // ID verification
   const [idPhotos, setIdPhotos] = useState<string[]>([]);
 
-  const handleMockProfileUpload = () => {
-    setProfilePicture("https://i.pravatar.cc/150?u=" + dbUser.id);
-    alert("Profile picture uploaded!");
+  const handleProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type === "image/jpeg" || file.type === "image/png") {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setProfilePicture(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert("Please select a valid image type (JPG, PNG).");
+      }
+    }
   };
 
   const handleSaveBio = async () => {
@@ -178,9 +188,15 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
                     </div>
                   )}
                 </div>
-                <button onClick={handleMockProfileUpload} className="px-4 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors">
+                <label className="cursor-pointer inline-block px-4 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors">
                   Upload Picture
-                </button>
+                  <input 
+                    type="file" 
+                    accept="image/jpeg, image/png" 
+                    className="hidden" 
+                    onChange={handleProfileUpload} 
+                  />
+                </label>
               </div>
             </div>
             <button onClick={handleSaveBio} disabled={loading} className="w-full py-3 bg-[#1B3A6B] text-white rounded-lg font-medium mt-4">
