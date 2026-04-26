@@ -82,6 +82,7 @@ export default function LawyerDashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [dbUser, setDbUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const fetchDbProfile = async (currentUser: User) => {
     try {
@@ -123,13 +124,9 @@ export default function LawyerDashboard() {
     );
   }
 
-  // Verification checks for Lawyers
-  if (dbUser?.role === "lawyer" && !dbUser.lawyerProfile?.isVerified) {
-    if (!dbUser.lawyerProfile?.profileCompleted) {
-      return <LawyerOnboarding dbUser={dbUser} onComplete={() => user && fetchDbProfile(user)} />;
-    }
-    return <PendingApproval />;
-  }
+  // Determine profile strength
+  const isProfileComplete = dbUser?.lawyerProfile?.profileCompleted;
+  const isVerified = dbUser?.lawyerProfile?.isVerified;
 
   const userName = user?.displayName || "Perera";
 
@@ -233,7 +230,44 @@ export default function LawyerDashboard() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto p-8 relative">
+          
+          {/* Profile Strength Card */}
+          {dbUser?.role === "lawyer" && (!isProfileComplete || !isVerified) && (
+            <div className="max-w-6xl mx-auto mb-6 bg-white border border-gray-200 rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between shadow-sm">
+              <div className="flex-1">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-xl font-bold text-gray-900">Profile Strength</h3>
+                  <span className="text-lg font-bold text-gray-900">{isProfileComplete ? "12" : "8"}<span className="text-gray-400 text-sm">/12</span></span>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  {isProfileComplete 
+                    ? "Your profile is pending admin approval. You will have full access once verified." 
+                    : "A strong profile helps you stand out and attract better opportunities."}
+                </p>
+                <div className="w-full bg-gray-100 h-2 rounded-full mb-4 overflow-hidden">
+                  <div className={`h-full rounded-full ${isProfileComplete ? 'bg-orange-500 w-full' : 'bg-gray-800 w-[66%]'}`}></div>
+                </div>
+                {!isProfileComplete && (
+                  <button 
+                    onClick={() => setShowOnboarding(true)}
+                    className="px-6 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Complete profile
+                  </button>
+                )}
+                {isProfileComplete && !isVerified && (
+                  <button 
+                    disabled
+                    className="px-6 py-2 bg-gray-100 text-gray-500 rounded-lg text-sm font-medium cursor-not-allowed"
+                  >
+                    Pending Approval
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="max-w-6xl mx-auto space-y-6">
             
             {/* Top Stat Cards */}
@@ -514,6 +548,29 @@ export default function LawyerDashboard() {
           </div>
         </main>
       </div>
+
+      {/* Onboarding Modal Overlay */}
+      {showOnboarding && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-10">
+          <div className="relative w-full max-w-2xl bg-transparent">
+            <button 
+              onClick={() => setShowOnboarding(false)}
+              className="absolute top-4 right-4 z-50 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full p-2"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <LawyerOnboarding 
+              dbUser={dbUser} 
+              onComplete={() => {
+                setShowOnboarding(false);
+                if (user) fetchDbProfile(user);
+              }} 
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

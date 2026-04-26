@@ -105,8 +105,7 @@ export default function LawyerOnboarding({ dbUser, onComplete }: { dbUser: any, 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+    <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
         <h1 className="text-2xl font-bold text-[#1B3A6B] mb-2">Lawyer Verification Setup</h1>
         <p className="text-gray-500 mb-8">Please complete your profile and verify your identity to access the dashboard.</p>
 
@@ -193,6 +192,5 @@ export default function LawyerOnboarding({ dbUser, onComplete }: { dbUser: any, 
         )}
 
       </div>
-    </div>
   );
 }
