@@ -9,15 +9,16 @@ declare global {
   }
 }
 
-export default function LawyerOnboarding({ dbUser, onComplete }: { dbUser: any, onComplete: () => void }) {
-  const [step, setStep] = useState(1);
+export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { dbUser: any, initialStep: 1 | 2 | 3, onComplete: () => void }) {
+  const [step] = useState(initialStep);
   const [loading, setLoading] = useState(false);
 
   // Profile data
-  const [specialization, setSpecialization] = useState("");
-  const [location, setLocation] = useState("");
-  const [bio, setBio] = useState("");
-  const [workExperience, setWorkExperience] = useState("");
+  const [specialization, setSpecialization] = useState(dbUser?.lawyerProfile?.specialization?.[0] || "");
+  const [location, setLocation] = useState(dbUser?.lawyerProfile?.location || "");
+  const [bio, setBio] = useState(dbUser?.lawyerProfile?.bio || "");
+  const [workExperience, setWorkExperience] = useState(dbUser?.lawyerProfile?.workExperience || "");
+  const [profilePicture, setProfilePicture] = useState(dbUser?.lawyerProfile?.profilePicture || "");
   
   // Phone verification
   const [phone, setPhone] = useState("");
@@ -28,8 +29,37 @@ export default function LawyerOnboarding({ dbUser, onComplete }: { dbUser: any, 
   // ID verification
   const [idPhotos, setIdPhotos] = useState<string[]>([]);
 
-  const handleNextStep = () => {
-    setStep(step + 1);
+  const handleMockProfileUpload = () => {
+    setProfilePicture("https://i.pravatar.cc/150?u=" + dbUser.id);
+    alert("Profile picture uploaded!");
+  };
+
+  const handleSaveBio = async () => {
+    setLoading(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/lawyers/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          specialization: [specialization],
+          location,
+          bio,
+          workExperience,
+          profilePicture
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update profile");
+      onComplete();
+    } catch (error) {
+      alert("Failed to save bio data.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSendCode = async () => {
@@ -57,8 +87,17 @@ export default function LawyerOnboarding({ dbUser, onComplete }: { dbUser: any, 
     try {
       await confirmationResult.confirm(otp);
       setPhoneVerified(true);
+      
+      // Save phone to DB
+      const idToken = await auth.currentUser?.getIdToken();
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/lawyers/profile`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ phone, phoneVerified: true }),
+      });
+      
       alert("Phone verified successfully!");
-      handleNextStep();
+      onComplete();
     } catch (error: any) {
       alert("Invalid OTP");
     } finally {
@@ -67,38 +106,27 @@ export default function LawyerOnboarding({ dbUser, onComplete }: { dbUser: any, 
   };
 
   const handleUploadID = () => {
-    // Mock upload
     setIdPhotos(["https://mock-id-photo-url.com/id1.jpg"]);
     alert("ID uploaded successfully!");
   };
 
-  const handleSubmitProfile = async () => {
+  const handleSaveID = async () => {
     setLoading(true);
     try {
       const idToken = await auth.currentUser?.getIdToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/lawyers/profile`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({
-          specialization: [specialization],
-          location,
-          bio,
-          workExperience,
-          phone,
-          phoneVerified: true,
           idPhotos,
           profileCompleted: true
         }),
       });
 
       if (!res.ok) throw new Error("Failed to update profile");
-      
-      onComplete(); // Triggers re-fetch or state update in parent
+      onComplete();
     } catch (error) {
-      alert("Failed to submit profile. Please try again.");
+      alert("Failed to submit ID. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -133,7 +161,26 @@ export default function LawyerOnboarding({ dbUser, onComplete }: { dbUser: any, 
               <label className="block text-sm font-medium text-gray-700 mb-1">Short Bio</label>
               <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={2} className="w-full px-4 py-2 border rounded-lg"></textarea>
             </div>
-            <button onClick={handleNextStep} className="w-full py-3 bg-[#1B3A6B] text-white rounded-lg font-medium mt-4">Continue to Phone Verification</button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gray-100 overflow-hidden border border-gray-200">
+                  {profilePicture ? (
+                    <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                  )}
+                </div>
+                <button onClick={handleMockProfileUpload} className="px-4 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors">
+                  Upload Picture
+                </button>
+              </div>
+            </div>
+            <button onClick={handleSaveBio} disabled={loading} className="w-full py-3 bg-[#1B3A6B] text-white rounded-lg font-medium mt-4">
+              {loading ? "Saving..." : "Save Bio Data"}
+            </button>
           </div>
         )}
 
@@ -185,8 +232,8 @@ export default function LawyerOnboarding({ dbUser, onComplete }: { dbUser: any, 
               )}
             </div>
 
-            <button onClick={handleSubmitProfile} disabled={loading || idPhotos.length === 0} className="w-full py-3 bg-[#1B3A6B] text-white rounded-lg font-medium mt-4 disabled:opacity-50">
-              {loading ? "Submitting..." : "Submit for Approval"}
+            <button onClick={handleSaveID} disabled={loading || idPhotos.length === 0} className="w-full py-3 bg-[#1B3A6B] text-white rounded-lg font-medium mt-4 disabled:opacity-50">
+              {loading ? "Submitting..." : "Submit ID for Approval"}
             </button>
           </div>
         )}

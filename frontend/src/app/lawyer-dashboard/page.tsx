@@ -82,7 +82,7 @@ export default function LawyerDashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [dbUser, setDbUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [setupStep, setSetupStep] = useState<1 | 2 | 3 | null>(null);
 
   const fetchDbProfile = async (currentUser: User) => {
     try {
@@ -124,10 +124,19 @@ export default function LawyerDashboard() {
     );
   }
 
-  // Determine profile strength
-  const isProfileComplete = dbUser?.lawyerProfile?.profileCompleted;
-  const isVerified = dbUser?.lawyerProfile?.isVerified;
+  // Determine profile strength and task completion
+  const lawyerProfile = dbUser?.lawyerProfile;
+  const isVerified = lawyerProfile?.isVerified;
+  const hasBioData = lawyerProfile && lawyerProfile.specialization?.length > 0 && !!lawyerProfile.location;
+  const hasVerifiedPhone = !!lawyerProfile?.phoneVerified;
+  const hasIdUploaded = lawyerProfile?.idPhotos?.length > 0;
+  
+  const showBioTask = dbUser?.role === "lawyer" && !hasBioData;
+  const showPhoneTask = dbUser?.role === "lawyer" && hasBioData && !hasVerifiedPhone;
+  const showIdTask = dbUser?.role === "lawyer" && hasBioData && hasVerifiedPhone && !isVerified && !hasIdUploaded;
+  const showPendingApproval = dbUser?.role === "lawyer" && hasIdUploaded && !isVerified;
 
+  const profilePic = lawyerProfile?.profilePicture;
   const userName = user?.displayName || "Perera";
 
   return (
@@ -138,15 +147,15 @@ export default function LawyerDashboard() {
         
         {/* Logo Section */}
         <div className="flex items-center gap-3 w-64">
-          <div className="w-8 h-8 rounded-lg bg-[#1B3A6B] flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-            </svg>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-gray-900 leading-tight">JusticePal</span>
-            <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase leading-none">{tx.sriLanka}</span>
-          </div>
+          <Link href="/">
+            <Image 
+              src="/logo.png" 
+              alt="JusticePal Logo" 
+              width={140} 
+              height={40} 
+              className="object-contain"
+            />
+          </Link>
         </div>
 
         {/* Search Bar */}
@@ -177,10 +186,14 @@ export default function LawyerDashboard() {
               <span className="text-sm font-bold text-gray-900 leading-tight">{tx.counselor} {userName}</span>
               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{tx.advocate}</span>
             </div>
-            <div className="w-9 h-9 rounded-full bg-blue-100 overflow-hidden relative">
-              <div className="w-full h-full flex items-center justify-center text-[#1B3A6B] font-bold">
-                {userName.charAt(0)}
-              </div>
+            <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden relative border border-gray-200">
+              {profilePic ? (
+                <Image src={profilePic} alt={userName} fill className="object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[#1B3A6B] font-bold">
+                  {userName.charAt(0)}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -232,41 +245,70 @@ export default function LawyerDashboard() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto p-8 relative">
           
-          {/* Profile Strength Card */}
-          {dbUser?.role === "lawyer" && (!isProfileComplete || !isVerified) && (
-            <div className="max-w-6xl mx-auto mb-6 bg-white border border-gray-200 rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between shadow-sm">
-              <div className="flex-1">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-xl font-bold text-gray-900">Profile Strength</h3>
-                  <span className="text-lg font-bold text-gray-900">{isProfileComplete ? "12" : "8"}<span className="text-gray-400 text-sm">/12</span></span>
+          {/* Action Task Cards Container */}
+          <div className="max-w-6xl mx-auto space-y-4 mb-8">
+            
+            {showBioTask && (
+              <div className="bg-white border border-blue-100 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    Add Bio Data
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">Complete your profile details including your picture, specialization, and work experience.</p>
                 </div>
-                <p className="text-sm text-gray-600 mb-4">
-                  {isProfileComplete 
-                    ? "Your profile is pending admin approval. You will have full access once verified." 
-                    : "A strong profile helps you stand out and attract better opportunities."}
-                </p>
-                <div className="w-full bg-gray-100 h-2 rounded-full mb-4 overflow-hidden">
-                  <div className={`h-full rounded-full ${isProfileComplete ? 'bg-orange-500 w-full' : 'bg-gray-800 w-[66%]'}`}></div>
-                </div>
-                {!isProfileComplete && (
-                  <button 
-                    onClick={() => setShowOnboarding(true)}
-                    className="px-6 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    Complete profile
-                  </button>
-                )}
-                {isProfileComplete && !isVerified && (
-                  <button 
-                    disabled
-                    className="px-6 py-2 bg-gray-100 text-gray-500 rounded-lg text-sm font-medium cursor-not-allowed"
-                  >
-                    Pending Approval
-                  </button>
-                )}
+                <button onClick={() => setSetupStep(1)} className="mt-4 md:mt-0 px-6 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
+                  Add Bio Data
+                </button>
               </div>
-            </div>
-          )}
+            )}
+
+            {showPhoneTask && (
+              <div className="bg-white border border-blue-100 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    Verify Mobile Number
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">Verify your phone number with OTP to secure your account and communicate with clients.</p>
+                </div>
+                <button onClick={() => setSetupStep(2)} className="mt-4 md:mt-0 px-6 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
+                  Verify Number
+                </button>
+              </div>
+            )}
+
+            {showIdTask && (
+              <div className="bg-white border border-blue-100 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
+                    Verify Lawyer Account
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">Upload your official Lawyer ID to get verified by our administration team.</p>
+                </div>
+                <button onClick={() => setSetupStep(3)} className="mt-4 md:mt-0 px-6 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
+                  Verify Account
+                </button>
+              </div>
+            )}
+
+            {showPendingApproval && (
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-orange-500">
+                <div>
+                  <h3 className="text-lg font-bold text-orange-800 flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Pending Admin Approval
+                  </h3>
+                  <p className="text-sm text-orange-700 mt-1">Your Lawyer ID is currently being reviewed. You will have full access once approved.</p>
+                </div>
+                <button disabled className="mt-4 md:mt-0 px-6 py-2 bg-orange-200 text-orange-800 rounded-lg text-sm font-medium cursor-not-allowed whitespace-nowrap">
+                  Under Review
+                </button>
+              </div>
+            )}
+
+          </div>
 
           <div className="max-w-6xl mx-auto space-y-6">
             
@@ -550,11 +592,11 @@ export default function LawyerDashboard() {
       </div>
 
       {/* Onboarding Modal Overlay */}
-      {showOnboarding && (
+      {setupStep !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-10">
           <div className="relative w-full max-w-2xl bg-transparent">
             <button 
-              onClick={() => setShowOnboarding(false)}
+              onClick={() => setSetupStep(null)}
               className="absolute top-4 right-4 z-50 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full p-2"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -563,8 +605,9 @@ export default function LawyerDashboard() {
             </button>
             <LawyerOnboarding 
               dbUser={dbUser} 
+              initialStep={setupStep}
               onComplete={() => {
-                setShowOnboarding(false);
+                setSetupStep(null);
                 if (user) fetchDbProfile(user);
               }} 
             />
