@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { AuthRequest } from '../middleware/authMiddleware';
 
 const prisma = new PrismaClient();
 
@@ -48,6 +49,44 @@ export const createLawyerProfile = async (req: Request, res: Response, next: Nex
     });
 
     res.status(201).json(lawyer);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update lawyer profile (for onboarding)
+// @route   PUT /api/lawyers/profile
+// @access  Private (Lawyer)
+export const updateLawyerProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { specialization, location, bio, hourlyRate, workExperience, profilePicture, phone, phoneVerified, idPhotos, profileCompleted } = req.body;
+
+    const lawyer = await prisma.lawyer.findUnique({
+      where: { userId: req.user.id }
+    });
+
+    if (!lawyer) {
+      res.status(404);
+      throw new Error('Lawyer profile not found');
+    }
+
+    const updatedLawyer = await prisma.lawyer.update({
+      where: { userId: req.user.id },
+      data: {
+        specialization: specialization || lawyer.specialization,
+        location: location || lawyer.location,
+        bio: bio || lawyer.bio,
+        workExperience: workExperience || lawyer.workExperience,
+        profilePicture: profilePicture || lawyer.profilePicture,
+        phone: phone || lawyer.phone,
+        phoneVerified: phoneVerified !== undefined ? phoneVerified : lawyer.phoneVerified,
+        idPhotos: idPhotos || lawyer.idPhotos,
+        profileCompleted: profileCompleted !== undefined ? profileCompleted : lawyer.profileCompleted,
+        hourlyRate: hourlyRate ? parseFloat(hourlyRate) : lawyer.hourlyRate
+      }
+    });
+
+    res.status(200).json(updatedLawyer);
   } catch (error) {
     next(error);
   }
