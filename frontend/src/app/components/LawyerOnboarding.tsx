@@ -49,7 +49,8 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
           location,
           bio,
           workExperience,
-          profilePicture
+          profilePicture,
+          phone
         }),
       });
 
@@ -148,6 +149,10 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
               <input type="text" value={specialization} onChange={(e) => setSpecialization(e.target.value)} placeholder="e.g. Criminal Defense, Family Law" className="w-full px-4 py-2 border rounded-lg" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+              <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +94771234567" className="w-full px-4 py-2 border rounded-lg" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Location / Office</label>

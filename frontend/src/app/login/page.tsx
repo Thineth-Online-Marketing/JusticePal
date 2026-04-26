@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { signInWithGoogle } from "../lib/googleAuth";
 
@@ -245,7 +245,7 @@ export default function LoginPage() {
                 <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-[#1B3A6B] focus:ring-[#1B3A6B]" />
                 <span className="text-gray-600">{tx.remember}</span>
               </label>
-              <a href="#" className="font-semibold text-[#1B3A6B] hover:text-orange-500 transition-colors">{tx.forgot}</a>
+              <button onClick={handleResetPassword} type="button" className="font-semibold text-[#1B3A6B] hover:text-orange-500 transition-colors">{tx.forgot}</button>
             </div>
 
             <button

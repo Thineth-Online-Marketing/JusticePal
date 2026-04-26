@@ -149,7 +149,7 @@ export default function LawyerDashboard() {
         <div className="flex items-center gap-3 w-64">
           <Link href="/">
             <Image 
-              src="/logo.png" 
+              src="https://res.cloudinary.com/dluwvqdaz/image/upload/v1775969976/Navy_Blue_JusticePal_Logo_with_Dove_Fusion_new_uhyjl0.png" 
               alt="JusticePal Logo" 
               width={140} 
               height={40} 
@@ -286,14 +286,14 @@ export default function LawyerDashboard() {
                     Verify Lawyer Account
                   </h3>
                   <p className="text-xs text-gray-500 mt-1">
-                    {(!hasBioData || !hasVerifiedPhone) 
-                      ? "Complete your Bio Data and Mobile Verification to unlock this step." 
+                    {(!hasBioData) 
+                      ? "Complete your Bio Data to unlock this step." 
                       : "Upload your official Lawyer ID to get verified by our administration team."}
                   </p>
                 </div>
                 <button 
                   onClick={() => setSetupStep(3)} 
-                  disabled={!hasBioData || !hasVerifiedPhone}
+                  disabled={!hasBioData}
                   className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
                 >
                   Verify Account
