@@ -132,8 +132,8 @@ export default function LawyerDashboard() {
   const hasIdUploaded = lawyerProfile?.idPhotos?.length > 0;
   
   const showBioTask = dbUser?.role === "lawyer" && !hasBioData;
-  const showPhoneTask = dbUser?.role === "lawyer" && hasBioData && !hasVerifiedPhone;
-  const showIdTask = dbUser?.role === "lawyer" && hasBioData && hasVerifiedPhone && !isVerified && !hasIdUploaded;
+  const showPhoneTask = dbUser?.role === "lawyer" && !hasVerifiedPhone;
+  const showIdTask = dbUser?.role === "lawyer" && !isVerified && !hasIdUploaded;
   const showPendingApproval = dbUser?.role === "lawyer" && hasIdUploaded && !isVerified;
 
   const profilePic = lawyerProfile?.profilePicture;
@@ -249,60 +249,68 @@ export default function LawyerDashboard() {
           <div className="max-w-6xl mx-auto space-y-4 mb-8">
             
             {showBioTask && (
-              <div className="bg-white border border-blue-100 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                     Add Bio Data
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">Complete your profile details including your picture, specialization, and work experience.</p>
+                  <p className="text-xs text-gray-500 mt-1">Complete your profile details including your picture, specialization, and work experience.</p>
                 </div>
-                <button onClick={() => setSetupStep(1)} className="mt-4 md:mt-0 px-6 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
+                <button onClick={() => setSetupStep(1)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
                   Add Bio Data
                 </button>
               </div>
             )}
 
             {showPhoneTask && (
-              <div className="bg-white border border-blue-100 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                     Verify Mobile Number
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">Verify your phone number with OTP to secure your account and communicate with clients.</p>
+                  <p className="text-xs text-gray-500 mt-1">Verify your phone number with OTP to secure your account and communicate with clients.</p>
                 </div>
-                <button onClick={() => setSetupStep(2)} className="mt-4 md:mt-0 px-6 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
+                <button onClick={() => setSetupStep(2)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
                   Verify Number
                 </button>
               </div>
             )}
 
             {showIdTask && (
-              <div className="bg-white border border-blue-100 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500 opacity-90">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
                     Verify Lawyer Account
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">Upload your official Lawyer ID to get verified by our administration team.</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {(!hasBioData || !hasVerifiedPhone) 
+                      ? "Complete your Bio Data and Mobile Verification to unlock this step." 
+                      : "Upload your official Lawyer ID to get verified by our administration team."}
+                  </p>
                 </div>
-                <button onClick={() => setSetupStep(3)} className="mt-4 md:mt-0 px-6 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
+                <button 
+                  onClick={() => setSetupStep(3)} 
+                  disabled={!hasBioData || !hasVerifiedPhone}
+                  className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                >
                   Verify Account
                 </button>
               </div>
             )}
 
             {showPendingApproval && (
-              <div className="bg-orange-50 border border-orange-100 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-orange-500">
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-orange-500">
                 <div>
-                  <h3 className="text-lg font-bold text-orange-800 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <h3 className="text-base font-bold text-orange-800 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     Pending Admin Approval
                   </h3>
-                  <p className="text-sm text-orange-700 mt-1">Your Lawyer ID is currently being reviewed. You will have full access once approved.</p>
+                  <p className="text-xs text-orange-700 mt-1">Your Lawyer ID is currently being reviewed. You will have full access once approved.</p>
                 </div>
-                <button disabled className="mt-4 md:mt-0 px-6 py-2 bg-orange-200 text-orange-800 rounded-lg text-sm font-medium cursor-not-allowed whitespace-nowrap">
+                <button disabled className="mt-3 md:mt-0 px-5 py-2 bg-orange-200 text-orange-800 rounded-lg text-xs font-medium cursor-not-allowed whitespace-nowrap">
                   Under Review
                 </button>
               </div>
