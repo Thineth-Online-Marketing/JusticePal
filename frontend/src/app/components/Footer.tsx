@@ -4,35 +4,99 @@ import Link from "next/link";
 import Image from "next/image";
 import { useLanguage } from "../context/LanguageContext";
 
-const FOOTER_LINKS = {
-  Platform: [
-    { label: "How It Works", href: "/how-it-works" },
-    { label: "Pricing", href: "/pricing" },
-    { label: "Find a Lawyer", href: "/lawyers" },
-    { label: "Legal AI", href: "/ai" },
-  ],
-  Company: [
-    { label: "About Us", href: "/about" },
-    { label: "Careers", href: "/careers" },
-    { label: "Blog", href: "/blog" },
-    { label: "Press", href: "/press" },
-  ],
-  Legal: [
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
-    { label: "Cookie Policy", href: "/cookies" },
-    { label: "Disclaimer", href: "/disclaimer" },
-  ],
-  Support: [
-    { label: "Help Center", href: "/help" },
-    { label: "Contact Us", href: "/contact" },
-    { label: "Community", href: "/community" },
-    { label: "Status", href: "/status" },
-  ],
+const content = {
+  en: {
+    description: "Empowering Sri Lanka with accessible legal assistance through artificial intelligence and expert human insight.",
+    rights: "All rights reserved.",
+    status: "All systems operational",
+    categories: {
+      Platform: {
+        title: "Platform",
+        links: [
+          { label: "How It Works", href: "/how-it-works" },
+          { label: "Pricing", href: "/pricing" },
+          { label: "Find a Lawyer", href: "/lawyers" },
+          { label: "Legal AI", href: "/ai" },
+        ],
+      },
+      Company: {
+        title: "Company",
+        links: [
+          { label: "About Us", href: "/about" },
+          { label: "Careers", href: "/careers" },
+          { label: "Blog", href: "/blog" },
+          { label: "Press", href: "/press" },
+        ],
+      },
+      Legal: {
+        title: "Legal",
+        links: [
+          { label: "Privacy Policy", href: "/privacy" },
+          { label: "Terms of Service", href: "/terms" },
+          { label: "Cookie Policy", href: "/cookies" },
+          { label: "Disclaimer", href: "/disclaimer" },
+        ],
+      },
+      Support: {
+        title: "Support",
+        links: [
+          { label: "Help Center", href: "/help" },
+          { label: "Contact Us", href: "/contact" },
+          { label: "Community", href: "/community" },
+          { label: "Status", href: "/status" },
+        ],
+      },
+    }
+  },
+  si: {
+    description: "කෘතිම බුද්ධිය සහ ප්‍රවීණ මානව අවබෝධය හරහා ප්‍රවේශ විය හැකි නීතිමය සහාය ලබා දෙමින් ශ්‍රී ලංකාව සවිබල ගැන්වීම.",
+    rights: "සියලුම හිමිකම් ඇවිරිණි.",
+    status: "සියලුම පද්ධති ක්‍රියාත්මකයි",
+    categories: {
+      Platform: {
+        title: "වේදිකාව",
+        links: [
+          { label: "ක්‍රියාත්මක වන ආකාරය", href: "/how-it-works" },
+          { label: "මිල ගණන්", href: "/pricing" },
+          { label: "නීතිඥයෙකු සොයන්න", href: "/lawyers" },
+          { label: "නීතිමය AI", href: "/ai" },
+        ],
+      },
+      Company: {
+        title: "සමාගම",
+        links: [
+          { label: "අප ගැන", href: "/about" },
+          { label: "රැකියා", href: "/careers" },
+          { label: "බ්ලොග්", href: "/blog" },
+          { label: "මාධ්‍ය", href: "/press" },
+        ],
+      },
+      Legal: {
+        title: "නීතිමය",
+        links: [
+          { label: "රහස්‍යතා ප්‍රතිපත්තිය", href: "/privacy" },
+          { label: "සේවා කොන්දේසි", href: "/terms" },
+          { label: "කුකීස් ප්‍රතිපත්තිය", href: "/cookies" },
+          { label: "වියාචනය", href: "/disclaimer" },
+        ],
+      },
+      Support: {
+        title: "සහාය",
+        links: [
+          { label: "උදව් මධ්‍යස්ථානය", href: "/help" },
+          { label: "අප අමතන්න", href: "/contact" },
+          { label: "ප්‍රජාව", href: "/community" },
+          { label: "තත්ත්වය", href: "/status" },
+        ],
+      },
+    }
+  }
 };
 
 export default function Footer() {
   const { lang, toggle } = useLanguage();
+  const tx = content[lang as keyof typeof content] || content.en;
+
   return (
     <footer className="bg-[#050B14] text-white pt-20 px-6 pb-8 border-t border-gray-800">
       <div className="max-w-[1400px] mx-auto">
@@ -59,7 +123,7 @@ export default function Footer() {
             </Link>
 
             <p className="text-gray-400 leading-relaxed max-w-sm mb-8">
-              Empowering Sri Lanka with accessible legal assistance through artificial intelligence and expert human insight.
+              {tx.description}
             </p>
 
             {/* Socials */}
@@ -83,13 +147,13 @@ export default function Footer() {
           </div>
 
           {/* Links Grid */}
-          {Object.entries(FOOTER_LINKS).map(([title, links]) => (
-            <div key={title}>
+          {Object.entries(tx.categories).map(([key, category]) => (
+            <div key={key}>
               <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-6">
-                {title}
+                {category.title}
               </h4>
               <ul className="space-y-4">
-                {links.map((link) => (
+                {category.links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
@@ -106,7 +170,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} JusticePal. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} JusticePal. {tx.rights}</p>
 
           <div className="flex items-center gap-6">
             <button
@@ -121,7 +185,7 @@ export default function Footer() {
             </button>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-              <span>All systems operational</span>
+              <span>{tx.status}</span>
             </div>
           </div>
         </div>
