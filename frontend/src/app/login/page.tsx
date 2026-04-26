@@ -60,8 +60,13 @@ export default function LoginPage() {
     setError("");
     setGoogleLoading(true);
     try {
-      await signInWithGoogle();
-      router.push("/lawyers");
+      const userData = await signInWithGoogle(role);
+      const userRole = userData?.role || role;
+      if (userRole === "lawyer") {
+        router.push("/lawyer-dashboard");
+      } else {
+        router.push("/client-dashboard");
+      }
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
       if (e.code === "auth/popup-closed-by-user") return; // user closed popup
@@ -85,14 +90,16 @@ export default function LoginPage() {
       const idToken = await firebaseUser.getIdToken();
 
       // Step 3: Sync user to PostgreSQL backend
-      const endpoint = role === "client" ? "/api/auth/login/client" : "/api/auth/login/lawyer";
-      const res = await fetch(`${BACKEND_URL}${endpoint}`, {
+      const res = await fetch(`${BACKEND_URL}/api/auth/sync`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ email: firebaseUser.email }),
+        body: JSON.stringify({ 
+          email: firebaseUser.email,
+          role: role
+        }),
       });
 
       if (!res.ok) {
@@ -100,8 +107,15 @@ export default function LoginPage() {
         throw new Error(data.message || "Failed to sync user with server");
       }
 
+      const userData = await res.json();
+      const userRole = userData?.role || role;
+
       // Step 4: Redirect on success
-      router.push("/lawyers");
+      if (userRole === "lawyer") {
+        router.push("/lawyer-dashboard");
+      } else {
+        router.push("/client-dashboard");
+      }
     } catch (err: unknown) {
       const firebaseError = err as { code?: string; message?: string };
       switch (firebaseError.code) {

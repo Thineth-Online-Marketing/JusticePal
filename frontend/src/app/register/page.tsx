@@ -46,6 +46,7 @@ const content = {
 };
 
 export default function RegisterPage() {
+  const [role, setRole] = useState<"client" | "lawyer">("client");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -61,8 +62,13 @@ export default function RegisterPage() {
     setError("");
     setGoogleLoading(true);
     try {
-      await signInWithGoogle();
-      router.push("/lawyers");
+      const userData = await signInWithGoogle(role);
+      const userRole = userData?.role || role;
+      if (userRole === "lawyer") {
+        router.push("/lawyer-dashboard");
+      } else {
+        router.push("/client-dashboard");
+      }
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
       if (e.code === "auth/popup-closed-by-user") return;
@@ -106,7 +112,7 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ email: firebaseUser.email, name }),
+        body: JSON.stringify({ email: firebaseUser.email, name, role }),
       });
 
       if (!res.ok) {
@@ -114,8 +120,15 @@ export default function RegisterPage() {
         throw new Error(data.message || "Failed to sync user with server");
       }
 
+      const userData = await res.json();
+      const userRole = userData?.role || role;
+
       // Step 5: Redirect on success
-      router.push("/lawyers");
+      if (userRole === "lawyer") {
+        router.push("/lawyer-dashboard");
+      } else {
+        router.push("/client-dashboard");
+      }
     } catch (err: unknown) {
       const firebaseError = err as { code?: string; message?: string };
       switch (firebaseError.code) {
@@ -193,6 +206,30 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Role Selection Toggle */}
+            <div className="flex p-1 bg-gray-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setRole("client")}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${role === "client"
+                    ? "bg-white text-[#1B3A6B] shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                  }`}
+              >
+                Client
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("lawyer")}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${role === "lawyer"
+                    ? "bg-white text-[#1B3A6B] shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                  }`}
+              >
+                Lawyer
+              </button>
+            </div>
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">{tx.name}</label>
               <input 

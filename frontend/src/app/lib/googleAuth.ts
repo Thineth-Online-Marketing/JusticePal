@@ -4,7 +4,8 @@ import { auth } from "./firebase";
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 // Shared Google sign-in flow used by both login and register pages
-export async function signInWithGoogle(): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function signInWithGoogle(role?: string): Promise<any> {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
@@ -24,6 +25,7 @@ export async function signInWithGoogle(): Promise<void> {
     body: JSON.stringify({
       email: firebaseUser.email,
       name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
+      role: role || "client",
     }),
   });
 
@@ -31,4 +33,7 @@ export async function signInWithGoogle(): Promise<void> {
     const data = await res.json();
     throw new Error(data.message || "Failed to sync user with server");
   }
+  
+  const userData = await res.json();
+  return userData;
 }
