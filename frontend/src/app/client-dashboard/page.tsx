@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Navbar from "../components/Navbar";
+import ClientNavbar from "../components/ClientNavbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
 import { 
@@ -19,7 +19,7 @@ export default function ClientDashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans">
-      <Navbar />
+      <ClientNavbar />
       
       <main className="flex-1 max-w-[1400px] w-full mx-auto px-6 py-8 mt-[72px]">
         {/* Header Section */}
