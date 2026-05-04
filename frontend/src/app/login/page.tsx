@@ -76,6 +76,24 @@ export default function LoginPage() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError("Please enter your email address first to reset password.");
+      return;
+    }
+    try {
+      setLoading(true);
+      setError("");
+      await sendPasswordResetEmail(auth, email);
+      alert("Password reset email sent! Check your inbox.");
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setError(e.message || "Failed to send reset email. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
