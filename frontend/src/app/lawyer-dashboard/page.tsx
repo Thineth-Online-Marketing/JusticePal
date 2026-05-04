@@ -100,7 +100,7 @@ export default function LawyerDashboard() {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser: User | null) => {
       if (currentUser) {
         setUser(currentUser);
         await fetchDbProfile(currentUser);
