@@ -153,6 +153,20 @@ export default function LoginPage() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError("Please enter your email address first to reset password.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert("Password reset email sent! Check your inbox.");
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setError(e.message || "Failed to send password reset email.");
+    }
+  };
+
   return (
     <div className="min-h-screen flex text-gray-900 bg-white">
       {/* Viewport Split - Left Side Form */}
