@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import LawyerOnboarding from "../components/LawyerOnboarding";
-import PendingApproval from "../components/PendingApproval";
+import LawyerOnboarding from "./LawyerOnboarding";
+import PendingApproval from "./PendingApproval";
 
 const content = {
   en: {
@@ -104,14 +104,12 @@ export default function LawyerDashboard() {
       if (currentUser) {
         setUser(currentUser);
         await fetchDbProfile(currentUser);
-      } else {
-        router.push("/login");
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, []);
 
   if (loading) {
     return (

@@ -58,7 +58,7 @@ export default function ClientNavbar() {
 
         {/* Desktop Nav Links */}
         <div className="hidden md:flex items-center gap-8">
-          <Link href="/client-dashboard" className={`text-sm transition-colors duration-200 ${pathname === '/client-dashboard' ? 'font-bold text-[#1B3A6B]' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
+          <Link href="/" className={`text-sm transition-colors duration-200 ${pathname === '/' ? 'font-bold text-[#1B3A6B]' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
             {tx.dashboard}
           </Link>
           <Link href="/lawyers" className={`text-sm transition-colors duration-200 ${pathname.startsWith('/lawyers') ? 'font-bold text-[#1B3A6B]' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
@@ -137,7 +137,7 @@ export default function ClientNavbar() {
       {/* Mobile Menu Overlay */}
       <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-96 border-t border-gray-100 bg-white shadow-xl' : 'max-h-0'}`}>
         <div className="flex flex-col p-4 space-y-2">
-          <Link href="/client-dashboard" onClick={() => setMenuOpen(false)} className={`px-4 py-3 text-base rounded-lg transition-colors ${pathname === '/client-dashboard' ? 'text-blue-900 bg-blue-50 font-bold' : 'font-medium text-gray-700 hover:bg-gray-50'}`}>
+          <Link href="/" onClick={() => setMenuOpen(false)} className={`px-4 py-3 text-base rounded-lg transition-colors ${pathname === '/' ? 'text-blue-900 bg-blue-50 font-bold' : 'font-medium text-gray-700 hover:bg-gray-50'}`}>
             {tx.dashboard}
           </Link>
           <Link href="/lawyers" onClick={() => setMenuOpen(false)} className={`px-4 py-3 text-base rounded-lg transition-colors ${pathname.startsWith('/lawyers') ? 'text-blue-900 bg-blue-50 font-bold' : 'font-medium text-gray-700 hover:bg-gray-50'}`}>

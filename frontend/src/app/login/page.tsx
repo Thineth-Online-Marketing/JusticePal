@@ -62,10 +62,10 @@ export default function LoginPage() {
     try {
       const userData = await signInWithGoogle(role);
       const userRole = userData?.role || role;
-      if (userRole === "lawyer") {
-        router.push("/lawyer-dashboard");
+      if (userRole === "lawyer" || userRole === "client") {
+        router.push("/");
       } else {
-        router.push("/client-dashboard");
+        router.push("/");
       }
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
@@ -111,11 +111,7 @@ export default function LoginPage() {
       const userRole = userData?.role || role;
 
       // Step 4: Redirect on success
-      if (userRole === "lawyer") {
-        router.push("/lawyer-dashboard");
-      } else {
-        router.push("/client-dashboard");
-      }
+      router.push("/");
     } catch (err: unknown) {
       const firebaseError = err as { code?: string; message?: string };
       switch (firebaseError.code) {
