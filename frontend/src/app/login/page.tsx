@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { signInWithGoogle } from "../lib/googleAuth";
 
@@ -61,12 +61,14 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       const userData = await signInWithGoogle(role);
-      const userRole = userData?.role || role;
-      if (userRole === "lawyer" || userRole === "client") {
-        router.push("/");
-      } else {
-        router.push("/");
+      const userRole = userData?.role;
+
+      if (userRole && userRole !== role) {
+        await signOut(auth);
+        throw new Error(`This account is registered as a ${userRole}. Please select ${userRole.charAt(0).toUpperCase() + userRole.slice(1)} to log in.`);
       }
+
+      router.push("/");
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
       if (e.code === "auth/popup-closed-by-user") return; // user closed popup
@@ -108,7 +110,12 @@ export default function LoginPage() {
       }
 
       const userData = await res.json();
-      const userRole = userData?.role || role;
+      const userRole = userData?.role;
+
+      if (userRole && userRole !== role) {
+        await signOut(auth);
+        throw new Error(`This account is registered as a ${userRole}. Please select ${userRole.charAt(0).toUpperCase() + userRole.slice(1)} to log in.`);
+      }
 
       // Step 4: Redirect on success
       router.push("/");

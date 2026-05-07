@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { signInWithGoogle } from "../lib/googleAuth";
 
@@ -63,12 +63,14 @@ export default function RegisterPage() {
     setGoogleLoading(true);
     try {
       const userData = await signInWithGoogle(role);
-      const userRole = userData?.role || role;
-      if (userRole === "lawyer" || userRole === "client") {
-        router.push("/");
-      } else {
-        router.push("/");
+      const userRole = userData?.role;
+      
+      if (userRole && userRole !== role) {
+        await signOut(auth);
+        throw new Error(`This account is already registered as a ${userRole}. Please select ${userRole.charAt(0).toUpperCase() + userRole.slice(1)} to log in.`);
       }
+      
+      router.push("/");
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
       if (e.code === "auth/popup-closed-by-user") return;
@@ -121,7 +123,14 @@ export default function RegisterPage() {
       }
 
       const userData = await res.json();
-      const userRole = userData?.role || role;
+      const userRole = userData?.role;
+
+      if (userRole && userRole !== role) {
+        // Technically, a new signup shouldn't hit this unless the backend ignored our role and kept an old one.
+        // But let's be safe.
+        await signOut(auth);
+        throw new Error(`This account is already registered as a ${userRole}. Please sign in as ${userRole.charAt(0).toUpperCase() + userRole.slice(1)}.`);
+      }
 
       // Step 5: Redirect on success
       router.push("/");
