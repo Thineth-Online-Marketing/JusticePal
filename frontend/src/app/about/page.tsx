@@ -10,7 +10,7 @@ import { useLanguage } from "../context/LanguageContext";
 const translations = {
   en: {
     // Hero
-    heroLabel: "CONSTITUTIONAL INNOVATION",
+    heroLabel: "SOVEREIGN LEGAL INNOVATION",
     heroHeading: "Democratizing Legal Access for Every Sri Lankan",
     heroSubtitle:
       "JusticePal bridges the gap between citizens and legal experts through innovative AI-powered technology and a commitment to absolute transparency.",
