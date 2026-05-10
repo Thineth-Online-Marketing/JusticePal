@@ -1,13 +1,72 @@
 "use client";
 
-import React from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useLanguage } from "../context/LanguageContext";
+import {
+  Search, X, Sparkles, MapPin, CheckCircle2
+} from "lucide-react";
 import Footer from "../components/Footer";
 
+/* ───────────────────── types ───────────────────── */
+interface Suggestion {
+  label: string;
+  selected: boolean;
+  color: string;
+}
+
+/* ───────────────────── mock suggestion data ───────────────────── */
+const MOCK_SUGGESTIONS: Suggestion[] = [
+  { label: "Tenancy Law", selected: true, color: "bg-blue-100 text-blue-800 border-blue-300" },
+  { label: "Property Law", selected: false, color: "bg-gray-100 text-gray-700 border-gray-200" },
+  { label: "Contract Dispute", selected: false, color: "bg-gray-100 text-gray-700 border-gray-200" },
+];
+
+const MOCK_LOCATION_SUGGESTIONS: Suggestion[] = [
+  { label: "Colombo", selected: true, color: "bg-green-100 text-green-800 border-green-300" },
+  { label: "Gampaha", selected: false, color: "bg-gray-100 text-gray-700 border-gray-200" },
+];
+
+const MOCK_BUDGET_SUGGESTIONS: Suggestion[] = [
+  { label: "Under LKR 30,000", selected: true, color: "bg-purple-100 text-purple-800 border-purple-300" },
+  { label: "LKR 30k-60k", selected: false, color: "bg-gray-100 text-gray-700 border-gray-200" },
+];
+
+const MOCK_LANGUAGE_SUGGESTIONS: Suggestion[] = [
+  { label: "English", selected: true, color: "bg-orange-100 text-orange-800 border-orange-300" },
+  { label: "Sinhala", selected: false, color: "bg-gray-100 text-gray-700 border-gray-200" },
+];
+
+/* ───────────────────── component ───────────────────── */
 export default function FindLawyerPage() {
   const { lang, toggle } = useLanguage();
+  const [caseText, setCaseText] = useState("");
+  const [caseSuggestions, setCaseSuggestions] = useState(MOCK_SUGGESTIONS);
+  const [locationSuggestions] = useState(MOCK_LOCATION_SUGGESTIONS);
+  const [budgetSuggestions] = useState(MOCK_BUDGET_SUGGESTIONS);
+  const [langSuggestions] = useState(MOCK_LANGUAGE_SUGGESTIONS);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const toggleSuggestion = (idx: number) => {
+    setCaseSuggestions(prev =>
+      prev.map((s, i) =>
+        i === idx
+          ? {
+              ...s,
+              selected: !s.selected,
+              color: !s.selected
+                ? "bg-blue-100 text-blue-800 border-blue-300"
+                : "bg-gray-100 text-gray-700 border-gray-200",
+            }
+          : s
+      )
+    );
+  };
+
+  const handleClear = () => {
+    setCaseText("");
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc] font-sans">
@@ -74,6 +133,100 @@ export default function FindLawyerPage() {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#111827] tracking-tight">Find Your Lawyer</h1>
           <p className="text-gray-500 mt-2 text-base">Describe your legal issue and let our AI match you with the right expert.</p>
+        </div>
+
+        {/* ─── AI Case Intake ─── */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-8 overflow-hidden">
+          <div className="px-6 pt-5 pb-3 flex items-center gap-2 text-sm font-semibold text-gray-800">
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            AI Case Intake — describe your issue in plain language
+          </div>
+          <div className="px-6 pb-5">
+            <textarea
+              ref={textareaRef}
+              value={caseText}
+              onChange={(e) => setCaseText(e.target.value)}
+              rows={3}
+              placeholder="e.g. My landlord is refusing to return my security deposit after I moved out last month. He claims there was damage but I have photos showing the flat was clean. I'm based in Colombo and I need urgent advice..."
+              className="w-full resize-none border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all bg-gray-50"
+            />
+          </div>
+
+          {/* AI info note */}
+          <div className="px-6 pb-4 flex items-start gap-2 text-xs text-gray-500">
+            <Sparkles className="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" />
+            <span>AI will auto-detect case type, suggest location & budget, and rank matching lawyers for you.</span>
+          </div>
+
+          {/* ─── AI-Detected Suggestions ─── */}
+          <div className="px-6 pb-6 space-y-4">
+            <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">AI-Detected Suggestions — Click to Apply</p>
+
+            {/* Case type row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 min-w-[80px]">Case type:</span>
+              {caseSuggestions.map((s, i) => (
+                <button
+                  key={s.label}
+                  onClick={() => toggleSuggestion(i)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:scale-[1.03] active:scale-100 ${s.color}`}
+                >
+                  {s.selected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Location row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 min-w-[80px]">Location:</span>
+              {locationSuggestions.map((s) => (
+                <span key={s.label} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${s.color}`}>
+                  {s.selected && <MapPin className="w-3.5 h-3.5" />}
+                  {s.label}
+                </span>
+              ))}
+            </div>
+
+            {/* Budget row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 min-w-[80px]">Budget:</span>
+              {budgetSuggestions.map((s) => (
+                <span key={s.label} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${s.color}`}>
+                  {s.selected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                  {s.label}
+                </span>
+              ))}
+            </div>
+
+            {/* Language row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 min-w-[80px]">Language:</span>
+              {langSuggestions.map((s) => (
+                <span key={s.label} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${s.color}`}>
+                  {s.selected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                  {s.label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="px-6 pb-6 flex flex-wrap items-center gap-3">
+            <button
+              className="inline-flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#112549] text-white px-6 py-3 rounded-xl font-semibold text-sm shadow-lg shadow-blue-900/20 hover:shadow-blue-900/30 transition-all hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <Search className="w-4 h-4" />
+              Find Matching Lawyers
+            </button>
+            <button
+              onClick={handleClear}
+              className="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-5 py-3 rounded-xl font-semibold text-sm transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Clear
+            </button>
+          </div>
         </div>
       </main>
 
