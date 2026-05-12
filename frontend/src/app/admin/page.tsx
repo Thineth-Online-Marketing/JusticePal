@@ -228,7 +228,7 @@ export default function AdminDashboard() {
           }}
         >
           {/* Search */}
-          <div className="flex-1 max-w-md mx-auto">
+          <div className="flex-1 max-w-md">
             <div
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
               style={{
@@ -287,8 +287,7 @@ export default function AdminDashboard() {
               Dashboard Overview
             </h1>
             <p className="text-sm text-slate-400 mt-0.5">
-              Welcome back, Sarah. Here&apos;s what&apos;s happening on JusticePal
-              today.
+              Real-time platform performance and AI-driven metrics for the JusticePal ecosystem
             </p>
           </div>
 
