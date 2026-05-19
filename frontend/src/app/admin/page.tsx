@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import {
   LayoutDashboard,
   Users,
@@ -160,14 +161,19 @@ export default function AdminDashboard() {
         {/* Logo */}
         <div className="flex flex-col items-center pt-6 pb-5 px-3 border-b border-white/10">
           <div
-            className="flex items-center justify-center rounded-lg mb-2"
+            className="relative flex items-center justify-center rounded-xl overflow-hidden mb-2"
             style={{
               width: 42,
               height: 42,
               background: "rgba(255,255,255,0.12)",
             }}
           >
-            <Scale size={22} color="#f59e0b" />
+            <Image
+              src="https://res.cloudinary.com/dluwvqdaz/image/upload/v1775969976/Navy_Blue_JusticePal_Logo_with_Dove_Fusion_new_uhyjl0.png"
+              alt="JusticePal Logo"
+              fill
+              className="object-cover"
+            />
           </div>
           <span className="text-sm font-bold tracking-wide">JusticePal</span>
           <span
