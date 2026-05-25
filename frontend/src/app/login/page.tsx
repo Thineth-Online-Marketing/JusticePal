@@ -68,7 +68,7 @@ export default function LoginPage() {
         throw new Error(`This account is registered as a ${userRole}. Please select ${userRole.charAt(0).toUpperCase() + userRole.slice(1)} to log in.`);
       }
 
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
       if (e.code === "auth/popup-closed-by-user") return; // user closed popup
@@ -118,7 +118,7 @@ export default function LoginPage() {
       }
 
       // Step 4: Redirect on success
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: unknown) {
       const firebaseError = err as { code?: string; message?: string };
       switch (firebaseError.code) {
