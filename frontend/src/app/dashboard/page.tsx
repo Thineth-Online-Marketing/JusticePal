@@ -10,16 +10,23 @@ export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const [role, setRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     if (authLoading) return;
 
-    if (!user) {
-      // Not logged in — redirect to login
+    // Check both Firebase auth AND localStorage login flag
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+
+    if (!user || !isLoggedIn) {
+      // Not logged in or no explicit login session — clear everything and redirect
+      localStorage.removeItem("isLoggedIn");
       router.push("/login");
       return;
     }
+
+    setIsAuthorized(true);
 
     const fetchRole = async () => {
       try {
@@ -47,7 +54,8 @@ export default function DashboardPage() {
     fetchRole();
   }, [user, authLoading, router]);
 
-  if (authLoading || roleLoading) {
+  // Show loading spinner while checking auth
+  if (authLoading || !isAuthorized || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
         <svg

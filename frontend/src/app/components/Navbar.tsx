@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
+import { useAuth } from "../context/AuthContext";
 import { Bell, User, LogOut } from "lucide-react";
 
 const t = {
@@ -15,6 +16,7 @@ const t = {
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { logout } = useAuth();
   const { lang, toggle } = useLanguage();
   const tx = t[lang];
   const pathname = usePathname();
@@ -23,9 +25,10 @@ export default function Navbar() {
     setIsLoggedIn(localStorage.getItem("isLoggedIn") === "true");
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem("isLoggedIn");
     setIsLoggedIn(false);
+    await logout(); // Sign out from Firebase
     window.location.href = "/";
   };
 

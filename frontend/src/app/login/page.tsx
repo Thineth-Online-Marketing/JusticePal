@@ -68,6 +68,7 @@ export default function LoginPage() {
         throw new Error(`This account is registered as a ${userRole}. Please select ${userRole.charAt(0).toUpperCase() + userRole.slice(1)} to log in.`);
       }
 
+      localStorage.setItem("isLoggedIn", "true");
       router.push("/dashboard");
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
@@ -118,6 +119,7 @@ export default function LoginPage() {
       }
 
       // Step 4: Redirect on success
+      localStorage.setItem("isLoggedIn", "true");
       router.push("/dashboard");
     } catch (err: unknown) {
       const firebaseError = err as { code?: string; message?: string };
