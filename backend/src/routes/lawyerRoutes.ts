@@ -1,10 +1,13 @@
 import express from 'express';
-import { getLawyers, createLawyerProfile, updateLawyerProfile } from '../controllers/lawyerController';
-import { protect } from '../middleware/authMiddleware';
+import { getLawyers, createLawyerProfile, updateLawyerProfile, getPendingLawyers, verifyLawyer, getLawyerById } from '../controllers/lawyerController';
+import { protect, adminProtect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
 router.route('/').get(getLawyers).post(protect, createLawyerProfile);
 router.route('/profile').put(protect, updateLawyerProfile);
+router.route('/pending').get(adminProtect, getPendingLawyers);
+router.route('/:id/verify').put(adminProtect, verifyLawyer);
+router.route('/:id').get(getLawyerById);
 
 export default router;

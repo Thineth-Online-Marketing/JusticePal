@@ -5,6 +5,7 @@ import userRoutes from './routes/userRoutes';
 import lawyerRoutes from './routes/lawyerRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import authRoutes from './routes/authRoutes';
+import adminRoutes from './routes/adminRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 
 dotenv.config();
@@ -42,6 +43,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/lawyers', lawyerRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);

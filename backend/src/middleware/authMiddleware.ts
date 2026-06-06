@@ -82,3 +82,15 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
     }
   });
 };
+
+// Middleware 3: Ensures the user has the 'admin' role
+export const adminProtect = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  protect(req, res, () => {
+    if (req.user && req.user.role === 'admin') {
+      next();
+    } else {
+      res.status(403);
+      next(new Error('Not authorized as an admin'));
+    }
+  });
+};
