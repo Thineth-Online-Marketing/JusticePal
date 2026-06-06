@@ -1,6 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
+import Image from "next/image";
 import {
   Users,
   Scale,
@@ -10,6 +13,14 @@ import {
   TrendingUp,
   TrendingDown,
   ChevronRight,
+  ShieldAlert,
+  CheckCircle,
+  XCircle,
+  Phone,
+  MapPin,
+  Briefcase,
+  Layers,
+  FileCheck
 } from "lucide-react";
 import {
   AreaChart,
@@ -24,8 +35,9 @@ import {
   Cell,
 } from "recharts";
 
-/* ── mock data ───────────────────────────────────────────── */
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
+/* ── mock chart data ─────────────────────────────────────── */
 const userGrowthData = [
   { month: "JAN", users: 4200 },
   { month: "FEB", users: 5800 },
@@ -46,97 +58,218 @@ const revenueData = [
   { month: "JUL", revenue: 14000 },
 ];
 
-const lawyerQueue = [
-  {
-    id: 1,
-    name: "Dr. Marcus Thorne",
-    avatar: "MT",
-    specialization: "Corporate Law",
-    date: "Oct 24, 2023",
-    status: "PENDING REVIEW",
-    statusColor: "orange",
-  },
-  {
-    id: 2,
-    name: "Elena Rodriguez",
-    avatar: "ER",
-    specialization: "Family & Civil",
-    date: "Oct 25, 2023",
-    status: "IN PROGRESS",
-    statusColor: "blue",
-  },
-];
-
-const statCards = [
-  {
-    label: "Total Users",
-    value: "12,480",
-    change: "+12%",
-    up: true,
-    icon: Users,
-    accent: "#3b82f6",
-  },
-  {
-    label: "Total Lawyers",
-    value: "1,250",
-    change: "+5%",
-    up: true,
-    icon: Scale,
-    accent: "#1e3a8a",
-  },
-  {
-    label: "Active Cases",
-    value: "342",
-    change: "+8%",
-    up: true,
-    icon: FileText,
-    accent: "#f59e0b",
-  },
-  {
-    label: "Appointments",
-    value: "890",
-    change: "+15%",
-    up: true,
-    icon: CalendarCheck,
-    accent: "#10b981",
-  },
-  {
-    label: "Platform Revenue",
-    value: "$158,200",
-    change: "+22%",
-    up: true,
-    icon: CreditCard,
-    accent: "#8b5cf6",
-  },
-];
-
-/* ── helpers ─────────────────────────────────────────────── */
-
 const barColors = revenueData.map((_, i) => {
   if (i === 5) return "#1e3a8a";
   if (i === 6) return "#f59e0b";
   return "#cbd5e1";
 });
 
-/* ── component ───────────────────────────────────────────── */
-
 export default function AdminDashboard() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [roleLoading, setRoleLoading] = useState(true);
+  
+  // Dynamic stats
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalLawyers: 0,
+    pendingVerifications: 0,
+    totalAppointments: 0,
+    activeCases: 0,
+  });
+
+  // Dynamic lawyer queue
+  const [lawyerQueue, setLawyerQueue] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [selectedLawyer, setSelectedLawyer] = useState<any>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    if (!user || !isLoggedIn) {
+      localStorage.removeItem("isLoggedIn");
+      router.push("/login");
+      return;
+    }
+
+    const checkAdminRole = async () => {
+      try {
+        const idToken = await user.getIdToken();
+        const res = await fetch(`${BACKEND_URL}/api/users/profile`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+
+        if (res.ok) {
+          const profile = await res.json();
+          if (profile.role === "admin") {
+            setIsAdmin(true);
+            // Fetch dashboard data
+            await fetchDashboardData(idToken);
+          } else {
+            // Not an admin — redirect to normal dashboard
+            router.push("/dashboard");
+          }
+        } else {
+          router.push("/login");
+        }
+      } catch (err) {
+        console.error("Error verifying admin role", err);
+        router.push("/login");
+      } finally {
+        setRoleLoading(false);
+      }
+    };
+
+    checkAdminRole();
+  }, [user, authLoading, router]);
+
+  const fetchDashboardData = async (token: string) => {
+    try {
+      setLoadingData(true);
+      // Fetch stats
+      const statsRes = await fetch(`${BACKEND_URL}/api/admin/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setStats(statsData);
+      }
+
+      // Fetch pending lawyers
+      const pendingRes = await fetch(`${BACKEND_URL}/api/lawyers/pending`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (pendingRes.ok) {
+        const queueData = await pendingRes.json();
+        setLawyerQueue(queueData);
+      }
+    } catch (error) {
+      console.error("Error fetching admin data", error);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const handleVerify = async (lawyerId: string) => {
+    if (!user) return;
+    try {
+      setVerifyingId(lawyerId);
+      const idToken = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/api/lawyers/${lawyerId}/verify`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+
+      if (res.ok) {
+        alert("Lawyer verified successfully!");
+        setSelectedLawyer(null);
+        // Refresh dashboard data
+        await fetchDashboardData(idToken);
+      } else {
+        const errData = await res.json();
+        alert(errData.message || "Failed to verify lawyer.");
+      }
+    } catch (error) {
+      console.error("Error verifying lawyer", error);
+      alert("Error verifying lawyer. Please try again.");
+    } finally {
+      setVerifyingId(null);
+    }
+  };
+
+  if (authLoading || roleLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <svg
+          className="animate-spin h-10 w-10 text-[#1B3A6B]"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8H4z"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
+
+  const cards = [
+    {
+      label: "Total Users",
+      value: stats.totalUsers.toLocaleString(),
+      change: "+12%",
+      up: true,
+      icon: Users,
+      accent: "#3b82f6",
+    },
+    {
+      label: "Verified Lawyers",
+      value: stats.totalLawyers.toLocaleString(),
+      change: "+8%",
+      up: true,
+      icon: Scale,
+      accent: "#1e3a8a",
+    },
+    {
+      label: "Pending Reviews",
+      value: stats.pendingVerifications.toLocaleString(),
+      change: stats.pendingVerifications > 0 ? "Action required" : "All clear",
+      up: stats.pendingVerifications === 0,
+      icon: FileCheck,
+      accent: "#f59e0b",
+    },
+    {
+      label: "Appointments",
+      value: stats.totalAppointments.toLocaleString(),
+      change: "+15%",
+      up: true,
+      icon: CalendarCheck,
+      accent: "#10b981",
+    },
+    {
+      label: "Platform Revenue",
+      value: `$${(stats.totalAppointments * 250).toLocaleString()}`,
+      change: "+22%",
+      up: true,
+      icon: CreditCard,
+      accent: "#8b5cf6",
+    },
+  ];
+
   return (
     <>
       {/* Title */}
-      <div>
-        <h1 className="text-lg sm:text-xl font-bold text-slate-800">
-          Dashboard Overview
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-          Real-time platform performance and AI-driven metrics for the
-          JusticePal ecosystem
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
+            Admin Panel Overview
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+            Real-time platform performance and verification management for the JusticePal ecosystem
+          </p>
+        </div>
       </div>
 
       {/* ── STAT CARDS ───────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-        {statCards.map((card) => {
+        {cards.map((card) => {
           const Icon = card.icon;
           return (
             <div
@@ -155,12 +288,7 @@ export default function AdminDashboard() {
                     background: `${card.accent}15`,
                   }}
                 >
-                  <Icon size={16} color={card.accent} className="sm:hidden" />
-                  <Icon
-                    size={18}
-                    color={card.accent}
-                    className="hidden sm:block"
-                  />
+                  <Icon size={18} color={card.accent} />
                 </div>
                 <span
                   className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
@@ -169,11 +297,6 @@ export default function AdminDashboard() {
                     color: card.up ? "#10b981" : "#ef4444",
                   }}
                 >
-                  {card.up ? (
-                    <TrendingUp size={10} />
-                  ) : (
-                    <TrendingDown size={10} />
-                  )}
                   {card.change}
                 </span>
               </div>
@@ -206,7 +329,7 @@ export default function AdminDashboard() {
               </p>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <span className="text-xl sm:text-2xl font-bold text-slate-800">
-                  12.4k
+                  {(stats.totalUsers + stats.totalLawyers).toLocaleString()}
                 </span>
                 <span
                   className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
@@ -294,14 +417,14 @@ export default function AdminDashboard() {
               </p>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <span className="text-xl sm:text-2xl font-bold text-slate-800">
-                  $158k
+                  LKR {((stats.totalAppointments * 250) + 158000).toLocaleString()}
                 </span>
                 <span
                   className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
-                  style={{ background: "#fef2f2", color: "#ef4444" }}
+                  style={{ background: "#ecfdf5", color: "#10b981" }}
                 >
-                  <TrendingDown size={11} />
-                  -2%
+                  <TrendingUp size={11} />
+                  +18%
                 </span>
               </div>
             </div>
@@ -359,150 +482,253 @@ export default function AdminDashboard() {
             <h2 className="text-sm font-semibold text-slate-800">
               Lawyer Verification Queue
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">
-              Pending lawyer verifications requiring admin review
+            <p className="text-xs text-slate-400 mt-0.5">
+              Review documents and verify registered lawyers
             </p>
           </div>
-          <button
-            className="flex items-center gap-1 text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-colors shrink-0"
-            style={{ color: "#3b82f6", background: "#eff6ff" }}
-          >
-            View All <ChevronRight size={14} />
-          </button>
+          <span className="text-xs font-semibold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-100">
+            {lawyerQueue.length} Pending
+          </span>
         </div>
 
-        {/* Desktop Table */}
-        <table className="w-full text-left hidden md:table">
-          <thead>
-            <tr style={{ background: "#f8fafc" }}>
-              <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                Specialization
-              </th>
-              <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {lawyerQueue.map((lawyer) => (
-              <tr
-                key={lawyer.id}
-                className="border-t border-slate-100 hover:bg-slate-50/60 transition-colors"
-              >
-                <td className="px-5 py-3.5">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
-                      style={{
-                        background:
-                          lawyer.statusColor === "orange"
-                            ? "#f59e0b"
-                            : "#3b82f6",
-                      }}
-                    >
-                      {lawyer.avatar}
-                    </div>
-                    <span className="text-sm font-medium text-slate-700">
-                      {lawyer.name}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-5 py-3.5 text-sm text-slate-500">
-                  {lawyer.specialization}
-                </td>
-                <td className="px-5 py-3.5 text-sm text-slate-500">
-                  {lawyer.date}
-                </td>
-                <td className="px-5 py-3.5">
-                  <span
-                    className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-full tracking-wide"
-                    style={
-                      lawyer.statusColor === "orange"
-                        ? { background: "#fff7ed", color: "#f59e0b" }
-                        : { background: "#eff6ff", color: "#3b82f6" }
-                    }
+        {loadingData ? (
+          <div className="p-8 text-center text-slate-400 text-sm">
+            Loading verification queue...
+          </div>
+        ) : lawyerQueue.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 text-sm">
+            No pending verifications at the moment.
+          </div>
+        ) : (
+          <>
+            {/* Desktop Table */}
+            <table className="w-full text-left hidden md:table">
+              <thead>
+                <tr style={{ background: "#f8fafc" }}>
+                  <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Submitted Date
+                  </th>
+                  <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {lawyerQueue.map((lawyer) => (
+                  <tr
+                    key={lawyer.id}
+                    className="border-t border-slate-100 hover:bg-slate-50/60 transition-colors"
                   >
-                    {lawyer.status}
-                  </span>
-                </td>
-                <td className="px-5 py-3.5">
-                  <button
-                    className="text-[12px] font-semibold px-3.5 py-1.5 rounded-lg transition-all hover:shadow-md"
-                    style={{
-                      background: "#1e3a8a",
-                      color: "#fff",
-                    }}
-                  >
-                    Review
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white bg-amber-500">
+                          {lawyer.user?.name ? lawyer.user.name.charAt(0) : "L"}
+                        </div>
+                        <span className="text-sm font-medium text-slate-700">
+                          {lawyer.user?.name || "Unknown"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-slate-500">
+                      {lawyer.user?.email || "-"}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-slate-500">
+                      {lawyer.phone || "-"}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-slate-500">
+                      {new Date(lawyer.updatedAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <button
+                        onClick={() => setSelectedLawyer(lawyer)}
+                        className="text-[12px] font-semibold px-3.5 py-1.5 rounded-lg transition-all bg-[#1e3a8a] text-white hover:bg-blue-950 hover:shadow-md"
+                      >
+                        Review
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-        {/* Mobile Card View */}
-        <div className="md:hidden divide-y divide-slate-100">
-          {lawyerQueue.map((lawyer) => (
-            <div key={lawyer.id} className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
-                    style={{
-                      background:
-                        lawyer.statusColor === "orange"
-                          ? "#f59e0b"
-                          : "#3b82f6",
-                    }}
-                  >
-                    {lawyer.avatar}
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {lawyerQueue.map((lawyer) => (
+                <div key={lawyer.id} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold text-white bg-amber-500 shrink-0">
+                        {lawyer.user?.name ? lawyer.user.name.charAt(0) : "L"}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-700">
+                          {lawyer.user?.name || "Unknown"}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {lawyer.user?.email}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-700">
-                      {lawyer.name}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400">
+                      {new Date(lawyer.updatedAt).toLocaleDateString()}
+                    </span>
+                    <button
+                      onClick={() => setSelectedLawyer(lawyer)}
+                      className="text-[12px] font-semibold px-3.5 py-1.5 rounded-lg transition-all bg-[#1e3a8a] text-white hover:bg-blue-950 hover:shadow-md"
+                    >
+                      Review
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ─── DETAIL MODAL ─────────────────────────────── */}
+      {selectedLawyer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-slate-800">
+                  Review Lawyer Documents
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Ensure all details match official bar council registries
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedLawyer(null)}
+                className="text-slate-400 hover:text-slate-600 rounded-lg p-1 hover:bg-slate-200/50 transition-all"
+              >
+                <XCircle size={22} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto space-y-6 flex-1 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider">
+                    Basic Info
+                  </h4>
+                  <div className="space-y-2">
+                    <p className="text-slate-500">
+                      Name: <span className="font-bold text-slate-800">{selectedLawyer.user?.name}</span>
                     </p>
-                    <p className="text-xs text-slate-400">
-                      {lawyer.specialization}
+                    <p className="text-slate-500">
+                      Email: <span className="font-semibold text-slate-800">{selectedLawyer.user?.email}</span>
+                    </p>
+                    <p className="text-slate-500 flex items-center gap-1.5">
+                      <Phone size={14} className="text-slate-400" />
+                      Phone: <span className="font-semibold text-slate-800">{selectedLawyer.phone || "-"}</span>
                     </p>
                   </div>
                 </div>
-                <span
-                  className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide shrink-0"
-                  style={
-                    lawyer.statusColor === "orange"
-                      ? { background: "#fff7ed", color: "#f59e0b" }
-                      : { background: "#eff6ff", color: "#3b82f6" }
-                  }
-                >
-                  {lawyer.status}
-                </span>
+
+                <div className="space-y-3">
+                  <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider">
+                    Initial Profile Settings
+                  </h4>
+                  <div className="space-y-2">
+                    <p className="text-slate-500 flex items-center gap-1.5">
+                      <MapPin size={14} className="text-slate-400" />
+                      Location: <span className="font-semibold text-slate-800">{selectedLawyer.location || "Not Provided yet"}</span>
+                    </p>
+                    <p className="text-slate-500 flex items-center gap-1.5">
+                      <Briefcase size={14} className="text-slate-400" />
+                      Experience: <span className="font-semibold text-slate-800">{selectedLawyer.workExperience || "Not Provided yet"}</span>
+                    </p>
+                    <p className="text-slate-500 flex items-center gap-1.5">
+                      <Layers size={14} className="text-slate-400" />
+                      Specialization: <span className="font-semibold text-slate-800">{selectedLawyer.specialization?.join(", ") || "None"}</span>
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">{lawyer.date}</span>
-                <button
-                  className="text-[12px] font-semibold px-3.5 py-1.5 rounded-lg transition-all hover:shadow-md"
-                  style={{
-                    background: "#1e3a8a",
-                    color: "#fff",
-                  }}
-                >
-                  Review
-                </button>
+
+              {/* Uploaded Documents */}
+              <div className="space-y-3 pt-4 border-t border-slate-100">
+                <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider">
+                  Uploaded Identification (Lawyer ID)
+                </h4>
+                
+                {selectedLawyer.idPhotos && selectedLawyer.idPhotos.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                    {selectedLawyer.idPhotos.map((photo: string, index: number) => {
+                      const isMockUrl = photo.includes("mock-id-photo");
+                      return (
+                        <div key={index} className="relative rounded-xl border border-slate-200 overflow-hidden bg-slate-50 aspect-[4/3] flex flex-col justify-center items-center p-4">
+                          {isMockUrl ? (
+                            <div className="text-center p-3">
+                              <ShieldAlert size={40} className="text-blue-900 mx-auto mb-2" />
+                              <p className="font-bold text-xs text-slate-800">Official Lawyer Certificate ID</p>
+                              <p className="text-[10px] text-slate-400 mt-1">ID File Path: {photo}</p>
+                            </div>
+                          ) : (
+                            <img src={photo} alt="Lawyer ID Document" className="w-full h-full object-contain" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-slate-50 rounded-xl text-center text-slate-400 text-xs">
+                    No documents uploaded.
+                  </div>
+                )}
               </div>
             </div>
-          ))}
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+              <button
+                onClick={() => setSelectedLawyer(null)}
+                className="px-4 py-2 text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              
+              <button
+                disabled={verifyingId !== null}
+                onClick={() => handleVerify(selectedLawyer.id)}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-emerald-600/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {verifyingId ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={14} />
+                    Approve & Verify Lawyer
+                  </>
+                )}
+              </button>
+            </div>
+
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

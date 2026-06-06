@@ -3,14 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
-import ClientDashboard from "../components/ClientDashboard";
-import LawyerDashboard from "../components/LawyerDashboard";
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
-  const [role, setRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -26,9 +22,7 @@ export default function DashboardPage() {
       return;
     }
 
-    setIsAuthorized(true);
-
-    const fetchRole = async () => {
+    const fetchRoleAndRedirect = async () => {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
@@ -39,56 +33,51 @@ export default function DashboardPage() {
         );
         if (res.ok) {
           const data = await res.json();
-          setRole(data.role);
+          if (data.role === "lawyer") {
+            router.replace("/lawyer-dashboard");
+          } else if (data.role === "client") {
+            router.replace("/client-dashboard");
+          } else if (data.role === "admin") {
+            router.replace("/admin");
+          } else {
+            router.replace("/login");
+          }
         } else {
-          setRole(null);
+          router.replace("/login");
         }
       } catch (err) {
         console.error("Failed to fetch user role", err);
-        setRole(null);
+        router.replace("/login");
       } finally {
         setRoleLoading(false);
       }
     };
 
-    fetchRole();
+    fetchRoleAndRedirect();
   }, [user, authLoading, router]);
 
-  // Show loading spinner while checking auth
-  if (authLoading || !isAuthorized || roleLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
-        <svg
-          className="animate-spin h-10 w-10 text-[#1B3A6B]"
-          viewBox="0 0 24 24"
-          fill="none"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v8H4z"
-          />
-        </svg>
-      </div>
-    );
-  }
-
-  // Render Dashboard based on role
-  if (role === "client") {
-    return <ClientDashboard />;
-  } else if (role === "lawyer") {
-    return <LawyerDashboard />;
-  }
-
-  // Fallback — no valid role, redirect to login
-  router.push("/login");
-  return null;
+  // Show loading spinner while checking auth and redirecting
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+      <svg
+        className="animate-spin h-10 w-10 text-[#1B3A6B]"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v8H4z"
+        />
+      </svg>
+    </div>
+  );
 }

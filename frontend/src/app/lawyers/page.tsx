@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,11 +10,15 @@ import Footer from "../components/Footer";
 import { useLanguage } from "../context/LanguageContext";
 import { getLawyers } from "../../data/lawyers";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
 export default function LawyersPage() {
   const { lang } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
+  const [dbLawyers, setDbLawyers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const translations = {
@@ -38,9 +42,41 @@ export default function LawyersPage() {
     }
   };
 
+  useEffect(() => {
+    const fetchLawyers = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/lawyers`);
+        if (res.ok) {
+          const data = await res.json();
+          const mapped = data.map((l: any) => ({
+            id: l.id,
+            name: l.user?.name || "Anonymous",
+            specialization: l.specialization?.[0] || (lang === "si" ? "නීතිඥ" : "Attorney-at-Law"),
+            location: l.location || (lang === "si" ? "කොළඹ, ශ්‍රී ලංකාව" : "Colombo, Sri Lanka"),
+            experience: l.workExperience || (lang === "si" ? "වසර 5+ ක පළපුරුද්ද" : "5+ Years Experience"),
+            rating: 4.9,
+            reviews: 14,
+            image: l.profilePicture || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80",
+            casesWon: "50+",
+            consultations: "150",
+            languages: ["English", "Sinhala"],
+            tags: l.specialization || ["Lawyer"],
+          }));
+          setDbLawyers(mapped);
+        }
+      } catch (error) {
+        console.error("Error fetching lawyers from backend", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLawyers();
+  }, [lang]);
+
   const t = translations[lang as keyof typeof translations] || translations.en;
 
-  const allLawyers = getLawyers(lang);
+  const mockLawyers = getLawyers(lang);
+  const allLawyers = [...dbLawyers, ...mockLawyers];
 
   const filteredLawyers = allLawyers.filter((lawyer) => {
     const query = searchQuery.toLowerCase();
@@ -55,8 +91,8 @@ export default function LawyersPage() {
 
     const matchesFilter = isAll || 
       lawyer.specialization.toLowerCase().includes(selectedFilter.toLowerCase()) ||
-      lawyer.tags.some(tag => tag.toLowerCase().includes(engFilter)) ||
-      (engFilter === "civil litigation" && lawyer.tags.some(tag => tag.toLowerCase().includes("civil")));
+      lawyer.tags.some((tag: string) => tag.toLowerCase().includes(engFilter)) ||
+      (engFilter === "civil litigation" && lawyer.tags.some((tag: string) => tag.toLowerCase().includes("civil")));
 
     return matchesSearch && matchesFilter;
   });

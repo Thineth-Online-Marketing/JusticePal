@@ -133,6 +133,8 @@ export default function RegisterPage() {
         throw new Error(`This account is already registered as a ${userRole}. Please sign in as ${userRole.charAt(0).toUpperCase() + userRole.slice(1)}.`);
       }
 
+      localStorage.setItem("isLoggedIn", "true");
+
       // Step 5: Redirect on success
       localStorage.setItem("isLoggedIn", "true");
       router.push("/dashboard");
