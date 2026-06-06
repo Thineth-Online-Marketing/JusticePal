@@ -64,6 +64,7 @@ export default function RegisterPage() {
     try {
       const userData = await signInWithGoogle(role);
       const userRole = userData?.role || role;
+      localStorage.setItem("isLoggedIn", "true");
       if (userRole === "lawyer") {
         router.push("/lawyer-dashboard");
       } else {
@@ -122,6 +123,8 @@ export default function RegisterPage() {
 
       const userData = await res.json();
       const userRole = userData?.role || role;
+
+      localStorage.setItem("isLoggedIn", "true");
 
       // Step 5: Redirect on success
       if (userRole === "lawyer") {

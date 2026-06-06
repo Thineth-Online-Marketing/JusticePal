@@ -62,6 +62,7 @@ export default function LoginPage() {
     try {
       const userData = await signInWithGoogle(role);
       const userRole = userData?.role || role;
+      localStorage.setItem("isLoggedIn", "true");
       if (userRole === "lawyer") {
         router.push("/lawyer-dashboard");
       } else {
@@ -127,6 +128,8 @@ export default function LoginPage() {
 
       const userData = await res.json();
       const userRole = userData?.role || role;
+      
+      localStorage.setItem("isLoggedIn", "true");
 
       // Step 4: Redirect on success
       if (userRole === "lawyer") {
@@ -150,20 +153,6 @@ export default function LoginPage() {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!email) {
-      setError("Please enter your email address first to reset password.");
-      return;
-    }
-    try {
-      await sendPasswordResetEmail(auth, email);
-      alert("Password reset email sent! Check your inbox.");
-    } catch (err: unknown) {
-      const e = err as { message?: string };
-      setError(e.message || "Failed to send password reset email.");
     }
   };
 
