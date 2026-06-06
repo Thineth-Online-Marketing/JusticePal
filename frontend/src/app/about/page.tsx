@@ -9,6 +9,19 @@ import { useLanguage } from "../context/LanguageContext";
 // ─── translations ────────────────────────────────────────────────────────────
 const translations = {
   en: {
+    // Hero
+    heroLabel: "SOVEREIGN LEGAL INNOVATION",
+    heroHeading: "Democratizing Legal Access for Every Sri Lankan",
+    heroSubtitle:
+      "JusticePal bridges the gap between citizens and legal experts through innovative AI-powered technology and a commitment to absolute transparency.",
+    heroBtn: "Start Your Journey",
+    stat1Number: "500+",
+    stat1Label: "LAWYERS VERIFIED",
+    stat2Number: "12,400+",
+    stat2Label: "CASES HELPED",
+    stat3Number: "45k+",
+    stat3Label: "CONSULTATIONS COMPLETED",
+
     // Origin Story
     originLabel: "ORIGIN STORY",
     originHeading: "Born from a Need for\nAccessible Justice",
@@ -53,6 +66,19 @@ const translations = {
     ctaBtn2: "Find an Advocate",
   },
   si: {
+    // Hero
+    heroLabel: "ආණ්ඩුක්‍රම නවෝත්පාදනය",
+    heroHeading: "සෑම ශ්‍රී ලාංකිකයෙකුටම නීතිමය ප්‍රවේශය ප්‍රජාතන්ත්‍රීකරණය",
+    heroSubtitle:
+      "JusticePal නවෝත්පාදී AI-බලගැන්වූ තාක්ෂණය සහ නිරපේක්ෂ විනිවිදභාවයට කැපවීම මගින් නාගරිකයන් සහ නීතිමය විශේෂඥයන් අතර පරතරය පියවයි.",
+    heroBtn: "ඔබේ ගමන ආරම්භ කරන්න",
+    stat1Number: "500+",
+    stat1Label: "සත්‍යාපිත නීතිඥයින්",
+    stat2Number: "12,400+",
+    stat2Label: "උදව් කළ නඩු",
+    stat3Number: "45k+",
+    stat3Label: "සම්පූර්ණ කළ උපදේශන",
+
     originLabel: "මූලාරම්භය",
     originHeading: "ප්‍රවේශ්‍ය යුක්තිය සඳහා\nඋපන් ගමනක්",
     originP1:
@@ -94,6 +120,37 @@ const translations = {
     ctaBtn2: "නීතිඥයෙකු සොයන්න",
   },
 };
+
+// ─── Stat Icons ───────────────────────────────────────────────────────────────
+function LawyersStatIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function CasesStatIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </svg>
+  );
+}
+
+function ConsultationsStatIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
 
 // ─── Value Card Icons ─────────────────────────────────────────────────────────
 function ShieldIcon() {
@@ -143,6 +200,87 @@ export default function AboutPage() {
       <Navbar />
 
       <main className="pt-[72px] bg-[#F8F9FA] min-h-screen">
+
+        {/* ── HERO SECTION ─────────────────────────────────────────────────── */}
+        <section className="relative bg-[#0a1628] overflow-hidden">
+          {/* Subtle decorative elements */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-[#c9a84c]/[0.03] blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-[#1e3a5f]/30 blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 max-w-4xl mx-auto px-6 pt-[100px] pb-[80px] text-center">
+            {/* Top label */}
+            <span className="inline-block text-xs font-bold tracking-[0.25em] text-[#c9a84c] uppercase mb-6">
+              {tx.heroLabel}
+            </span>
+
+            {/* Main heading */}
+            <h1 className="text-[40px] sm:text-[48px] lg:text-[56px] font-extrabold text-white leading-[1.15] mb-6">
+              {tx.heroHeading}
+            </h1>
+
+            {/* Subtitle */}
+            <p className="max-w-[600px] mx-auto text-[#cbd5e1] text-[16px] sm:text-[18px] leading-relaxed mb-10">
+              {tx.heroSubtitle}
+            </p>
+
+            {/* CTA Button */}
+            <Link
+              href="/register"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-lg font-semibold text-[15px] bg-[#c9a84c] text-[#0a1628] hover:bg-[#b8973f] shadow-lg shadow-[#c9a84c]/20 hover:shadow-[#c9a84c]/30 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
+            >
+              {tx.heroBtn}
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </section>
+
+        {/* ── STATS ROW ────────────────────────────────────────────────────── */}
+        <section className="bg-white border-b border-[#E5E7EB]">
+          <div className="max-w-5xl mx-auto px-6 py-14">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-6 text-center">
+              {/* Stat 1 */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#fdf8ed] mb-1">
+                  <LawyersStatIcon />
+                </div>
+                <span className="text-3xl lg:text-4xl font-extrabold text-[#0a1628]">
+                  {tx.stat1Number}
+                </span>
+                <span className="text-xs font-bold tracking-[0.15em] text-[#6B7280] uppercase">
+                  {tx.stat1Label}
+                </span>
+              </div>
+
+              {/* Stat 2 */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#fdf8ed] mb-1">
+                  <CasesStatIcon />
+                </div>
+                <span className="text-3xl lg:text-4xl font-extrabold text-[#0a1628]">
+                  {tx.stat2Number}
+                </span>
+                <span className="text-xs font-bold tracking-[0.15em] text-[#6B7280] uppercase">
+                  {tx.stat2Label}
+                </span>
+              </div>
+
+              {/* Stat 3 */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#fdf8ed] mb-1">
+                  <ConsultationsStatIcon />
+                </div>
+                <span className="text-3xl lg:text-4xl font-extrabold text-[#0a1628]">
+                  {tx.stat3Number}
+                </span>
+                <span className="text-xs font-bold tracking-[0.15em] text-[#6B7280] uppercase">
+                  {tx.stat3Label}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* ── SECTION 1: Origin Story ─────────────────────────────────────── */}
         <section className="max-w-7xl mx-auto px-6 py-20 lg:py-28 lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">

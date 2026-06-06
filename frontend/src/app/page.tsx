@@ -6,6 +6,7 @@ import CTABanner from "./components/CTABanner";
 import Footer from "./components/Footer";
 
 export default function Home() {
+  // Always show the landing page at the root URL
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <Navbar />
@@ -19,3 +20,4 @@ export default function Home() {
     </div>
   );
 }
+

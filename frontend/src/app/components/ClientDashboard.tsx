@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import ClientNavbar from "./ClientNavbar";
+import Footer from "./Footer";
 import { useAuth } from "../context/AuthContext";
 import { 
   Scale, FileText, Clock, DollarSign, 
@@ -13,13 +13,11 @@ import Image from "next/image";
 
 export default function ClientDashboard() {
   const { user } = useAuth();
-  
-  // Example state for interactivity
   const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans">
-      <Navbar />
+      <ClientNavbar />
       
       <main className="flex-1 max-w-[1400px] w-full mx-auto px-6 py-8 mt-[72px]">
         {/* Header Section */}

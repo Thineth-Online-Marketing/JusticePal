@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { signInWithGoogle } from "../lib/googleAuth";
 
@@ -63,13 +63,15 @@ export default function RegisterPage() {
     setGoogleLoading(true);
     try {
       const userData = await signInWithGoogle(role);
-      const userRole = userData?.role || role;
-      localStorage.setItem("isLoggedIn", "true");
-      if (userRole === "lawyer") {
-        router.push("/lawyer-dashboard");
-      } else {
-        router.push("/client-dashboard");
+      const userRole = userData?.role;
+      
+      if (userRole && userRole !== role) {
+        await signOut(auth);
+        throw new Error(`This account is already registered as a ${userRole}. Please select ${userRole.charAt(0).toUpperCase() + userRole.slice(1)} to log in.`);
       }
+      
+      localStorage.setItem("isLoggedIn", "true");
+      router.push("/dashboard");
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
       if (e.code === "auth/popup-closed-by-user") return;
@@ -122,16 +124,20 @@ export default function RegisterPage() {
       }
 
       const userData = await res.json();
-      const userRole = userData?.role || role;
+      const userRole = userData?.role;
+
+      if (userRole && userRole !== role) {
+        // Technically, a new signup shouldn't hit this unless the backend ignored our role and kept an old one.
+        // But let's be safe.
+        await signOut(auth);
+        throw new Error(`This account is already registered as a ${userRole}. Please sign in as ${userRole.charAt(0).toUpperCase() + userRole.slice(1)}.`);
+      }
 
       localStorage.setItem("isLoggedIn", "true");
 
       // Step 5: Redirect on success
-      if (userRole === "lawyer") {
-        router.push("/lawyer-dashboard");
-      } else {
-        router.push("/client-dashboard");
-      }
+      localStorage.setItem("isLoggedIn", "true");
+      router.push("/dashboard");
     } catch (err: unknown) {
       const firebaseError = err as { code?: string; message?: string };
       switch (firebaseError.code) {
