@@ -67,8 +67,8 @@ const barColors = revenueData.map((_, i) => {
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [roleLoading, setRoleLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(false);
   
   // Dynamic stats
   const [stats, setStats] = useState({
@@ -86,55 +86,33 @@ export default function AdminDashboard() {
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading) return;
-
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    if (!user || !isLoggedIn) {
-      localStorage.removeItem("isLoggedIn");
-      router.push("/login");
-      return;
-    }
-
-    const checkAdminRole = async () => {
-      try {
-        const idToken = await user.getIdToken();
-        const res = await fetch(`${BACKEND_URL}/api/users/profile`, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
-
-        if (res.ok) {
-          const profile = await res.json();
-          if (profile.role === "admin") {
-            setIsAdmin(true);
-            // Fetch dashboard data
-            await fetchDashboardData(idToken);
-          } else {
-            // Not an admin — redirect to normal dashboard
-            router.push("/dashboard");
-          }
-        } else {
-          router.push("/login");
+    const fetchWithoutToken = async () => {
+      let idToken = "";
+      if (user) {
+        try {
+          idToken = await user.getIdToken();
+        } catch (err) {
+          console.error("Error getting token", err);
         }
-      } catch (err) {
-        console.error("Error verifying admin role", err);
-        router.push("/login");
-      } finally {
-        setRoleLoading(false);
       }
+      await fetchDashboardData(idToken);
     };
-
-    checkAdminRole();
-  }, [user, authLoading, router]);
+    fetchWithoutToken();
+  }, [user]);
 
   const fetchDashboardData = async (token: string) => {
     try {
       setLoadingData(true);
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
       const [statsRes, pendingRes] = await Promise.all([
         fetch(`${BACKEND_URL}/api/admin/stats`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers
         }),
         fetch(`${BACKEND_URL}/api/lawyers/pending`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers
         })
       ]);
 
@@ -155,13 +133,23 @@ export default function AdminDashboard() {
   };
 
   const handleVerify = async (lawyerId: string) => {
-    if (!user) return;
     try {
       setVerifyingId(lawyerId);
-      const idToken = await user.getIdToken();
+      let idToken = "";
+      if (user) {
+        try {
+          idToken = await user.getIdToken();
+        } catch (e) {
+          console.error("Error getting idToken", e);
+        }
+      }
+      const headers: HeadersInit = {};
+      if (idToken) {
+        headers["Authorization"] = `Bearer ${idToken}`;
+      }
       const res = await fetch(`${BACKEND_URL}/api/lawyers/${lawyerId}/verify`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${idToken}` },
+        headers,
       });
 
       if (res.ok) {
