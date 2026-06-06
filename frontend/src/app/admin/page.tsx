@@ -129,19 +129,20 @@ export default function AdminDashboard() {
   const fetchDashboardData = async (token: string) => {
     try {
       setLoadingData(true);
-      // Fetch stats
-      const statsRes = await fetch(`${BACKEND_URL}/api/admin/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const [statsRes, pendingRes] = await Promise.all([
+        fetch(`${BACKEND_URL}/api/admin/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${BACKEND_URL}/api/lawyers/pending`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      ]);
+
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
       }
 
-      // Fetch pending lawyers
-      const pendingRes = await fetch(`${BACKEND_URL}/api/lawyers/pending`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
       if (pendingRes.ok) {
         const queueData = await pendingRes.json();
         setLawyerQueue(queueData);

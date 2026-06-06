@@ -8,26 +8,30 @@ const prisma = new PrismaClient();
 // @access  Private (Admin only)
 export const getAdminStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const totalUsers = await prisma.user.count({
-      where: { role: 'user' }
-    });
-
-    const totalLawyers = await prisma.lawyer.count({
-      where: { isVerified: true }
-    });
-
-    const pendingVerifications = await prisma.lawyer.count({
-      where: {
-        isVerified: false,
-        profileCompleted: true
-      }
-    });
-
-    const totalAppointments = await prisma.appointment.count();
-
-    const activeCases = await prisma.appointment.count({
-      where: { status: 'confirmed' }
-    });
+    const [
+      totalUsers,
+      totalLawyers,
+      pendingVerifications,
+      totalAppointments,
+      activeCases
+    ] = await Promise.all([
+      prisma.user.count({
+        where: { role: 'user' }
+      }),
+      prisma.lawyer.count({
+        where: { isVerified: true }
+      }),
+      prisma.lawyer.count({
+        where: {
+          isVerified: false,
+          profileCompleted: true
+        }
+      }),
+      prisma.appointment.count(),
+      prisma.appointment.count({
+        where: { status: 'confirmed' }
+      })
+    ]);
 
     res.status(200).json({
       totalUsers,
