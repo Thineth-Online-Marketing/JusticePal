@@ -23,16 +23,20 @@ export const syncUser = async (req: AuthRequest, res: Response, next: NextFuncti
       include: { lawyerProfile: true },
     });
 
+    const resolvedEmail = email || req.firebaseUser?.email || '';
+    const isAdmin = resolvedEmail === 'admin@justicepal.com' || resolvedEmail?.endsWith('@justicepal.admin');
+    const resolvedRole = isAdmin ? 'admin' : (role || 'user');
+
     if (!user) {
       // Create user if they don't exist (initial sign-up context)
-      const isLawyer = role === 'lawyer';
+      const isLawyer = resolvedRole === 'lawyer';
       
       user = await prisma.user.create({
         data: {
           firebaseUid: req.firebaseUid,
           name: name || req.firebaseUser?.name || 'Unknown User',
-          email: email || req.firebaseUser?.email || '',
-          role: role || 'user',
+          email: resolvedEmail,
+          role: resolvedRole,
           lawyerProfile: isLawyer ? {
             create: {} // Creates an empty Lawyer record associated with this User
           } : undefined,
@@ -41,6 +45,15 @@ export const syncUser = async (req: AuthRequest, res: Response, next: NextFuncti
       });
       res.status(201).json(user);
     } else {
+      // If user exists but role changed (e.g. upgraded to admin via email pattern)
+      if (user.role !== resolvedRole) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { role: resolvedRole },
+          include: { lawyerProfile: true },
+        });
+      }
+      
       // If user exists and is a lawyer but doesn't have a profile yet (legacy check)
       if (user.role === 'lawyer' && !user.lawyerProfile) {
         await prisma.lawyer.create({

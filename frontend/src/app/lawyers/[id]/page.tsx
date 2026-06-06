@@ -10,20 +10,68 @@ import Footer from "../../components/Footer";
 import { useLanguage } from "../../context/LanguageContext";
 import { getLawyers } from "../../../data/lawyers";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
 export default function LawyerProfilePage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
   const { lang } = useLanguage();
 
+  const [lawyer, setLawyer] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     if (!isLoggedIn) {
       router.push("/login");
+      return;
     }
-  }, [router]);
-  const lawyers = getLawyers(lang);
-  const lawyer = lawyers.find(l => l.id === id);
+
+    const fetchLawyer = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/lawyers/${id}`);
+        if (res.ok) {
+          const l = await res.json();
+          setLawyer({
+            id: l.id,
+            name: l.user?.name || "Anonymous",
+            specialization: l.specialization?.[0] || (lang === "si" ? "නීතිඥ" : "Attorney-at-Law"),
+            location: l.location || (lang === "si" ? "කොළඹ, ශ්‍රී ලංකාව" : "Colombo, Sri Lanka"),
+            experience: l.workExperience || (lang === "si" ? "වසර 5+ ක පළපුරුද්ද" : "5+ Years Experience"),
+            rating: 4.9,
+            reviews: 14,
+            image: l.profilePicture || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80",
+            casesWon: "50+",
+            consultations: "150",
+            languages: ["English", "Sinhala"],
+            tags: l.specialization || ["Lawyer"],
+            aboutEn: l.bio || "",
+            aboutSi: l.bio || "",
+          });
+        } else {
+          // If not found in DB, search mock lawyers
+          const mockLawyers = getLawyers(lang);
+          const mock = mockLawyers.find(ml => ml.id === id);
+          if (mock) {
+            setLawyer(mock);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch lawyer", err);
+        // Fallback to mock
+        const mockLawyers = getLawyers(lang);
+        const mock = mockLawyers.find(ml => ml.id === id);
+        if (mock) {
+          setLawyer(mock);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLawyer();
+  }, [id, lang, router]);
 
   const [activeTab, setActiveTab] = useState("About");
   const [currentDate, setCurrentDate] = useState(new Date()); 
@@ -56,6 +104,17 @@ export default function LawyerProfilePage() {
     ? selectedFullDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : 'Select a date';
   const [consultationType, setConsultationType] = useState("video");
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+        <svg className="animate-spin h-10 w-10 text-[#1B3A6B]" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+        </svg>
+      </div>
+    );
+  }
 
   if (!lawyer) {
     return (
@@ -131,7 +190,7 @@ export default function LawyerProfilePage() {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      {lawyer.tags.map(tag => (
+                      {lawyer.tags.map((tag: string) => (
                         <span key={tag} className="px-3 py-1.5 bg-[#F1F5F9] text-[#334155] border border-gray-200 text-xs font-semibold rounded-full">
                           {tag}
                         </span>
@@ -189,7 +248,7 @@ export default function LawyerProfilePage() {
                     <>
                       <h3 className="text-lg font-bold text-gray-900 mb-4">{lang === "si" ? "ප්‍රධාන විශේෂඥතා" : "Core Specializations"}</h3>
                       <ul className="list-disc pl-5 space-y-2 text-gray-600 text-sm">
-                        {lawyer.tags.map((tag, i) => <li key={i} className="font-semibold text-gray-800">{tag}</li>)}
+                        {lawyer.tags.map((tag: string, i: number) => <li key={i} className="font-semibold text-gray-800">{tag}</li>)}
                         <li>{lawyer.specialization}</li>
                         <li>{lang === "si" ? "නීති උපදේශනය සහ නියෝජනය" : "Legal Consulting & Representation"}</li>
                       </ul>

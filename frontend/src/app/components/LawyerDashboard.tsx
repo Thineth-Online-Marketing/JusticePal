@@ -117,14 +117,14 @@ export default function LawyerDashboard() {
   // Determine profile strength and task completion
   const lawyerProfile = dbUser?.lawyerProfile;
   const isVerified = lawyerProfile?.isVerified;
-  const hasBioData = lawyerProfile && lawyerProfile.specialization?.length > 0 && !!lawyerProfile.location;
+  const hasBioData = lawyerProfile && lawyerProfile.specialization?.length > 0 && !!lawyerProfile.location && !!lawyerProfile.bio;
   const hasVerifiedPhone = !!lawyerProfile?.phoneVerified;
   const hasIdUploaded = lawyerProfile?.idPhotos?.length > 0;
   
-  const showBioTask = dbUser?.role === "lawyer" && !hasBioData;
-  const showPhoneTask = dbUser?.role === "lawyer" && !hasVerifiedPhone;
-  const showIdTask = dbUser?.role === "lawyer" && !isVerified && !hasIdUploaded;
-  const showPendingApproval = dbUser?.role === "lawyer" && hasIdUploaded && !isVerified;
+  const showPendingApproval = dbUser?.role === "lawyer" && !isVerified && lawyerProfile?.profileCompleted;
+  const showBioTask = dbUser?.role === "lawyer" && isVerified && !hasBioData;
+  const showPhoneTask = dbUser?.role === "lawyer" && !isVerified && !hasVerifiedPhone && !showPendingApproval;
+  const showIdTask = dbUser?.role === "lawyer" && !isVerified && !hasIdUploaded && !showPendingApproval;
 
   return (
     <>

@@ -10,6 +10,7 @@ const prisma = new PrismaClient();
 export const getLawyers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const lawyers = await prisma.lawyer.findMany({
+      where: { isVerified: true },
       include: {
         user: {
           select: { name: true, email: true }
@@ -87,6 +88,92 @@ export const updateLawyerProfile = async (req: AuthRequest, res: Response, next:
     });
 
     res.status(200).json(updatedLawyer);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get pending lawyers for verification
+// @route   GET /api/lawyers/pending
+// @access  Private (Admin only)
+export const getPendingLawyers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const lawyers = await prisma.lawyer.findMany({
+      where: {
+        isVerified: false,
+        profileCompleted: true
+      },
+      include: {
+        user: {
+          select: { name: true, email: true }
+        }
+      }
+    });
+    res.status(200).json(lawyers);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify a lawyer profile
+// @route   PUT /api/lawyers/:id/verify
+// @access  Private (Admin only)
+export const verifyLawyer = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const lawyer = await prisma.lawyer.findUnique({
+      where: { id }
+    });
+
+    if (!lawyer) {
+      res.status(404);
+      throw new Error('Lawyer profile not found');
+    }
+
+    const updatedLawyer = await prisma.lawyer.update({
+      where: { id },
+      data: { isVerified: true },
+      include: {
+        user: {
+          select: { name: true, email: true }
+        }
+      }
+    });
+
+    res.status(200).json(updatedLawyer);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get lawyer by ID
+// @route   GET /api/lawyers/:id
+// @access  Public
+export const getLawyerById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const lawyer = await prisma.lawyer.findFirst({
+      where: {
+        OR: [
+          { id: id },
+          { userId: id }
+        ]
+      },
+      include: {
+        user: {
+          select: { name: true, email: true }
+        }
+      }
+    });
+
+    if (!lawyer) {
+      res.status(404);
+      throw new Error('Lawyer profile not found');
+    }
+
+    res.status(200).json(lawyer);
   } catch (error) {
     next(error);
   }

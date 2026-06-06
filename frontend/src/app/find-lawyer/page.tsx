@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import {
   Search, X, Sparkles, MapPin, Star, ChevronDown,
@@ -166,6 +167,8 @@ const MOCK_LAWYERS: LawyerCard[] = [
 ];
 
 /* ───────────────────── component ───────────────────── */
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
 export default function FindLawyerPage() {
   const { lang, toggle } = useLanguage();
   const tx = translations[lang as keyof typeof translations] || translations.en;
@@ -176,6 +179,42 @@ export default function FindLawyerPage() {
   const [budgetSuggestions] = useState(MOCK_BUDGET_SUGGESTIONS);
   const [langSuggestions] = useState(MOCK_LANGUAGE_SUGGESTIONS);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const router = useRouter();
+
+  const [dbLawyers, setDbLawyers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchLawyers = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/lawyers`);
+        if (res.ok) {
+          const data = await res.json();
+          const mapped = data.map((l: any) => ({
+            id: l.id,
+            initials: l.user?.name ? l.user.name.split(" ").map((n: string) => n.charAt(0)).join("").slice(0, 2) : "L",
+            initialsColor: "bg-blue-600",
+            name: l.user?.name || "Anonymous Lawyer",
+            specialty: l.specialization?.[0] || (lang === "si" ? "නීතිඥ" : "Attorney-at-Law"),
+            location: `${l.location || "Colombo"} · ${l.workExperience || "5 yrs exp"}`,
+            experience: l.workExperience || "5 yrs exp",
+            languages: ["English", "Sinhala"],
+            matchPercent: 92,
+            tags: l.specialization || ["Lawyer"],
+            rate: l.hourlyRate ? `LKR ${l.hourlyRate.toLocaleString()}` : "LKR 5,000",
+            rating: 4.9,
+            reviews: 14,
+            verified: l.isVerified,
+          }));
+          setDbLawyers(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch lawyers", err);
+      }
+    };
+    fetchLawyers();
+  }, [lang]);
+
+  const allLawyers = [...dbLawyers, ...MOCK_LAWYERS];
 
   const toggleSuggestion = (idx: number) => {
     setCaseSuggestions(prev =>
@@ -405,12 +444,12 @@ export default function FindLawyerPage() {
                 <h2 className="text-2xl font-extrabold text-[#111827]">{tx.matchedLawyers}</h2>
                 <p className="text-sm text-gray-400 font-medium mt-0.5">{tx.aiRanked}</p>
               </div>
-              <span className="text-sm font-semibold text-gray-500">{MOCK_LAWYERS.length} {tx.resultsFound}</span>
+              <span className="text-sm font-semibold text-gray-500">{allLawyers.length} {tx.resultsFound}</span>
             </div>
 
             {/* ─── Lawyer Cards Grid ─── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {MOCK_LAWYERS.map((lawyer, idx) => (
+              {allLawyers.map((lawyer, idx) => (
                 <div
                   key={idx}
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all p-6 flex flex-col relative group"
@@ -435,7 +474,7 @@ export default function FindLawyerPage() {
                         {lawyer.location}
                       </div>
                       <div className="flex flex-wrap gap-2 mt-1.5">
-                        {lawyer.languages.map((l) => (
+                        {lawyer.languages.map((l: string) => (
                           <span key={l} className="text-[10px] font-semibold text-gray-500 bg-gray-50 px-2 py-0.5 rounded">{l}</span>
                         ))}
                       </div>
@@ -458,7 +497,7 @@ export default function FindLawyerPage() {
 
                   {/* Tags */}
                   <div className="flex flex-wrap gap-2 mb-5">
-                    {lawyer.tags.map((tag) => (
+                    {lawyer.tags.map((tag: string) => (
                       <span key={tag} className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${tagColor(tag)}`}>
                         {tx.tags[tag] || tag}
                       </span>
@@ -483,7 +522,21 @@ export default function FindLawyerPage() {
                         <span className="font-bold text-gray-800">{lawyer.rating}</span>
                         <span className="text-xs text-gray-400">({lawyer.reviews})</span>
                       </div>
-                      <button className="bg-[#1B3A6B] hover:bg-[#112549] text-white px-4 py-2 rounded-lg text-xs font-semibold transition-colors shadow-sm">
+                      <button 
+                        onClick={() => {
+                          const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+                          if (isLoggedIn) {
+                            if (lawyer.id) {
+                              router.push(`/lawyers/${lawyer.id}`);
+                            } else {
+                              router.push(`/lawyers/kavinda-perera`);
+                            }
+                          } else {
+                            router.push("/login");
+                          }
+                        }}
+                        className="bg-[#1B3A6B] hover:bg-[#112549] text-white px-4 py-2 rounded-lg text-xs font-semibold transition-colors shadow-sm"
+                      >
                         {tx.bookBtn}
                       </button>
                     </div>
