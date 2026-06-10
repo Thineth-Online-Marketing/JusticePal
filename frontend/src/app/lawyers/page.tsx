@@ -9,11 +9,13 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useLanguage } from "../context/LanguageContext";
 import { getLawyers } from "../../data/lawyers";
+import { useAuth } from "../context/AuthContext";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 export default function LawyersPage() {
   const { lang } = useLanguage();
+  const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
@@ -202,8 +204,7 @@ export default function LawyersPage() {
 
                 <button 
                   onClick={() => {
-                    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-                    if (isLoggedIn) {
+                    if (user) {
                       router.push(`/lawyers/${lawyer.id}`);
                     } else {
                       router.push("/login");

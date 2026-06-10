@@ -96,12 +96,14 @@ export default function LawyerDashboard() {
       if (currentUser) {
         setUser(currentUser);
         await fetchDbProfile(currentUser);
+        setLoading(false);
+      } else {
+        router.push("/login");
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   if (loading) {
     return (

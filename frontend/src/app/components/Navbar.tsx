@@ -15,19 +15,12 @@ const t = {
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { lang, toggle } = useLanguage();
   const tx = t[lang];
   const pathname = usePathname();
 
-  useEffect(() => {
-    setIsLoggedIn(localStorage.getItem("isLoggedIn") === "true");
-  }, []);
-
   const handleLogout = async () => {
-    localStorage.removeItem("isLoggedIn");
-    setIsLoggedIn(false);
     await logout(); // Sign out from Firebase
     window.location.href = "/";
   };
@@ -93,7 +86,7 @@ export default function Navbar() {
             <span className={`transition-colors duration-200 ${lang === "si" ? "text-blue-700 font-bold" : "text-gray-400"}`}>සිං</span>
           </button>
 
-          {isLoggedIn ? (
+          {user ? (
             <div className="flex items-center gap-2 ml-2">
               <button className="relative p-2 text-gray-500 hover:text-[#1B3A6B] transition-colors rounded-full hover:bg-gray-100">
                 <Bell className="w-5 h-5" />
@@ -181,7 +174,7 @@ export default function Navbar() {
           </button>
 
           <div className="h-px bg-gray-100 my-2" />
-          {isLoggedIn ? (
+          {user ? (
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between px-4 py-2">
                 <div className="flex items-center gap-3">

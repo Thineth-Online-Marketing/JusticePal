@@ -88,9 +88,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (authLoading) return;
 
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    if (!user || !isLoggedIn) {
-      localStorage.removeItem("isLoggedIn");
+    if (!user) {
       router.push("/login");
       return;
     }

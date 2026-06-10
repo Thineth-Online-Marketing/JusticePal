@@ -10,6 +10,7 @@ import {
   SlidersHorizontal, CheckCircle2, ArrowUpDown, Shield
 } from "lucide-react";
 import Footer from "../components/Footer";
+import { useAuth } from "../context/AuthContext";
 
 /* ───────────────────── translations ───────────────────── */
 const translations = {
@@ -171,6 +172,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:500
 
 export default function FindLawyerPage() {
   const { lang, toggle } = useLanguage();
+  const { user } = useAuth();
   const tx = translations[lang as keyof typeof translations] || translations.en;
   const [caseText, setCaseText] = useState("");
   const [showResults, setShowResults] = useState(true);
@@ -524,8 +526,7 @@ export default function FindLawyerPage() {
                       </div>
                       <button 
                         onClick={() => {
-                          const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-                          if (isLoggedIn) {
+                          if (user) {
                             if (lawyer.id) {
                               router.push(`/lawyers/${lawyer.id}`);
                             } else {

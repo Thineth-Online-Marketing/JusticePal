@@ -12,12 +12,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (authLoading) return;
 
-    // Check both Firebase auth AND localStorage login flag
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-
-    if (!user || !isLoggedIn) {
-      // Not logged in or no explicit login session — clear everything and redirect
-      localStorage.removeItem("isLoggedIn");
+    if (!user) {
       router.push("/login");
       return;
     }

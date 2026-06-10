@@ -9,6 +9,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { useLanguage } from "../../context/LanguageContext";
 import { getLawyers } from "../../../data/lawyers";
+import { useAuth } from "../../context/AuthContext";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -17,13 +18,14 @@ export default function LawyerProfilePage() {
   const router = useRouter();
   const id = params?.id as string;
   const { lang } = useLanguage();
+  const { user, loading: authLoading } = useAuth();
 
   const [lawyer, setLawyer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    if (!isLoggedIn) {
+    if (authLoading) return;
+    if (!user) {
       router.push("/login");
       return;
     }
