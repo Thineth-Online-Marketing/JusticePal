@@ -8,6 +8,7 @@ import { ChevronRight, Heart, Share2, MapPin, BriefcaseBusiness, Globe, ChevronL
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
+import BookingModal from "../components/BookingModal";
 
 export default function LawyerProfilePage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function LawyerProfilePage() {
   const [selectedDate, setSelectedDate] = useState(4);
   const [selectedSlot, setSelectedSlot] = useState("10:30 AM");
   const [consultationType, setConsultationType] = useState("video");
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   return (
     <>
@@ -297,7 +299,10 @@ export default function LawyerProfilePage() {
                   </div>
                 </div>
 
-                <button className="w-full bg-[#1B3A6B] hover:bg-[#112549] text-white font-semibold py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 group shadow-md shadow-[#1B3A6B]/10">
+                <button 
+                  onClick={() => setIsBookingModalOpen(true)}
+                  className="w-full bg-[#1B3A6B] hover:bg-[#112549] text-white font-semibold py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 group shadow-md shadow-[#1B3A6B]/10"
+                >
                   Proceed to Payment
                   <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <rect x="3" y="6" width="18" height="12" rx="2" ry="2" />
@@ -332,6 +337,17 @@ export default function LawyerProfilePage() {
         </div>
       </main>
       <Footer />
+      {isBookingModalOpen && (
+        <BookingModal 
+          lawyerId="chaminda-perera" 
+          lawyerName="Mr. Chaminda Perera"
+          selectedDate={`November ${selectedDate}, 2024`}
+          selectedTime={selectedSlot}
+          consultationType={consultationType === 'video' ? 'Video Call' : 'In-Person'}
+          totalAmount={consultationType === 'video' ? '5,250.00' : '7,750.00'}
+          onClose={() => setIsBookingModalOpen(false)} 
+        />
+      )}
     </>
   );
 }

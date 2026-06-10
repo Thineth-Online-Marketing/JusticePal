@@ -13,6 +13,8 @@ import {
 import Footer from "../components/Footer";
 import ClientNavbar from "../components/ClientNavbar";
 import { useAuth } from "../context/AuthContext";
+import { useUI } from "../context/UIContext";
+import LawyerCardSkeleton from "../components/LawyerCardSkeleton";
 
 const translations = {
   en: {
@@ -325,6 +327,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:500
 
 export default function FindLawyerPage() {
   const { user, loading: authLoading } = useAuth();
+  const { isLoading, setIsLoading, showToast } = useUI();
   const [roleLoading, setRoleLoading] = useState(true);
   const { lang, toggle } = useLanguage();
   const tx = translations[lang as keyof typeof translations] || translations.en;
@@ -387,6 +390,7 @@ export default function FindLawyerPage() {
   useEffect(() => {
     if (roleLoading) return;
     const fetchLawyers = async () => {
+      setIsLoading(true);
       try {
         const res = await fetch(`${BACKEND_URL}/api/lawyers`);
         if (res.ok) {
@@ -412,10 +416,13 @@ export default function FindLawyerPage() {
         }
       } catch (err) {
         console.error("Failed to fetch lawyers", err);
+        showToast("Failed to fetch lawyers", "error");
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchLawyers();
-  }, [lang, roleLoading]);
+  }, [lang, roleLoading, setIsLoading, showToast]);
 
   const allLawyers: LawyerCard[] = useMemo(() => {
     return [...dbLawyers, ...MOCK_LAWYERS];
@@ -978,7 +985,13 @@ export default function FindLawyerPage() {
                   <span className="text-sm font-semibold text-gray-500">{filteredLawyers.length} {tx.resultsFound}</span>
                 </div>
 
-                {filteredLawyers.length === 0 ? (
+                {isLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {[1, 2, 3, 4].map(idx => (
+                      <LawyerCardSkeleton key={idx} />
+                    ))}
+                  </div>
+                ) : filteredLawyers.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
                     <div className="w-16 h-16 mx-auto mb-4 bg-gray-50 rounded-full flex items-center justify-center">
                       <Search className="w-7 h-7 text-gray-300" />
