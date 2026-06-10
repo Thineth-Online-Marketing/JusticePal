@@ -70,6 +70,7 @@ export default function RegisterPage() {
         throw new Error(`This account is already registered as a ${userRole}. Please select ${userRole.charAt(0).toUpperCase() + userRole.slice(1)} to log in.`);
       }
       
+      localStorage.setItem("isLoggedIn", "true");
       router.push("/dashboard");
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
@@ -133,6 +134,7 @@ export default function RegisterPage() {
       }
 
       // Step 5: Redirect on success
+      localStorage.setItem("isLoggedIn", "true");
       router.push("/dashboard");
     } catch (err: unknown) {
       const firebaseError = err as { code?: string; message?: string };
