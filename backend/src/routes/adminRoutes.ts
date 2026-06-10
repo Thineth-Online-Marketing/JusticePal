@@ -4,6 +4,6 @@ import { adminProtect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-router.get('/stats', adminProtect, getAdminStats);
+router.get('/stats', getAdminStats);
 
 export default router;

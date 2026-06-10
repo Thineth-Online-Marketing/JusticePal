@@ -13,17 +13,54 @@ import {
 import Image from "next/image";
 
 export default function ClientDashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const [roleLoading, setRoleLoading] = useState(true);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
+    if (authLoading) return;
 
-  if (loading || !user) {
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    if (!user || !isLoggedIn) {
+      localStorage.removeItem("isLoggedIn");
+      router.replace("/login");
+      return;
+    }
+
+    const verifyClientRole = async () => {
+      try {
+        const idToken = await user.getIdToken();
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/users/profile`,
+          {
+            headers: { Authorization: `Bearer ${idToken}` },
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.role === "client") {
+            setRoleLoading(false);
+          } else if (data.role === "lawyer") {
+            router.replace("/lawyer-dashboard");
+          } else if (data.role === "admin") {
+            router.replace("/admin");
+          } else {
+            router.replace("/login");
+          }
+        } else {
+          router.replace("/login");
+        }
+      } catch (err) {
+        console.error("Failed to verify client role", err);
+        router.replace("/login");
+      }
+    };
+
+    verifyClientRole();
+  }, [user, authLoading, router]);
+
+  if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
         <svg className="animate-spin h-10 w-10 text-[#1B3A6B]" viewBox="0 0 24 24" fill="none">

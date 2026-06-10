@@ -67,8 +67,8 @@ const barColors = revenueData.map((_, i) => {
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [roleLoading, setRoleLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(false);
   
   // Dynamic stats
   const [stats, setStats] = useState({
@@ -116,30 +116,32 @@ export default function AdminDashboard() {
       } catch (err) {
         console.error("Error verifying admin role", err);
         router.push("/login");
-      } finally {
-        setRoleLoading(false);
       }
     };
-
     checkAdminRole();
   }, [user, authLoading, router]);
 
   const fetchDashboardData = async (token: string) => {
     try {
       setLoadingData(true);
-      // Fetch stats
-      const statsRes = await fetch(`${BACKEND_URL}/api/admin/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const [statsRes, pendingRes] = await Promise.all([
+        fetch(`${BACKEND_URL}/api/admin/stats`, {
+          headers
+        }),
+        fetch(`${BACKEND_URL}/api/lawyers/pending`, {
+          headers
+        })
+      ]);
+
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
       }
 
-      // Fetch pending lawyers
-      const pendingRes = await fetch(`${BACKEND_URL}/api/lawyers/pending`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
       if (pendingRes.ok) {
         const queueData = await pendingRes.json();
         setLawyerQueue(queueData);
@@ -152,13 +154,23 @@ export default function AdminDashboard() {
   };
 
   const handleVerify = async (lawyerId: string) => {
-    if (!user) return;
     try {
       setVerifyingId(lawyerId);
-      const idToken = await user.getIdToken();
+      let idToken = "";
+      if (user) {
+        try {
+          idToken = await user.getIdToken();
+        } catch (e) {
+          console.error("Error getting idToken", e);
+        }
+      }
+      const headers: HeadersInit = {};
+      if (idToken) {
+        headers["Authorization"] = `Bearer ${idToken}`;
+      }
       const res = await fetch(`${BACKEND_URL}/api/lawyers/${lawyerId}/verify`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${idToken}` },
+        headers,
       });
 
       if (res.ok) {

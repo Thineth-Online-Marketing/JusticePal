@@ -58,16 +58,16 @@ export default function ClientNavbar() {
 
         {/* Desktop Nav Links */}
         <div className="hidden md:flex items-center gap-8">
-          <Link href="/" className={`text-sm transition-colors duration-200 ${pathname === '/' ? 'font-bold text-[#1B3A6B]' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
+          <Link href="/client-dashboard" className={`relative inline-flex justify-center min-w-[90px] text-sm transition-colors duration-200 whitespace-nowrap ${pathname === '/client-dashboard' ? 'text-[#1B3A6B] font-bold after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
             {tx.dashboard}
           </Link>
-          <Link href="/lawyers" className={`text-sm transition-colors duration-200 ${pathname.startsWith('/lawyers') ? 'font-bold text-[#1B3A6B]' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
+          <Link href="/find-lawyer" className={`relative inline-flex justify-center min-w-[90px] text-sm transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/find-lawyer') ? 'text-[#1B3A6B] font-bold after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
             {tx.findLawyer}
           </Link>
-          <Link href="/chat-ai" className={`text-sm transition-colors duration-200 ${pathname.startsWith('/chat-ai') ? 'font-bold text-[#1B3A6B]' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
+          <Link href="/chat-ai" className={`relative inline-flex justify-center min-w-[70px] text-sm transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/chat-ai') ? 'text-[#1B3A6B] font-bold after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
             {tx.chatAi}
           </Link>
-          <Link href="/guide" className={`text-sm transition-colors duration-200 ${pathname.startsWith('/guide') ? 'font-bold text-[#1B3A6B]' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
+          <Link href="/guide" className={`relative inline-flex justify-center min-w-[90px] text-sm transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/guide') ? 'text-[#1B3A6B] font-bold after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
             {tx.userGuide}
           </Link>
         </div>
@@ -137,10 +137,10 @@ export default function ClientNavbar() {
       {/* Mobile Menu Overlay */}
       <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-96 border-t border-gray-100 bg-white shadow-xl' : 'max-h-0'}`}>
         <div className="flex flex-col p-4 space-y-2">
-          <Link href="/" onClick={() => setMenuOpen(false)} className={`px-4 py-3 text-base rounded-lg transition-colors ${pathname === '/' ? 'text-blue-900 bg-blue-50 font-bold' : 'font-medium text-gray-700 hover:bg-gray-50'}`}>
+          <Link href="/client-dashboard" onClick={() => setMenuOpen(false)} className={`px-4 py-3 text-base rounded-lg transition-colors ${pathname === '/client-dashboard' ? 'text-blue-900 bg-blue-50 font-bold' : 'font-medium text-gray-700 hover:bg-gray-50'}`}>
             {tx.dashboard}
           </Link>
-          <Link href="/lawyers" onClick={() => setMenuOpen(false)} className={`px-4 py-3 text-base rounded-lg transition-colors ${pathname.startsWith('/lawyers') ? 'text-blue-900 bg-blue-50 font-bold' : 'font-medium text-gray-700 hover:bg-gray-50'}`}>
+          <Link href="/find-lawyer" onClick={() => setMenuOpen(false)} className={`px-4 py-3 text-base rounded-lg transition-colors ${pathname.startsWith('/find-lawyer') ? 'text-blue-900 bg-blue-50 font-bold' : 'font-medium text-gray-700 hover:bg-gray-50'}`}>
             {tx.findLawyer}
           </Link>
           <Link href="/chat-ai" onClick={() => setMenuOpen(false)} className={`px-4 py-3 text-base rounded-lg transition-colors ${pathname.startsWith('/chat-ai') ? 'text-blue-900 bg-blue-50 font-bold' : 'font-medium text-gray-700 hover:bg-gray-50'}`}>
