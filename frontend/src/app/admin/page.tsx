@@ -86,19 +86,40 @@ export default function AdminDashboard() {
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchWithoutToken = async () => {
-      let idToken = "";
-      if (user) {
-        try {
-          idToken = await user.getIdToken();
-        } catch (err) {
-          console.error("Error getting token", err);
+    if (authLoading) return;
+
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    const checkAdminRole = async () => {
+      try {
+        const idToken = await user.getIdToken();
+        const res = await fetch(`${BACKEND_URL}/api/users/profile`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+
+        if (res.ok) {
+          const profile = await res.json();
+          if (profile.role === "admin") {
+            setIsAdmin(true);
+            // Fetch dashboard data
+            await fetchDashboardData(idToken);
+          } else {
+            // Not an admin — redirect to normal dashboard
+            router.push("/dashboard");
+          }
+        } else {
+          router.push("/login");
         }
+      } catch (err) {
+        console.error("Error verifying admin role", err);
+        router.push("/login");
       }
-      await fetchDashboardData(idToken);
     };
-    fetchWithoutToken();
-  }, [user]);
+    checkAdminRole();
+  }, [user, authLoading, router]);
 
   const fetchDashboardData = async (token: string) => {
     try {

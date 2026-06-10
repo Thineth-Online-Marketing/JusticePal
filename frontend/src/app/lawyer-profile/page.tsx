@@ -7,16 +7,17 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, Heart, Share2, MapPin, BriefcaseBusiness, Globe, ChevronLeft, Calendar as CalendarIcon, Star, CheckCircle2, ChevronRight as ChevronRightIcon } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useAuth } from "../context/AuthContext";
 
 export default function LawyerProfilePage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    if (!isLoggedIn) {
+    if (!loading && !user) {
       router.push("/login");
     }
-  }, [router]);
+  }, [user, loading, router]);
 
   const [selectedDate, setSelectedDate] = useState(4);
   const [selectedSlot, setSelectedSlot] = useState("10:30 AM");

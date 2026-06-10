@@ -23,7 +23,6 @@ export default function ClientNavbar() {
 
   const handleLogout = async () => {
     try {
-      localStorage.removeItem("isLoggedIn");
       await logout();
       window.location.href = "/";
     } catch (error) {

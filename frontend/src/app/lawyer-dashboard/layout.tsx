@@ -70,10 +70,10 @@ export default function LawyerDashboardLayout({ children }: { children: ReactNod
       if (currentUser) {
         setUser(currentUser);
         await fetchDbProfile(currentUser);
+        setLoading(false);
       } else {
         router.push("/login");
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
