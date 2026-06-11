@@ -390,7 +390,7 @@ export default function ClientInboxPage() {
                       {msg.text}
 
                       {/* File attachment preview */}
-                      {msg.attachment && (
+                      {('attachment' in msg) && msg.attachment && (
                         <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center gap-3">
                           <div className="w-9 h-9 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0 font-bold text-xs uppercase">
                             {msg.attachment.name.split(".").pop()}
