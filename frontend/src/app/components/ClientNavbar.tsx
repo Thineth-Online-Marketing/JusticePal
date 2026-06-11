@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, Mail } from "lucide-react";
 import DashboardProfileDropdown from "./DashboardProfileDropdown";
 
 export default function ClientNavbar() {
@@ -101,6 +101,12 @@ export default function ClientNavbar() {
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
           </button>
 
+          {/* Messages Mail */}
+          <Link href="/client-dashboard/inbox" className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors">
+            <Mail className="w-5 h-5 text-gray-600" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full border-2 border-white"></span>
+          </Link>
+
           {/* User Profile */}
           <DashboardProfileDropdown />
         </div>
@@ -147,6 +153,10 @@ export default function ClientNavbar() {
                   <Bell className="w-5 h-5 text-gray-600" />
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
                 </button>
+                <Link href="/client-dashboard/inbox" onClick={() => setMenuOpen(false)} className="relative p-2 bg-gray-50 rounded-xl">
+                  <Mail className="w-5 h-5 text-gray-600" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full border-2 border-white"></span>
+                </Link>
                 <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 relative">
                   <Image src={user?.photoURL || "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=100&h=100"} alt="Profile" fill className="object-cover" />
                 </div>
