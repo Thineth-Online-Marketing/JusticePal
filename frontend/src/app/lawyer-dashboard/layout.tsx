@@ -95,15 +95,15 @@ export default function LawyerDashboardLayout({ children }: { children: ReactNod
   const userName = user?.displayName || "Perera";
 
   return (
-    <div className="flex flex-col h-screen bg-[#F5F7FA] font-sans overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#f1f5f9] font-sans overflow-hidden">
       
       {/* Top Navbar */}
-      <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-20 shadow-sm flex-shrink-0">
+      <header className="h-14 flex items-center z-20 flex-shrink-0" style={{ borderBottom: '1px solid #e2e8f0' }}>
         
-        {/* Logo Section */}
-        <div className="flex items-center gap-3 w-64">
+        {/* Logo Section — dark bg matching admin sidebar header */}
+        <div className="flex items-center gap-3 w-64 h-full px-6 shrink-0" style={{ background: '#1e293b', borderBottom: '1px solid #334155' }}>
           <Link href="/" className="flex items-center gap-3">
-            <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-sm flex items-center justify-center bg-blue-50/50">
+            <div className="relative w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ background: '#3b82f6' }}>
               <Image 
                 src="https://res.cloudinary.com/dluwvqdaz/image/upload/v1775969976/Navy_Blue_JusticePal_Logo_with_Dove_Fusion_new_uhyjl0.png" 
                 alt="JusticePal Logo" 
@@ -111,62 +111,61 @@ export default function LawyerDashboardLayout({ children }: { children: ReactNod
                 className="object-cover"
               />
             </div>
-            <div className="flex flex-col leading-tight">
-              <span className="font-extrabold text-xl tracking-tight text-[#1B3A6B]">JusticePal</span>
-              <span className="text-[10px] font-bold tracking-[0.2em] text-[#3b6fd4] uppercase">Sri Lanka</span>
-            </div>
+            <span className="text-xl font-bold text-white tracking-tight">JusticePal</span>
           </Link>
         </div>
+        {/* Right area — white bg matching admin header */}
+        <div className="flex-1 flex items-center justify-between h-full px-4 sm:px-6" style={{ background: '#fff' }}>
 
         {/* Search Bar */}
-        <div className="flex-1 max-w-2xl px-8">
-          <div className="relative">
-            <svg className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex-1 max-w-md hidden sm:block">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0' }}>
+            <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input 
               type="text" 
               placeholder={tx.searchPlaceholder}
-              className="w-full bg-[#F3F4F6] text-sm text-gray-700 rounded-lg pl-10 pr-4 py-2 outline-none border border-transparent focus:border-blue-200 focus:bg-white transition-all"
+              className="bg-transparent outline-none text-[13px] w-full placeholder:text-slate-400"
             />
           </div>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-6">
-          <button className="relative text-gray-500 hover:text-gray-700 transition-colors">
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="flex items-center gap-3 sm:gap-4 ml-2 sm:ml-4 shrink-0">
+          <button className="relative p-1">
+            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="#64748b">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full" style={{ background: '#ef4444', border: '2px solid #fff' }} />
           </button>
           
           <div className="relative">
             <button 
               onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-              className="flex items-center gap-3 focus:outline-none"
+              className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-slate-50 transition-colors"
             >
-              <div className="flex flex-col text-right">
-                <span className="text-sm font-bold text-gray-900 leading-tight">{tx.counselor} {userName}</span>
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{tx.advocate}</span>
+              <div className="text-right leading-tight hidden sm:block">
+                <p className="text-[13px] font-semibold text-slate-800">{tx.counselor} {userName}</p>
+                <p className="text-[10px] font-bold tracking-wider" style={{ color: '#3b82f6' }}>{tx.advocate}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden relative border border-gray-200 flex-shrink-0">
-                {profilePic ? (
-                  <Image src={profilePic} alt={userName} fill className="object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[#1B3A6B] font-bold">
-                    {userName.charAt(0)}
-                  </div>
-                )}
+              <div className="flex items-center gap-1">
+                <div className="w-9 h-9 rounded-full overflow-hidden relative flex-shrink-0 flex items-center justify-center text-xs font-bold text-white" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%)' }}>
+                  {profilePic ? (
+                    <Image src={profilePic} alt={userName} fill className="object-cover" />
+                  ) : (
+                    userName.charAt(0)
+                  )}
+                </div>
+                <svg className={`w-3.5 h-3.5 text-slate-400 hidden sm:block transition-transform ${isProfileDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </div>
-              <svg className={`w-4 h-4 text-gray-500 transition-transform ${isProfileDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
             </button>
 
             {/* Profile Dropdown */}
             {isProfileDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-sm font-bold text-gray-900">{user?.displayName || "Perera"}</p>
                   <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email}</p>
@@ -213,13 +212,14 @@ export default function LawyerDashboardLayout({ children }: { children: ReactNod
             )}
           </div>
         </div>
+        </div>
       </header>
 
       {/* Main Layout Area */}
       <div className="flex flex-1 overflow-hidden">
         
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-gray-200 flex flex-col justify-between py-6 flex-shrink-0">
+        <aside className="w-64 flex flex-col justify-between py-6 flex-shrink-0" style={{ background: '#1e293b' }}>
           <nav className="space-y-1 px-4">
             {[
               { name: tx.dashboard, icon: "M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z", active: pathname === "/lawyer-dashboard", href: "/lawyer-dashboard" },
@@ -230,13 +230,13 @@ export default function LawyerDashboardLayout({ children }: { children: ReactNod
               <Link 
                 key={idx} 
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  item.active 
-                    ? "bg-[#EBF1F9] text-[#1B3A6B]" 
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  background: item.active ? '#3b82f6' : 'transparent',
+                  color: item.active ? '#fff' : '#94a3b8',
+                }}
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: item.active ? '#fff' : '#64748b' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                 </svg>
                 {item.name}
@@ -244,12 +244,13 @@ export default function LawyerDashboardLayout({ children }: { children: ReactNod
             ))}
           </nav>
           
-          <div className="px-4">
+          <div className="px-4" style={{ borderTop: '1px solid #334155', paddingTop: '1rem' }}>
             <Link 
               href="/lawyer-dashboard/settings"
-              className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              style={{ color: pathname === '/lawyer-dashboard/settings' ? '#fff' : '#94a3b8', background: pathname === '/lawyer-dashboard/settings' ? '#3b82f6' : 'transparent' }}
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: pathname === '/lawyer-dashboard/settings' ? '#fff' : '#64748b' }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
