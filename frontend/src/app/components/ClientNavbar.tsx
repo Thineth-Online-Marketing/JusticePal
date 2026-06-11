@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { Bell, LogOut } from "lucide-react";
+import DashboardProfileDropdown from "./DashboardProfileDropdown";
 
 export default function ClientNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -101,26 +102,7 @@ export default function ClientNavbar() {
           </button>
 
           {/* User Profile */}
-          <div className="relative group">
-            <button className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B] focus:ring-offset-1">
-              <Image
-                src={user?.photoURL || "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=100&h=100"}
-                alt="Profile"
-                fill
-                className="object-cover"
-              />
-            </button>
-
-            {/* Dropdown for Logout */}
-            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <div className="p-2">
-                <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium">
-                  <LogOut className="w-4 h-4" />
-                  {tx.logout}
-                </button>
-              </div>
-            </div>
-          </div>
+          <DashboardProfileDropdown />
         </div>
 
         {/* Mobile Hamburger Button */}
