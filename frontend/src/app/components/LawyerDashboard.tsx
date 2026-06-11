@@ -299,17 +299,20 @@ export default function LawyerDashboard() {
                 
                 <div className="space-y-4">
                   {/* Schedule Item 1 */}
-                  <div className="flex gap-4 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 items-center">
+                  <div 
+                    onClick={() => router.push("/consultation?role=lawyer")}
+                    className="flex gap-4 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 items-center cursor-pointer hover:bg-gray-100/80 transition-colors group"
+                  >
                     <div className="w-20 text-right flex-shrink-0">
                       <p className="font-bold text-gray-900 text-sm">09:00 AM</p>
                       <p className="text-xs text-gray-500 font-medium mt-0.5">60 min</p>
                     </div>
                     <div className="w-1 rounded-full bg-blue-500 h-12"></div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 text-sm truncate">Client Consultation: Sarah Chen</p>
+                      <p className="font-bold text-gray-900 text-sm truncate group-hover:text-[#1B3A6B] transition-colors">Client Consultation: Sarah Chen</p>
                       <p className="text-xs text-gray-500 font-medium mt-1 truncate">Virtual Meeting • Civil Dispute #4421</p>
                     </div>
-                    <div className="w-8 h-8 rounded-lg text-gray-400 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg text-gray-400 group-hover:text-[#1B3A6B] group-hover:bg-blue-50 flex items-center justify-center flex-shrink-0 transition-all">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
