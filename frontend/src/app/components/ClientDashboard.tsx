@@ -121,7 +121,10 @@ export default function ClientDashboard() {
                     Discussion regarding property settlement and final mediation steps.
                   </p>
                   <div className="flex flex-wrap gap-3">
-                    <button className="flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#112549] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-sm">
+                    <button 
+                      onClick={() => router.push("/consultation?role=client")}
+                      className="flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#112549] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-sm"
+                    >
                       <Video className="w-4 h-4" />
                       Join Video Call
                     </button>
