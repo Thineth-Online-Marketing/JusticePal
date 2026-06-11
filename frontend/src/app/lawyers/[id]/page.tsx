@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronRight, Heart, Share2, MapPin, BriefcaseBusiness, Globe, ChevronLeft, Calendar as CalendarIcon, Star, CheckCircle2, ChevronRight as ChevronRightIcon } from "lucide-react";
 import Navbar from "../../components/Navbar";
+import ClientNavbar from "../../components/ClientNavbar";
 import Footer from "../../components/Footer";
 import { useLanguage } from "../../context/LanguageContext";
 import { getLawyers } from "../../../data/lawyers";
@@ -27,10 +28,6 @@ export default function LawyerProfilePage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
-      router.push("/login");
-      return;
-    }
 
     const fetchLawyer = async () => {
       try {
@@ -75,7 +72,7 @@ export default function LawyerProfilePage() {
     };
 
     fetchLawyer();
-  }, [id, lang, router]);
+  }, [id, lang, authLoading]);
 
   const [activeTab, setActiveTab] = useState("About");
   const [currentDate, setCurrentDate] = useState(new Date()); 
@@ -108,6 +105,7 @@ export default function LawyerProfilePage() {
     ? selectedFullDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : 'Select a date';
   const [consultationType, setConsultationType] = useState("video");
+  const [isFirstBooking] = useState(!!user);
 
   if (loading) {
     return (
@@ -135,8 +133,8 @@ export default function LawyerProfilePage() {
 
   return (
     <>
-      <Navbar />
-      <main className="min-h-screen bg-[#F8FAFC] pt-28 pb-20">
+      {user ? <ClientNavbar /> : <Navbar />}
+      <main className={`min-h-screen bg-[#F8FAFC] ${user ? 'pt-24' : 'pt-28'} pb-20`}>
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
@@ -446,20 +444,35 @@ export default function LawyerProfilePage() {
                   </label>
                 </div>
 
-                {/* Price Breakdown */}
+                {isFirstBooking && (
+                  <div className="mb-4 bg-emerald-50 text-emerald-800 p-3 rounded-xl border border-emerald-100 flex items-start gap-2">
+                    <span className="text-lg">🎉</span>
+                    <p className="text-sm font-medium">Welcome to JusticePal! Your first legal consultation is 100% Free.</p>
+                  </div>
+                )}
+
                 <div className="bg-[#F8FAFC] rounded-xl p-5 mb-5 border border-gray-100">
                   <div className="flex justify-between items-center text-sm mb-2.5">
                     <span className="text-gray-500 font-medium">Consultation Fee</span>
-                    <span className="text-gray-900 font-semibold">Rs. {consultationType === 'video' ? '5,000.00' : '7,500.00'}</span>
+                    <div className="flex items-center gap-2">
+                      {isFirstBooking && <span className="text-gray-400 line-through text-xs">Rs. {consultationType === 'video' ? '5,000.00' : '7,500.00'}</span>}
+                      <span className="text-gray-900 font-semibold">Rs. {isFirstBooking ? '0.00' : (consultationType === 'video' ? '5,000.00' : '7,500.00')}</span>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center text-sm mb-4">
                     <span className="text-gray-500 font-medium">Service Fee (JusticePal)</span>
-                    <span className="text-gray-900 font-semibold">Rs. 250.00</span>
+                    <div className="flex items-center gap-2">
+                      {isFirstBooking && <span className="text-gray-400 line-through text-xs">Rs. 250.00</span>}
+                      <span className="text-gray-900 font-semibold">Rs. {isFirstBooking ? '0.00' : '250.00'}</span>
+                    </div>
                   </div>
                   <div className="h-px bg-gray-200 mb-4" />
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-gray-900 text-base">Total Amount</span>
-                    <span className="font-bold text-[#1B3A6B] text-lg">Rs. {consultationType === 'video' ? '5,250.00' : '7,750.00'}</span>
+                    <div className="flex items-center gap-2">
+                      {isFirstBooking && <span className="text-gray-400 line-through text-sm">Rs. {consultationType === 'video' ? '5,250.00' : '7,750.00'}</span>}
+                      <span className="font-bold text-[#1B3A6B] text-lg">Rs. {isFirstBooking ? '0.00' : (consultationType === 'video' ? '5,250.00' : '7,750.00')}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -467,7 +480,7 @@ export default function LawyerProfilePage() {
                   onClick={() => setIsBookingModalOpen(true)}
                   className="w-full bg-[#1B3A6B] hover:bg-[#112549] text-white font-semibold py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 group shadow-md shadow-[#1B3A6B]/10"
                 >
-                  Proceed to Payment
+                  {isFirstBooking ? 'Confirm Free Booking 🚀' : 'Proceed to Payment'}
                   <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <rect x="3" y="6" width="18" height="12" rx="2" ry="2"/>
                     <path d="M3 10h18"/>
@@ -508,7 +521,7 @@ export default function LawyerProfilePage() {
           selectedDate={formattedSelectedDate}
           selectedTime={selectedSlot}
           consultationType={consultationType === 'video' ? 'Video Call' : 'In-Person'}
-          totalAmount={consultationType === 'video' ? '5,250.00' : '7,750.00'}
+          totalAmount={isFirstBooking ? '0.00' : (consultationType === 'video' ? '5,250.00' : '7,750.00')}
           onClose={() => setIsBookingModalOpen(false)} 
         />
       )}
