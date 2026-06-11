@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../context/AuthContext";
 import Image from "next/image";
 import {
   Users,
@@ -65,10 +64,7 @@ const barColors = revenueData.map((_, i) => {
 });
 
 export default function AdminDashboard() {
-  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(true);
-  const [roleLoading, setRoleLoading] = useState(false);
   
   // Dynamic stats
   const [stats, setStats] = useState({
@@ -86,55 +82,15 @@ export default function AdminDashboard() {
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading) return;
+    fetchDashboardData();
+  }, []);
 
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    const checkAdminRole = async () => {
-      try {
-        const idToken = await user.getIdToken();
-        const res = await fetch(`${BACKEND_URL}/api/users/profile`, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
-
-        if (res.ok) {
-          const profile = await res.json();
-          if (profile.role === "admin") {
-            setIsAdmin(true);
-            // Fetch dashboard data
-            await fetchDashboardData(idToken);
-          } else {
-            // Not an admin — redirect to normal dashboard
-            router.push("/dashboard");
-          }
-        } else {
-          router.push("/login");
-        }
-      } catch (err) {
-        console.error("Error verifying admin role", err);
-        router.push("/login");
-      }
-    };
-    checkAdminRole();
-  }, [user, authLoading, router]);
-
-  const fetchDashboardData = async (token: string) => {
+  const fetchDashboardData = async () => {
     try {
       setLoadingData(true);
-      const headers: HeadersInit = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
       const [statsRes, pendingRes] = await Promise.all([
-        fetch(`${BACKEND_URL}/api/admin/stats`, {
-          headers
-        }),
-        fetch(`${BACKEND_URL}/api/lawyers/pending`, {
-          headers
-        })
+        fetch(`${BACKEND_URL}/api/admin/stats`),
+        fetch(`${BACKEND_URL}/api/lawyers/pending`)
       ]);
 
       if (statsRes.ok) {
@@ -156,28 +112,15 @@ export default function AdminDashboard() {
   const handleVerify = async (lawyerId: string) => {
     try {
       setVerifyingId(lawyerId);
-      let idToken = "";
-      if (user) {
-        try {
-          idToken = await user.getIdToken();
-        } catch (e) {
-          console.error("Error getting idToken", e);
-        }
-      }
-      const headers: HeadersInit = {};
-      if (idToken) {
-        headers["Authorization"] = `Bearer ${idToken}`;
-      }
       const res = await fetch(`${BACKEND_URL}/api/lawyers/${lawyerId}/verify`, {
         method: "PUT",
-        headers,
       });
 
       if (res.ok) {
         alert("Lawyer verified successfully!");
         setSelectedLawyer(null);
         // Refresh dashboard data
-        await fetchDashboardData(idToken);
+        await fetchDashboardData();
       } else {
         const errData = await res.json();
         alert(errData.message || "Failed to verify lawyer.");
@@ -189,36 +132,6 @@ export default function AdminDashboard() {
       setVerifyingId(null);
     }
   };
-
-  if (authLoading || roleLoading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <svg
-          className="animate-spin h-10 w-10 text-[#1B3A6B]"
-          viewBox="0 0 24 24"
-          fill="none"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v8H4z"
-          />
-        </svg>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return null;
-  }
 
   const cards = [
     {
