@@ -8,37 +8,35 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  firebaseUid String   @unique
-  email       String   @unique
-  name        String
-  role        String   @default("user") // "user", "lawyer", "admin"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  lawyerProfile Lawyer?
+  id            String        @id @default(uuid())
+  firebaseUid   String        @unique
+  email         String        @unique
+  name          String
+  role          String        @default("user")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
   appointments  Appointment[]
+  lawyerProfile Lawyer?
 }
 
 model Lawyer {
-  id               String   @id @default(uuid())
-  userId           String   @unique
+  id               String        @id @default(uuid())
+  userId           String        @unique
   specialization   String[]
   location         String?
   bio              String?
-  workExperience   String?
-  profilePicture   String?
-  phone            String?
-  phoneVerified    Boolean  @default(false)
-  idPhotos         String[]
-  profileCompleted Boolean  @default(false)
-  isVerified       Boolean  @default(false)
+  isVerified       Boolean       @default(false)
   hourlyRate       Float?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  idPhotos         String[]
+  phone            String?
+  phoneVerified    Boolean       @default(false)
+  profileCompleted Boolean       @default(false)
+  profilePicture   String?
+  workExperience   String?
+  appointments     Appointment[]
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Appointment {
@@ -46,12 +44,11 @@ model Appointment {
   userId          String
   lawyerId        String
   scheduledAt     DateTime
-  status          String   @default("pending") // "pending", "confirmed", "completed", "cancelled"
+  status          String   @default("pending")
   caseDescription String
   meetingLink     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lawyer Lawyer @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyer          Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
