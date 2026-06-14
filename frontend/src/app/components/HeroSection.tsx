@@ -29,7 +29,7 @@ const content = {
 export default function HeroSection() {
   const [searchValue, setSearchValue] = useState("");
   const { lang } = useLanguage();
-  const tx = content[lang];
+  const tx = content[lang as keyof typeof content] || content.en;
 
   return (
     <section className="relative w-full pt-32 pb-24 md:pt-40 md:pb-32 overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white">

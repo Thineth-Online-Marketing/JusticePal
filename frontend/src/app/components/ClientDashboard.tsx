@@ -41,6 +41,12 @@ export default function ClientDashboard() {
           const data = await res.json();
           if (data.role === "client") {
             setRoleLoading(false);
+            // Auto-fix display name if it got stuck as Counselor from testing
+            if (user.displayName && user.displayName.includes("Counselor")) {
+              import("firebase/auth").then(({ updateProfile }) => {
+                updateProfile(user, { displayName: user.displayName?.replace("Counselor ", "").replace("Counselor", "") || "Client" });
+              });
+            }
           } else if (data.role === "lawyer") {
             router.replace("/lawyer-dashboard");
           } else if (data.role === "admin") {

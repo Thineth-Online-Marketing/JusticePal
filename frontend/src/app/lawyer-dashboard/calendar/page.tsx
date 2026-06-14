@@ -26,7 +26,7 @@ const content = {
     consultation: "Consultation",
     videoMeeting: "Video Meeting",
     caseReview: "Case Review",
-    workingHours: "WORKING HOURS: 08:00 AM - 06:00 PM (GMT -5)"
+    workingHours: "WORKING HOURS: 08:00 AM - 06:00 PM (GMT +5:30 / Sri Lanka Time)"
   },
   si: {
     calendar: "දින දර්ශනය",
@@ -49,7 +49,7 @@ const content = {
     consultation: "උපදේශනය",
     videoMeeting: "වීඩියෝ හමුවීම",
     caseReview: "නඩු සමාලෝචනය",
-    workingHours: "වැඩ කරන වේලාවන්: පෙ.ව. 08:00 - ප.ව. 06:00 (GMT -5)"
+    workingHours: "වැඩ කරන වේලාවන්: පෙ.ව. 08:00 - ප.ව. 06:00 (GMT +5:30 / Sri Lanka Time)"
   }
 };
 
@@ -179,12 +179,22 @@ export default function CalendarPage() {
             ))}
 
             {/* Current Time Indicator (Red Line) - Approx 10:30 AM */}
-            <div className="absolute left-0 right-0 z-20 flex items-center" style={{ top: 'calc(2 * 6rem + 3rem)' }}>
-              <div className="w-20 flex justify-end pr-1">
-                <div className="w-2 h-2 rounded-full bg-red-500"></div>
-              </div>
-              <div className="flex-1 border-t-2 border-red-400/70"></div>
-            </div>
+            {(() => {
+              const currentDayIndex = 2; // Wednesday
+              return (
+                <div 
+                  className="absolute z-20 flex items-center" 
+                  style={{ 
+                    top: 'calc(2 * 6rem + 3rem)',
+                    left: `calc(5rem + (100% - 5rem) * ${currentDayIndex} / 7)`,
+                    width: 'calc((100% - 5rem) / 7)'
+                  }}
+                >
+                  <div className="absolute -left-1 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.8)]"></div>
+                  <div className="w-full border-t-2 border-red-500/80"></div>
+                </div>
+              );
+            })()}
 
             {/* Calendar Events (Absolutely positioned over the grid) */}
             {/* 1 hour = 6rem (96px). Top offset = (Hour - 8) * 6rem */}
@@ -270,7 +280,7 @@ export default function CalendarPage() {
               <span className="text-xs font-bold text-gray-600">{tx.caseReview} (1)</span>
             </div>
           </div>
-          <p className="text-[10px] font-bold text-gray-400 tracking-wider uppercase mt-4 md:mt-0">
+          <p className="text-[10px] font-bold text-slate-400 tracking-wider uppercase mt-4 md:mt-0">
             {tx.workingHours}
           </p>
         </div>

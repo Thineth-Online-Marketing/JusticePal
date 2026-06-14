@@ -165,7 +165,14 @@ export default function LawyerDashboardLayout({ children }: { children: ReactNod
 
             {/* Profile Dropdown */}
             {isProfileDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
+              <>
+                {/* Transparent Overlay for clicking outside */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setIsProfileDropdownOpen(false)}
+                ></div>
+
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-sm font-bold text-gray-900">{user?.displayName || "Perera"}</p>
                   <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email}</p>
@@ -209,6 +216,7 @@ export default function LawyerDashboardLayout({ children }: { children: ReactNod
                   </button>
                 </div>
               </div>
+            </>
             )}
           </div>
         </div>
