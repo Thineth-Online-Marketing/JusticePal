@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { User, ChevronDown, UserCircle, Settings, Shield, Globe, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -11,13 +12,7 @@ export default function DashboardProfileDropdown() {
   const { user, logout } = useAuth();
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    // Relying on transparent overlay for outside click detection
   }, []);
 
   const handleLogout = async () => {
@@ -42,6 +37,18 @@ export default function DashboardProfileDropdown() {
         </div>
         <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isOpen ? "rotate-180 text-[#1B3A6B]" : ""}`} />
       </button>
+
+      {/* Transparent Overlay for clicking outside (using Portal to bypass navbar stacking context) */}
+      {isOpen && typeof document !== "undefined" && createPortal(
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(false);
+          }}
+        ></div>,
+        document.body
+      )}
 
       {isOpen && (
         <div className="absolute right-0 mt-3 w-64 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden origin-top-right z-50 animate-in fade-in slide-in-from-top-2 duration-200">
