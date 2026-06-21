@@ -631,16 +631,16 @@ export default function LawyerVerificationPage() {
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Uploaded ID Documents ({selectedLawyer.idPhotos.length})</p>
                   {selectedLawyer.idPhotos.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {selectedLawyer.idPhotos.map((photo, i) => (
-                        <a key={i} href={photo} target="_blank" rel="noopener noreferrer" className="block border border-slate-200 rounded-xl overflow-hidden hover:border-[#1B3A6B] transition-colors group">
-                          <div className="h-32 bg-slate-100 flex items-center justify-center">
-                            <ImageIcon size={24} className="text-slate-300 group-hover:text-[#1B3A6B] transition-colors" />
+                        <div key={i} className="block border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                          <div className="bg-slate-100 flex items-center justify-center p-2 h-48">
+                            <img src={photo} alt={`ID Document ${i + 1}`} className="max-w-full max-h-full object-contain rounded-lg" />
                           </div>
-                          <div className="px-3 py-2 border-t border-slate-100">
-                            <p className="text-xs font-bold text-slate-600 truncate">ID Document {i + 1}</p>
+                          <div className="px-3 py-2 border-t border-slate-100 bg-white">
+                            <p className="text-xs font-bold text-slate-600 truncate">{i === 0 ? "Front of ID" : i === 1 ? "Back of ID" : `ID Document ${i + 1}`}</p>
                           </div>
-                        </a>
+                        </div>
                       ))}
                     </div>
                   ) : (
