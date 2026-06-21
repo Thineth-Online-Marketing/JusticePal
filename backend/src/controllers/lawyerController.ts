@@ -62,32 +62,36 @@ export const updateLawyerProfile = async (req: AuthRequest, res: Response, next:
   try {
     const { specialization, location, bio, hourlyRate, workExperience, profilePicture, phone, phoneVerified, idPhotos, profileCompleted } = req.body;
 
-    const lawyer = await prisma.lawyer.findUnique({
-      where: { userId: req.user.id }
-    });
-
-    if (!lawyer) {
-      res.status(404);
-      throw new Error('Lawyer profile not found');
-    }
-
-    const updatedLawyer = await prisma.lawyer.update({
+    const lawyer = await prisma.lawyer.upsert({
       where: { userId: req.user.id },
-      data: {
-        specialization: specialization || lawyer.specialization,
-        location: location || lawyer.location,
-        bio: bio || lawyer.bio,
-        workExperience: workExperience || lawyer.workExperience,
-        profilePicture: profilePicture || lawyer.profilePicture,
-        phone: phone || lawyer.phone,
-        phoneVerified: phoneVerified !== undefined ? phoneVerified : lawyer.phoneVerified,
-        idPhotos: idPhotos || lawyer.idPhotos,
-        profileCompleted: profileCompleted !== undefined ? profileCompleted : lawyer.profileCompleted,
-        hourlyRate: hourlyRate ? parseFloat(hourlyRate) : lawyer.hourlyRate
+      update: {
+        specialization: specialization || [],
+        location: location || null,
+        bio: bio || null,
+        workExperience: workExperience || null,
+        profilePicture: profilePicture || null,
+        phone: phone || null,
+        phoneVerified: phoneVerified !== undefined ? phoneVerified : undefined,
+        idPhotos: idPhotos || undefined,
+        profileCompleted: profileCompleted !== undefined ? profileCompleted : undefined,
+        hourlyRate: hourlyRate ? parseFloat(hourlyRate) : undefined
+      },
+      create: {
+        userId: req.user.id,
+        specialization: specialization || [],
+        location: location || null,
+        bio: bio || null,
+        workExperience: workExperience || null,
+        profilePicture: profilePicture || null,
+        phone: phone || null,
+        phoneVerified: phoneVerified !== undefined ? phoneVerified : false,
+        idPhotos: idPhotos || [],
+        profileCompleted: profileCompleted !== undefined ? profileCompleted : false,
+        hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null
       }
     });
 
-    res.status(200).json(updatedLawyer);
+    res.status(200).json(lawyer);
   } catch (error) {
     next(error);
   }
