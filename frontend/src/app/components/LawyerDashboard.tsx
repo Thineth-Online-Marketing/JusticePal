@@ -124,7 +124,7 @@ export default function LawyerDashboard() {
   const hasIdUploaded = lawyerProfile?.idPhotos?.length > 0;
   
   const showPendingApproval = dbUser?.role === "lawyer" && !isVerified && lawyerProfile?.profileCompleted;
-  const showBioTask = dbUser?.role === "lawyer" && isVerified && !hasBioData;
+  const showBioTask = dbUser?.role === "lawyer" && !hasBioData && !showPendingApproval;
   const showPhoneTask = dbUser?.role === "lawyer" && !isVerified && !hasVerifiedPhone && !showPendingApproval;
   const showIdTask = dbUser?.role === "lawyer" && !isVerified && !hasIdUploaded && !showPendingApproval;
 
@@ -172,15 +172,12 @@ export default function LawyerDashboard() {
                   Verify Lawyer Account
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">
-                  {(!hasBioData) 
-                    ? "Complete your Bio Data to unlock this step." 
-                    : "Upload your official Lawyer ID to get verified by our administration team."}
+                  Upload your official Lawyer ID to get verified by our administration team.
                 </p>
               </div>
               <button 
                 onClick={() => setSetupStep(3)} 
-                disabled={!hasBioData}
-                className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap"
               >
                 Verify Account
               </button>
