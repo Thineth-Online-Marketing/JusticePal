@@ -253,7 +253,7 @@ export default function LawyerDashboard() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{tx.newRequests}</h3>
-                  <p className="text-3xl font-bold text-gray-900">3</p>
+                  <p className="text-3xl font-bold text-amber-600">3</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -261,7 +261,7 @@ export default function LawyerDashboard() {
                   </svg>
                 </div>
               </div>
-              <p className="text-orange-500 text-xs font-semibold mt-4">
+              <p className="text-amber-600 text-xs font-bold mt-4">
                 {tx.awaitingReview}
               </p>
             </div>
@@ -404,6 +404,30 @@ export default function LawyerDashboard() {
                       <p className="text-xs text-gray-500 mt-1">Yesterday • 04:45 PM</p>
                     </div>
                   </div>
+
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0 mt-0.5">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900"><span className="font-bold">New Booking Requested:</span> by Sarah Chen</p>
+                      <p className="text-xs text-gray-500 mt-1">2 hours ago</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0 mt-0.5">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900"><span className="font-bold">Payment Verified:</span> For Case #2944</p>
+                      <p className="text-xs text-gray-500 mt-1">5 hours ago</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -455,10 +479,13 @@ export default function LawyerDashboard() {
                       <span className="text-[10px] text-gray-400 font-medium">#4412</span>
                     </div>
                     <h3 className="text-sm font-bold text-gray-900 mb-3">State vs. Harrison</h3>
-                    <div className="w-full bg-gray-100 h-1.5 rounded-full mb-2 overflow-hidden">
-                      <div className="bg-red-500 h-full rounded-full" style={{ width: '75%' }}></div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-red-500 h-full rounded-full" style={{ width: '75%' }}></div>
+                      </div>
+                      <span className="text-xs font-bold text-gray-700">75%</span>
                     </div>
-                    <p className="text-[10px] text-gray-500 font-medium">75% Complete • Trial Date: Oct 24</p>
+                    <p className="text-[10px] text-gray-500 font-medium">Trial Date: Oct 24</p>
                   </div>
 
                   <div className="w-full h-px bg-gray-100"></div>
@@ -470,10 +497,13 @@ export default function LawyerDashboard() {
                       <span className="text-[10px] text-gray-400 font-medium">#3190</span>
                     </div>
                     <h3 className="text-sm font-bold text-gray-900 mb-3">Miller Property Trust</h3>
-                    <div className="w-full bg-gray-100 h-1.5 rounded-full mb-2 overflow-hidden">
-                      <div className="bg-blue-500 h-full rounded-full" style={{ width: '30%' }}></div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-blue-500 h-full rounded-full" style={{ width: '30%' }}></div>
+                      </div>
+                      <span className="text-xs font-bold text-gray-700">30%</span>
                     </div>
-                    <p className="text-[10px] text-gray-500 font-medium">30% Complete • Reviewing Docs</p>
+                    <p className="text-[10px] text-gray-500 font-medium">Reviewing Docs</p>
                   </div>
                 </div>
 

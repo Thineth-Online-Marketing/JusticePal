@@ -49,7 +49,7 @@ const mockCases = [
     status: "Discovery",
     statusColor: "bg-blue-100 text-blue-600",
     statusDot: "bg-blue-500",
-    nextMeetingDate: "Oct 14, 2024",
+    nextMeetingDate: "Oct 14, 2026",
     nextMeetingTime: "10:30 AM (Hearing)",
     isToday: false
   },
@@ -63,7 +63,7 @@ const mockCases = [
     status: "Mediation",
     statusColor: "bg-yellow-100 text-yellow-700",
     statusDot: "bg-yellow-500",
-    nextMeetingDate: "Oct 16, 2024",
+    nextMeetingDate: "Oct 16, 2026",
     nextMeetingTime: "2:00 PM (Client Meeting)",
     isToday: false
   },
@@ -91,7 +91,7 @@ const mockCases = [
     status: "On Hold",
     statusColor: "bg-gray-100 text-gray-600",
     statusDot: "bg-gray-400",
-    nextMeetingDate: "Nov 02, 2024",
+    nextMeetingDate: "Nov 02, 2026",
     nextMeetingTime: "9:00 AM (Deposition)",
     isToday: false
   }
@@ -100,6 +100,7 @@ const mockCases = [
 export default function ActiveCasesPage() {
   const { lang } = useLanguage();
   const tx = content[lang as keyof typeof content] || content.en;
+  const [openActionId, setOpenActionId] = useState<number | null>(null);
 
   return (
     <main className="flex-1 overflow-y-auto p-8 relative h-full bg-[#F5F7FA]">
@@ -200,11 +201,31 @@ export default function ActiveCasesPage() {
                       <p className="text-xs font-medium text-gray-400 mt-0.5">{c.nextMeetingTime}</p>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="p-2 text-gray-400 hover:text-[#1B3A6B] hover:bg-blue-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                        </svg>
-                      </button>
+                      <div className="relative inline-block text-left">
+                        <button 
+                          onClick={() => setOpenActionId(openActionId === c.id ? null : c.id)}
+                          className={`p-2 rounded-lg transition-colors ${openActionId === c.id ? 'text-[#1B3A6B] bg-slate-100' : 'text-slate-500 hover:text-[#1B3A6B] hover:bg-slate-100'}`}
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                          </svg>
+                        </button>
+
+                        {openActionId === c.id && (
+                          <>
+                            <div className="fixed inset-0 z-30" onClick={() => setOpenActionId(null)}></div>
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-40 animate-in fade-in slide-in-from-top-2 duration-200">
+                              <div className="flex flex-col py-1">
+                                <button className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#1B3A6B] transition-colors text-left w-full">View Details</button>
+                                <button className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#1B3A6B] transition-colors text-left w-full">Edit Case</button>
+                                <button className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#1B3A6B] transition-colors text-left w-full">Manage Documents</button>
+                                <div className="h-px bg-gray-100 my-1"></div>
+                                <button className="px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors text-left w-full">Close Case</button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
