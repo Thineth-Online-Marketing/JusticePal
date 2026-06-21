@@ -79,6 +79,7 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
       if (!window.recaptchaVerifier) {
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
           size: 'invisible',
+          sitekey: 'Ae0iMNdQh6LTLCMNMmAWXZjFnFflXATzOZ-Ts6UKYCF3BTCzSJE3tasUqTn9quVg5ezbe2y8R8nQi4NkNxSfI0PO79ksggzZdaeonRZoiIPoYBRM74TlesVmwWz8KljJX66jp-NSuPIFLlkdLQwmOYR3'
         });
       }
       const appVerifier = window.recaptchaVerifier;
