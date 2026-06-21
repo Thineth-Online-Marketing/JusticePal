@@ -76,14 +76,14 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
   const handleSendCode = async () => {
     setLoading(true);
     try {
-      const dummyVerifier = {
-        type: 'recaptcha',
-        verify: () => Promise.resolve("Ae0iMNcVjedvW8BG2KuUwOvdbDIGVTBMyGh3DEHnYYR04DZpcsqvOz6Z0DpijTuXSF76BahCXzuS2bMPWB96YfKmt3nTpG4tKTlPzoW6MFLIvJyZUsHuyUdG8K2Q84hAH0irfLZykgHOtttzU_uIQrxt"),
-        clear: () => {},
-        reset: () => {}
-      };
-      
-      const result = await signInWithPhoneNumber(auth, phone, dummyVerifier);
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+          sitekey: 'Ae0iMNdQh6LTLCMNMmAWXZjFnFflXATzOZ-Ts6UKYCF3BTCzSJE3tasUqTn9quVg5ezbe2y8R8nQi4NkNxSfI0PO79ksggzZdaeonRZoiIPoYBRM74TlesVmwWz8KljJX66jp-NSuPIFLlkdLQwmOYR3'
+        });
+      }
+      const appVerifier = window.recaptchaVerifier;
+      const result = await signInWithPhoneNumber(auth, phone, appVerifier);
       setConfirmationResult(result);
       alert("OTP sent successfully!");
     } catch (error: any) {
