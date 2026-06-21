@@ -15,4 +15,6 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
 export const auth = getAuth(app);
+// Disable reCAPTCHA for test phone numbers and testing
+auth.settings.appVerificationDisabledForTesting = true;
 export default app;
