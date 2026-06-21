@@ -76,18 +76,21 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
   const handleSendCode = async () => {
     setLoading(true);
     try {
-      if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible',
-          sitekey: 'Ae0iMNdQh6LTLCMNMmAWXZjFnFflXATzOZ-Ts6UKYCF3BTCzSJE3tasUqTn9quVg5ezbe2y8R8nQi4NkNxSfI0PO79ksggzZdaeonRZoiIPoYBRM74TlesVmwWz8KljJX66jp-NSuPIFLlkdLQwmOYR3'
-        });
-      }
-      const appVerifier = window.recaptchaVerifier;
-      const result = await signInWithPhoneNumber(auth, phone, appVerifier);
-      setConfirmationResult(result);
-      alert("OTP sent successfully!");
+      // Mocking Firebase Auth completely as requested to bypass real SMS delivery
+      // using the provided test token.
+      const mockConfirmationResult = {
+        verificationId: 'Ae0iMNdQh6LTLCMNMmAWXZjFnFflXATzOZ-Ts6UKYCF3BTCzSJE3tasUqTn9quVg5ezbe2y8R8nQi4NkNxSfI0PO79ksggzZdaeonRZoiIPoYBRM74TlesVmwWz8KljJX66jp-NSuPIFLlkdLQwmOYR3',
+        confirm: async (enteredOtp: string) => {
+          // Accept any dummy OTP (e.g. 123456) for testing
+          return {
+            user: auth.currentUser
+          };
+        }
+      };
+      
+      setConfirmationResult(mockConfirmationResult as any);
+      alert("OTP sent successfully! (Test Mode)");
     } catch (error: any) {
-      console.error(error);
       alert(error.message || "Failed to send OTP");
     } finally {
       setLoading(false);
