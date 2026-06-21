@@ -35,6 +35,7 @@ model Lawyer {
   profileCompleted Boolean       @default(false)
   profilePicture   String?
   workExperience   String?
+  rejectedReason   String?
   appointments     Appointment[]
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
