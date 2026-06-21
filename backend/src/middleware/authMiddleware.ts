@@ -62,7 +62,10 @@ export const verifyFirebaseToken = async (req: AuthRequest, res: Response, next:
 // Middleware 2: Ensures the user exists in our Postgres Database (used for other routes)
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
   // First verify the firebase token
-  verifyFirebaseToken(req, res, async () => {
+  verifyFirebaseToken(req, res, async (err?: any) => {
+    if (err) {
+      return next(err);
+    }
     try {
       if (req.firebaseUid) {
         req.user = await prisma.user.findUnique({
@@ -76,6 +79,9 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         }
 
         next();
+      } else {
+        res.status(401);
+        next(new Error('Not authorized, no firebase UID'));
       }
     } catch (error) {
        next(error);
@@ -85,7 +91,10 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
 // Middleware 3: Ensures the user has the 'admin' role
 export const adminProtect = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  protect(req, res, () => {
+  protect(req, res, (err?: any) => {
+    if (err) {
+      return next(err);
+    }
     if (req.user && req.user.role === 'admin') {
       next();
     } else {
