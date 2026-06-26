@@ -17,6 +17,8 @@ export default function ClientDashboard() {
   const [roleLoading, setRoleLoading] = useState(true);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifLoading, setNotifLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
@@ -65,6 +67,30 @@ export default function ClientDashboard() {
 
     verifyClientRole();
   }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (roleLoading || !user) return;
+    const fetchNotifs = async () => {
+      try {
+        const idToken = await user.getIdToken();
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/notifications`,
+          {
+            headers: { Authorization: `Bearer ${idToken}` },
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setNotifications(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard notifications", err);
+      } finally {
+        setNotifLoading(false);
+      }
+    };
+    fetchNotifs();
+  }, [roleLoading, user]);
 
   if (authLoading || roleLoading) {
     return (
@@ -184,29 +210,34 @@ export default function ClientDashboard() {
               <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Notifications</h2>
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2">
                 <div className="flex flex-col">
-                  <NotificationItem 
-                    icon={<FileSignature className="w-5 h-5 text-blue-600" />}
-                    iconBg="bg-blue-50"
-                    title="Document Ready for Signature"
-                    message='"Settlement_Draft_V2.pdf" is ready for your e-signature.'
-                    time="2 hours ago"
-                  />
-                  <hr className="border-gray-50 mx-4" />
-                  <NotificationItem 
-                    icon={<MessageSquare className="w-5 h-5 text-green-600" />}
-                    iconBg="bg-green-50"
-                    title="New Message from Sarah"
-                    message='"I&apos;ve uploaded the evidence photos for tomorrow&apos;s meet."'
-                    time="5 hours ago"
-                  />
-                  <hr className="border-gray-50 mx-4" />
-                  <NotificationItem 
-                    icon={<CalendarCheck className="w-5 h-5 text-orange-600" />}
-                    iconBg="bg-orange-50"
-                    title="Meeting Confirmed"
-                    message="Court hearing scheduled for July 15, 2024."
-                    time="1 day ago"
-                  />
+                  {notifLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="w-5 h-5 border-2 border-gray-200 border-t-[#1B3A6B] rounded-full animate-spin" />
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500">
+                      <p className="text-sm font-semibold">No notifications</p>
+                      <p className="text-xs text-gray-400 mt-1">Everything looks up to date!</p>
+                    </div>
+                  ) : (
+                    notifications.slice(0, 5).map((notif, idx) => {
+                      const { icon, bg } = getDashboardNotificationIcon(notif.type);
+                      return (
+                        <React.Fragment key={notif.id}>
+                          <NotificationItem 
+                            icon={icon}
+                            iconBg={bg}
+                            title={notif.title}
+                            message={notif.message}
+                            time={timeAgoLocal(notif.createdAt)}
+                          />
+                          {idx < notifications.slice(0, 5).length - 1 && (
+                            <hr className="border-gray-50 mx-4" />
+                          )}
+                        </React.Fragment>
+                      );
+                    })
+                  )}
                 </div>
                 <div className="p-4 pt-2 mt-2">
                   <button className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 text-sm font-semibold text-gray-700 rounded-xl transition-colors">
@@ -319,4 +350,34 @@ function NotificationItem({ icon, iconBg, title, message, time }: { icon: React.
       </div>
     </div>
   );
+}
+
+// Helper utilities for dashboard notifications
+function getDashboardNotificationIcon(type: string) {
+  switch (type) {
+    case "booking":
+      return { icon: <CalendarCheck className="w-5 h-5 text-blue-600" />, bg: "bg-blue-50" };
+    case "payment":
+      return { icon: <DollarSign className="w-5 h-5 text-green-600" />, bg: "bg-green-50" };
+    case "warning":
+      return { icon: <Clock className="w-5 h-5 text-orange-600" />, bg: "bg-orange-50" };
+    default:
+      return { icon: <FileSignature className="w-5 h-5 text-indigo-600" />, bg: "bg-indigo-50" };
+  }
+}
+
+function timeAgoLocal(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHr / 24);
+
+  if (diffSec < 60) return "Just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
 }

@@ -8,6 +8,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { Bell, LogOut, Mail } from "lucide-react";
 import DashboardProfileDropdown from "./DashboardProfileDropdown";
+import NotificationBell from "./NotificationBell";
 
 export default function ClientNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -96,10 +97,7 @@ export default function ClientNavbar() {
           </button>
 
           {/* Notification Bell */}
-          <button className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors">
-            <Bell className="w-5 h-5 text-gray-600" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-          </button>
+          <NotificationBell />
 
           {/* Messages Mail */}
           <Link href="/client-dashboard/inbox" className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors">
