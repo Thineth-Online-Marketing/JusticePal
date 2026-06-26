@@ -9,7 +9,7 @@ import {
   Users, Settings, PhoneOff, Shield, Radio, CheckCircle, 
   ChevronRight, Send, Paperclip, Plus, FileText, Download, 
   Sparkles, RefreshCw, X, Loader2, Volume2, ShieldCheck, 
-  FileSignature, ChevronLeft, Calendar, LayoutDashboard, Clock, CircleDot
+  FileSignature, ChevronLeft, Calendar, LayoutDashboard, Clock, CircleDot, Trash2
 } from "lucide-react";
 import ClientNavbar from "../components/ClientNavbar";
 import { useAuth } from "../context/AuthContext";
@@ -62,8 +62,159 @@ function ConsultationContent() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   
   // Document state
-  const [documents, setDocuments] = useState(INITIAL_DOCUMENTS);
-  
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Extract appointment ID from search params
+  const appointmentId = searchParams.get("appointmentId");
+
+  // Format file size helper
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
+  // Fetch case files from backend
+  const fetchCaseFiles = async () => {
+    if (!user) return;
+    setIsLoadingDocs(true);
+    try {
+      const idToken = await user.getIdToken();
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      let url = `${backendUrl}/api/case-files`;
+      if (appointmentId) {
+        url += `?appointmentId=${appointmentId}`;
+      }
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${idToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDocuments(data);
+      } else {
+        console.error("Failed to fetch case files");
+      }
+    } catch (err) {
+      console.error("Error fetching case files:", err);
+    } finally {
+      setIsLoadingDocs(false);
+    }
+  };
+
+  // Run fetch on mount & when user / appointment ID changes
+  useEffect(() => {
+    if (user) {
+      fetchCaseFiles();
+    }
+  }, [user, appointmentId]);
+
+  // Handle case file upload
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Limit file size to 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      showToast("File size exceeds the 10MB limit.", "error");
+      return;
+    }
+
+    setIsUploading(true);
+    showToast(`Uploading ${file.name}...`, "warning");
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64String = (reader.result as string).split(",")[1];
+          const idToken = await user.getIdToken();
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+          const response = await fetch(`${backendUrl}/api/case-files`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`
+            },
+            body: JSON.stringify({
+              name: file.name,
+              fileContent: base64String,
+              fileType: file.type,
+              fileSize: file.size,
+              appointmentId: appointmentId || undefined
+            })
+          });
+
+          if (response.ok) {
+            showToast(`Uploaded file: ${file.name}`, "success");
+            fetchCaseFiles(); // Refresh list
+
+            // Inject notification message in chat
+            const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            setMessages(prev => [...prev, {
+              id: Math.random().toString(36).substr(2, 9),
+              sender: currentRole,
+              text: `📎 Shared a document: ${file.name} (${formatFileSize(file.size)})`,
+              time: timeString
+            }]);
+          } else {
+            const errorData = await response.json();
+            showToast(errorData.message || "Failed to upload file.", "error");
+          }
+        } catch (err) {
+          console.error("Error sending upload request:", err);
+          showToast("Upload failed.", "error");
+        } finally {
+          setIsUploading(false);
+          // Reset file input value
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("FileReader error:", err);
+      showToast("Failed to read file.", "error");
+      setIsUploading(false);
+    }
+  };
+
+  // Handle case file delete
+  const handleDeleteFile = async (fileId: string) => {
+    if (!user) {
+      showToast("You must be logged in to delete files.", "error");
+      return;
+    }
+    if (!confirm("Are you sure you want to delete this case file?")) return;
+    try {
+      const idToken = await user.getIdToken();
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const res = await fetch(`${backendUrl}/api/case-files/${fileId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${idToken}` }
+      });
+      if (res.ok) {
+        showToast("File deleted successfully", "success");
+        fetchCaseFiles(); // Refresh list
+      } else {
+        const errorData = await res.json();
+        showToast(errorData.message || "Failed to delete file", "error");
+      }
+    } catch (err) {
+      console.error("Error deleting file:", err);
+      showToast("Delete failed", "error");
+    }
+  };
+
+  // Trigger file dialog
+  const handleAttachFile = () => {
+    fileInputRef.current?.click();
+  };
+
   // Lawyer notes state
   const [lawyerNotes, setLawyerNotes] = useState(
     "Client Sarah Chen is agreeable to Property Partition of 60/40.\nKey concerns raised:\n1. Timeline of transfer (needs to be within 60 days of court final order).\n2. Taxes applicable on capital gains.\nAction required:\n- Draft amendment to Clause 4.2.\n- Schedule follow-up mediation session for Tuesday."
@@ -130,33 +281,6 @@ function ConsultationContent() {
       }]);
       showToast(`New message from ${receiverRole === "lawyer" ? "Sarah Jenkins (Lawyer)" : "Sarah Chen"}`, "success");
     }, 1500);
-  };
-
-  // Handle mock file attachment
-  const handleAttachFile = () => {
-    const fileNames = ["Tax_Assessment_2025.pdf", "Capital_Gains_Draft.pdf", "Mediation_Agreement_Signed.pdf"];
-    const randomName = fileNames[Math.floor(Math.random() * fileNames.length)];
-    const size = `${(Math.random() * 2 + 1).toFixed(1)} MB`;
-    
-    const newDoc = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: randomName,
-      size,
-      type: "pdf",
-      uploadedBy: currentRole === "lawyer" ? "Lawyer" : "Client"
-    };
-
-    setDocuments(prev => [...prev, newDoc]);
-    showToast(`Uploaded file: ${randomName}`, "success");
-
-    // Also inject notification message in chat
-    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setMessages(prev => [...prev, {
-      id: Math.random().toString(36).substr(2, 9),
-      sender: currentRole,
-      text: `📎 Shared a document: ${randomName} (${size})`,
-      time: timeString
-    }]);
   };
 
   // AI Summary generator trigger
@@ -900,47 +1024,90 @@ function ConsultationContent() {
 
                   {activeTab === "documents" && (
                     <div className="space-y-4 flex-1">
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        onChange={handleFileUpload} 
+                        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" 
+                      />
                       <div className="flex items-center justify-between pb-2 border-b border-gray-100">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Shared Files ({documents.length})</span>
                         <button 
                           onClick={handleAttachFile}
-                          className="flex items-center gap-1 text-[10px] font-extrabold text-[#1B3A6B] bg-blue-50 border border-blue-100 px-2 py-1 rounded-lg hover:bg-blue-100 transition-colors"
+                          disabled={isUploading}
+                          className="flex items-center gap-1 text-[10px] font-extrabold text-[#1B3A6B] bg-blue-50 border border-blue-100 px-2 py-1 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
                         >
                           <Plus className="w-3.5 h-3.5" />
                           Add File
                         </button>
                       </div>
 
+                      {isUploading && (
+                        <div className="bg-blue-50/50 border border-dashed border-blue-200 rounded-2xl p-3.5 flex gap-3 items-center">
+                          <Loader2 className="w-4 h-4 animate-spin text-[#1B3A6B] shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-blue-900 leading-snug">Uploading file...</p>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Documents Card list */}
                       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                        {documents.map((doc) => (
-                          <div 
-                            key={doc.id}
-                            className="bg-[#F9FAFC] border border-gray-200 rounded-2xl p-3.5 flex gap-3 items-start hover:border-blue-200 hover:bg-white transition-all cursor-pointer group"
-                          >
-                            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                              <FileText className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-xs font-bold text-gray-900 leading-snug truncate group-hover:text-blue-900 transition-colors" title={doc.name}>
-                                {doc.name}
-                              </h4>
-                              <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
-                                {doc.size} • Uploaded by {doc.uploadedBy}
-                              </p>
-                            </div>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                showToast(`Downloading ${doc.name}`, "success");
-                              }}
-                              className="text-gray-400 hover:text-blue-600 rounded-lg p-1 hover:bg-gray-100 transition-all shrink-0 mt-0.5"
-                              title="Download document"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
+                        {isLoadingDocs ? (
+                          <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                            <Loader2 className="w-6 h-6 animate-spin text-[#1B3A6B] mb-2" />
+                            <p className="text-xs font-medium">Loading documents...</p>
                           </div>
-                        ))}
+                        ) : documents.length === 0 ? (
+                          <div className="text-center py-8 text-gray-400">
+                            <p className="text-xs font-medium">No documents shared yet.</p>
+                          </div>
+                        ) : (
+                          documents.map((doc) => (
+                            <div 
+                              key={doc.id}
+                              className="bg-[#F9FAFC] border border-gray-200 rounded-2xl p-3.5 flex gap-3 items-start hover:border-blue-200 hover:bg-white transition-all cursor-pointer group"
+                            >
+                              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-xs font-bold text-gray-900 leading-snug truncate group-hover:text-blue-900 transition-colors" title={doc.name}>
+                                  {doc.name}
+                                </h4>
+                                <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                                  {formatFileSize(doc.fileSize)} • Uploaded by {doc.user?.name || doc.uploadedBy}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    showToast(`Opening ${doc.name}`, "success");
+                                    window.open(doc.url, "_blank");
+                                  }}
+                                  className="text-gray-400 hover:text-blue-600 rounded-lg p-1 hover:bg-gray-100 transition-all"
+                                  title="Download document"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                                {user && doc.user && doc.user.firebaseUid === user.uid && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteFile(doc.id);
+                                    }}
+                                    className="text-gray-400 hover:text-red-650 rounded-lg p-1 hover:bg-gray-100 transition-all"
+                                    title="Delete document"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
 
                     </div>
