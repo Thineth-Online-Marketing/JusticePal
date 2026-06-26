@@ -61,4 +61,13 @@
       filter: drop-shadow(0 0 60px rgba(201, 162, 39, 0.8));
     }
   }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
 }
