@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useLanguage } from "../context/LanguageContext";
 import { Bell } from "lucide-react";
+import NotificationBell from "./NotificationBell";
 
 export default function LawyersNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -71,10 +72,7 @@ export default function LawyersNavbar() {
           </button>
 
           {/* Notification Bell */}
-          <button className="relative p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-          </button>
+          <NotificationBell />
 
           {/* Profile Avatar */}
           <button className="relative w-9 h-9 rounded-full overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-[#1B3A6B] focus:ring-offset-2">

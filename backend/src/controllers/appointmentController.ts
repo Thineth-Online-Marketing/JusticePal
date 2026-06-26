@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { createNotification } from './notificationController';
 
 const prisma = new PrismaClient();
 
@@ -36,8 +37,32 @@ export const createAppointment = async (req: Request, res: Response, next: NextF
       }
     });
 
+    // ── Auto-trigger: notify the lawyer about the new booking ──
+    try {
+      const lawyer = await prisma.lawyer.findUnique({
+        where: { id: lawyerId },
+        select: { userId: true },
+      });
+      const client = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+      if (lawyer) {
+        await createNotification({
+          userId: lawyer.userId,
+          title: 'New Consultation Request',
+          message: `${client?.name || 'A client'} has booked a consultation for ${new Date(scheduledAt).toLocaleDateString()}.`,
+          type: 'booking',
+        });
+      }
+    } catch (notifErr) {
+      console.error('Failed to create booking notification:', notifErr);
+      // Don't fail the appointment creation if notification fails
+    }
+
     res.status(201).json(appointment);
   } catch (error) {
     next(error);
   }
 };
+

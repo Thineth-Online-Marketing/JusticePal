@@ -8,15 +8,17 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(uuid())
-  firebaseUid   String        @unique
-  email         String        @unique
+  id            String         @id @default(uuid())
+  firebaseUid   String         @unique
+  email         String         @unique
   name          String
-  role          String        @default("user")
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  role          String         @default("user")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   appointments  Appointment[]
   lawyerProfile Lawyer?
+  caseFiles     CaseFile[]
+  notifications Notification[]
 }
 
 model Lawyer {
@@ -41,15 +43,60 @@ model Lawyer {
 }
 
 model Appointment {
-  id              String   @id @default(uuid())
+  id              String     @id @default(uuid())
   userId          String
   lawyerId        String
   scheduledAt     DateTime
-  status          String   @default("pending")
+  status          String     @default("pending")
   caseDescription String
   meetingLink     String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  lawyer          Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  lawyer          Lawyer     @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseFiles       CaseFile[]
+  payments        Payment[]
+}
+
+// ─── Case File / Document Storage ───────────────────────────────
+model CaseFile {
+  id            String      @id @default(uuid())
+  name          String                              // original filename
+  url           String                              // storage URL (S3 / Firebase Storage)
+  fileType      String?                             // mime type, e.g. "application/pdf"
+  fileSize      Int?                                // size in bytes
+  uploadedBy    String      @default("client")      // "client" | "lawyer"
+  userId        String                              // who uploaded it
+  appointmentId String?                             // optional link to a specific appointment
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+}
+
+// ─── Payment / Transaction ──────────────────────────────────────
+model Payment {
+  id               String      @id @default(uuid())
+  appointmentId    String
+  amount           Float                             // amount in LKR
+  currency         String      @default("LKR")
+  status           String      @default("pending")   // "pending" | "succeeded" | "failed" | "refunded"
+  stripeSessionId  String?     @unique               // Stripe checkout session ID
+  stripePaymentId  String?                            // Stripe payment intent ID
+  paidAt           DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  appointment      Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+}
+
+// ─── Notification ───────────────────────────────────────────────
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")               // "info" | "success" | "warning" | "payment" | "booking"
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
