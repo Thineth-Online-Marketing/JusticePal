@@ -10,6 +10,8 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@pinecone-database/pinecone": "^8.0.0",
     "@prisma/client": "^6.19.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
