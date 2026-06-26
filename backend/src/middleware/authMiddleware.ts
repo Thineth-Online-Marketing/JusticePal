@@ -43,6 +43,7 @@ export const verifyFirebaseToken = async (req: AuthRequest, res: Response, next:
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
+
       const decodedToken = await admin.auth().verifyIdToken(token);
       
       req.firebaseUid = decodedToken.uid;
