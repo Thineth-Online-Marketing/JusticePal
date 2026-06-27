@@ -4,17 +4,16 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Search, X, Sparkles, MapPin, Star, ChevronDown,
   SlidersHorizontal, CheckCircle2, ArrowUpDown, Shield,
   Filter
 } from "lucide-react";
-import Footer from "../components/Footer";
-import ClientNavbar from "../components/ClientNavbar";
-import { useAuth } from "../context/AuthContext";
-import { useUI } from "../context/UIContext";
-import LawyerCardSkeleton from "../components/LawyerCardSkeleton";
+import Footer from "../../components/Footer";
+import { useAuth } from "../../context/AuthContext";
+import { useUI } from "../../context/UIContext";
+import LawyerCardSkeleton from "../../components/LawyerCardSkeleton";
 
 const translations = {
   en: {
@@ -673,10 +672,8 @@ export default function FindLawyerPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8fafc] font-sans">
-      <ClientNavbar />
-
-      <main className="flex-1 max-w-[1100px] w-full mx-auto px-3 sm:px-6 pt-28 pb-16">
+    <div className="h-full flex flex-col font-sans">
+      <main className="flex-1 max-w-[1100px] w-full mx-auto px-3 sm:px-6 pt-10 pb-16">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#111827] tracking-tight">{tx.title}</h1>
           <p className="text-gray-500 mt-2 text-base">{tx.subtitle}</p>

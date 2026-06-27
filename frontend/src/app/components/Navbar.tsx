@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { User, ChevronDown, LayoutDashboard, Calendar, FileText, Power } from "lucide-react";
+import JusticePalLogo from "./JusticePalLogo";
 
 const t = {
   en: { home: "Home", lawyers: "Our Lawyers", about: "About Us", login: "Log In", signup: "Get Started", logout: "Sign Out", dashboard: "Go to Dashboard", profile: "My Profile", appointments: "Active Appointments", docs: "Case Documents" },
@@ -49,26 +50,9 @@ export default function Navbar() {
         {/* Logo and Brand */}
         <Link
           href="/"
-          className="flex items-center gap-3 text-blue-900 hover:text-blue-700 transition-colors duration-200"
+          className="hover:opacity-90 transition-opacity duration-200"
         >
-          <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-sm flex items-center justify-center bg-blue-50/50">
-            <Image
-              src="https://res.cloudinary.com/dluwvqdaz/image/upload/v1775969976/Navy_Blue_JusticePal_Logo_with_Dove_Fusion_new_uhyjl0.png"
-              alt="JusticePal Logo"
-              fill
-              className="object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            <svg className="w-6 h-6 absolute -z-10 text-blue-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="font-extrabold text-xl tracking-tight text-[#1B3A6B]">JusticePal</span>
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#3b6fd4] uppercase">Sri Lanka</span>
-          </div>
+          <JusticePalLogo />
         </Link>
 
         {/* Desktop Nav Links */}
