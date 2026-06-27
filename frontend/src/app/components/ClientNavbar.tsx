@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import { Bell, LogOut, Mail } from "lucide-react";
 import DashboardProfileDropdown from "./DashboardProfileDropdown";
 import NotificationBell from "./NotificationBell";
+import JusticePalLogo from "./JusticePalLogo";
 
 export default function ClientNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -33,55 +34,40 @@ export default function ClientNavbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all duration-300">
-      <div className="max-w-[1400px] mx-auto px-6 h-[72px] flex items-center justify-between">
+    <nav className="w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all duration-300 flex-shrink-0 h-20">
+      <div className="max-w-[1400px] w-full mx-auto px-4 md:px-8 h-full flex items-center justify-between">
         
-        {/* Logo and Brand */}
-        <Link href="/" className="flex items-center gap-3 text-blue-900 hover:text-blue-700 transition-colors duration-200">
-          <div className="relative w-10 h-10 rounded-full overflow-hidden shadow-sm flex items-center justify-center bg-[#1B3A6B]">
-            <Image
-              src="https://res.cloudinary.com/dluwvqdaz/image/upload/v1775969976/Navy_Blue_JusticePal_Logo_with_Dove_Fusion_new_uhyjl0.png"
-              alt="JusticePal Logo"
-              fill
-              className="object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            <svg className="w-6 h-6 absolute -z-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="font-extrabold text-xl tracking-tight text-[#1B3A6B]">JusticePal</span>
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#3b6fd4] uppercase">Sri Lanka</span>
-          </div>
-        </Link>
+        {/* Left Side: Logo and Brand */}
+        <div className="w-1/3 flex items-center h-full shrink-0">
+          <Link href="/" className="hover:opacity-90 transition-opacity duration-200 shrink-0 flex items-center">
+            <JusticePalLogo />
+          </Link>
+        </div>
 
-        {/* Desktop Nav Links */}
-        <div className="hidden md:flex items-center gap-8">
-          <Link href="/client-dashboard" className={`relative inline-flex justify-center min-w-[90px] text-sm transition-colors duration-200 whitespace-nowrap ${pathname === '/client-dashboard' ? 'text-[#1B3A6B] font-bold after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
+        {/* Center: Desktop Nav Links */}
+        <div className="hidden md:flex w-1/3 justify-center items-center h-full gap-8">
+          <Link href="/client-dashboard" className={`relative inline-flex justify-center text-sm font-semibold transition-colors duration-200 whitespace-nowrap ${pathname === '/client-dashboard' ? 'text-[#1B3A6B] after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'text-gray-500 hover:text-[#1B3A6B]'}`}>
             {tx.dashboard}
           </Link>
-          <Link href="/find-lawyer" className={`relative inline-flex justify-center min-w-[90px] text-sm transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/find-lawyer') ? 'text-[#1B3A6B] font-bold after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
+          <Link href="/find-lawyer" className={`relative inline-flex justify-center text-sm font-semibold transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/find-lawyer') ? 'text-[#1B3A6B] after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'text-gray-500 hover:text-[#1B3A6B]'}`}>
             {tx.findLawyer}
           </Link>
-          <Link href="/chat-ai" className={`relative inline-flex justify-center min-w-[70px] text-sm transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/chat-ai') ? 'text-[#1B3A6B] font-bold after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
+          <Link href="/chat-ai" className={`relative inline-flex justify-center text-sm font-semibold transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/chat-ai') ? 'text-[#1B3A6B] after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'text-gray-500 hover:text-[#1B3A6B]'}`}>
             {tx.chatAi}
           </Link>
-          <Link href="/guide" className={`relative inline-flex justify-center min-w-[90px] text-sm transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/guide') ? 'text-[#1B3A6B] font-bold after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'font-medium text-gray-500 hover:text-[#1B3A6B]'}`}>
+          <Link href="/guide" className={`relative inline-flex justify-center text-sm font-semibold transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/guide') ? 'text-[#1B3A6B] after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'text-gray-500 hover:text-[#1B3A6B]'}`}>
             {tx.userGuide}
           </Link>
         </div>
 
-        {/* Right Side Items */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* Right Side: Actions */}
+        <div className="hidden md:flex w-1/3 items-center justify-end gap-4 h-full">
           
           {/* Language Toggle */}
           <button
             onClick={toggle}
             aria-label="Toggle language"
-            className="flex items-center justify-center gap-1.5 px-4 h-[38px] rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-200"
+            className="flex items-center justify-center gap-1.5 px-4 h-[38px] rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-200 shrink-0"
           >
             <svg className="w-4 h-4 text-[#1B3A6B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 8l6 6" />
@@ -100,8 +86,15 @@ export default function ClientNavbar() {
           <NotificationBell />
 
           {/* Messages Mail */}
-          <Link href="/client-dashboard/inbox" className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors">
-            <Mail className="w-5 h-5 text-gray-600" />
+          <Link 
+            href="/client-dashboard/inbox" 
+            className={`relative flex items-center justify-center w-10 h-10 shrink-0 rounded-xl transition-colors border ${
+              pathname.startsWith('/client-dashboard/inbox') 
+                ? 'bg-blue-50 border-blue-200' 
+                : 'bg-gray-50 hover:bg-gray-100 border-gray-100'
+            }`}
+          >
+            <Mail className={`w-5 h-5 ${pathname.startsWith('/client-dashboard/inbox') ? 'text-blue-600' : 'text-gray-600'}`} />
             <span className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full border-2 border-white"></span>
           </Link>
 

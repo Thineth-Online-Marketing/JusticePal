@@ -104,10 +104,8 @@ export default function ClientDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans">
-      <ClientNavbar />
-      
-      <main className="flex-1 max-w-[1400px] w-full mx-auto px-6 py-8 mt-[72px]">
+    <>
+      <main className="max-w-[1400px] w-full mx-auto px-4 md:px-8 py-8">
         {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-[#1B3A6B] tracking-tight">Client Dashboard</h1>
@@ -267,7 +265,7 @@ export default function ClientDashboard() {
       </main>
 
       <Footer />
-    </div>
+    </>
   );
 }
 

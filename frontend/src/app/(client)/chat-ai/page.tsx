@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
-import ClientNavbar from "../components/ClientNavbar";
+import { useAuth } from "../../context/AuthContext";
 import {
   Send,
   Bot,
@@ -189,10 +188,9 @@ export default function ChatAIPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
-      <ClientNavbar />
+    <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
 
-      <main className="pt-[72px] max-w-6xl mx-auto px-4 sm:px-6 pb-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-8">
         {/* Header */}
         <div className="pt-8 pb-6">
           <div className="flex items-center gap-3 mb-2">
@@ -232,7 +230,7 @@ export default function ChatAIPage() {
           </button>
         </div>
 
-        {/* ──── CHAT TAB ──── */}
+        {/* ΓöÇΓöÇΓöÇΓöÇ CHAT TAB ΓöÇΓöÇΓöÇΓöÇ */}
         {activeTab === "chat" && (
           <div className="flex flex-col bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden" style={{ height: "calc(100vh - 280px)" }}>
             {/* Chat Messages */}
@@ -299,7 +297,7 @@ export default function ChatAIPage() {
                                 <BookOpen className="w-3.5 h-3.5 text-[#1B3A6B] mt-0.5 shrink-0" />
                                 <div className="min-w-0">
                                   <p className="text-xs font-semibold text-gray-700 truncate">{src.title}</p>
-                                  <p className="text-[10px] text-gray-400">{src.source} • {src.category}</p>
+                                  <p className="text-[10px] text-gray-400">{src.source} ΓÇó {src.category}</p>
                                 </div>
                                 <span className="text-[10px] font-medium text-gray-400 shrink-0">{src.relevance}%</span>
                               </div>
@@ -372,7 +370,7 @@ export default function ChatAIPage() {
           </div>
         )}
 
-        {/* ──── LAWYER MATCHING TAB ──── */}
+        {/* ΓöÇΓöÇΓöÇΓöÇ LAWYER MATCHING TAB ΓöÇΓöÇΓöÇΓöÇ */}
         {activeTab === "match" && (
           <div className="space-y-6">
             {/* Search Card */}
@@ -446,7 +444,7 @@ export default function ChatAIPage() {
                               <h4 className="text-base font-bold text-[#112549] truncate">{lawyer.name}</h4>
                               {lawyer.isVerified && (
                                 <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                                  ✓ Verified
+                                  Γ£ô Verified
                                 </span>
                               )}
                             </div>

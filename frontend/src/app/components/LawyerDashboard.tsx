@@ -132,7 +132,7 @@ export default function LawyerDashboard() {
     <>
       <main className="flex-1 overflow-y-auto p-8 relative h-full">
         {/* Action Task Cards Container */}
-        <div className="max-w-6xl mx-auto space-y-4 mb-8">
+        <div className="w-full space-y-4 mb-8">
           
           {showBioTask && (
             <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
@@ -201,7 +201,7 @@ export default function LawyerDashboard() {
 
         </div>
 
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="w-full space-y-6">
           
           {/* Top Stat Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

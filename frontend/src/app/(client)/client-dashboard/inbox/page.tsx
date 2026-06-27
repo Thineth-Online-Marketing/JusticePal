@@ -4,9 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import ClientNavbar from "../../components/ClientNavbar";
-import { useAuth } from "../../context/AuthContext";
-import { useLanguage } from "../../context/LanguageContext";
+import ClientNavbar from "../../../components/ClientNavbar";
+import { useAuth } from "../../../context/AuthContext";
+import { useLanguage } from "../../../context/LanguageContext";
 import {
   Video, Phone, MoreVertical, Send, Paperclip, Smile,
   FileText, Download, User, Scale, Calendar, Briefcase, Shield, ArrowLeft
@@ -275,11 +275,7 @@ export default function ClientInboxPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans overflow-hidden h-screen">
-      <ClientNavbar />
-
-      {/* Main Container */}
-      <div className="flex-1 flex overflow-hidden mt-[72px] bg-white">
+      <div className="flex-1 flex overflow-hidden bg-white h-[calc(100vh-80px)] w-full">
         
         {/* LEFT COLUMN: Chat List */}
         <div className="w-[340px] flex-shrink-0 border-r border-gray-200 flex flex-col h-full bg-white">
@@ -513,6 +509,5 @@ export default function ClientInboxPage() {
         </div>
 
       </div>
-    </div>
   );
 }
