@@ -184,3 +184,31 @@ export async function queryLawyers(
     metadata: (match.metadata || {}) as Record<string, any>,
   }));
 }
+
+// --- List All Legal Knowledge (for Admin) ---
+export async function listAllKnowledge(): Promise<PineconeResult[]> {
+  const index = getIndex();
+
+  // Use a zero-vector query with high topK to retrieve all legal knowledge entries.
+  // This works well for knowledge bases under ~1000 entries.
+  const zeroVector = new Array(1024).fill(0);
+
+  const result = await index.query({
+    vector: zeroVector,
+    topK: 10000,
+    filter: { type: { $ne: 'lawyer' } },
+    includeMetadata: true,
+  });
+
+  return (result.matches || []).map((match) => ({
+    id: match.id,
+    score: match.score || 0,
+    metadata: (match.metadata || {}) as Record<string, any>,
+  }));
+}
+
+// --- Delete a Knowledge Entry (for Admin) ---
+export async function deleteKnowledge(id: string): Promise<void> {
+  const index = getIndex();
+  await index.deleteOne({ id });
+}

@@ -16,10 +16,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading) {
-      // Allow if it's a public route, OR if the user is authenticated.
-      // Wait, is it exact match for pathname? Yes, and maybe some dynamic public routes?
-      // For now, exact matching on publicRoutes works.
-      const isPublic = publicRoutes.includes(pathname);
+      // Allow if it's an exact public route or starts with /admin (admin handles its own auth)
+      const isPublic = publicRoutes.includes(pathname) || pathname.startsWith("/admin");
       
       if (!user && !isPublic) {
         // Use router.replace to avoid building up a huge back stack of redirects
@@ -30,7 +28,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, pathname, router]);
 
-  const isPublic = publicRoutes.includes(pathname);
+  const isPublic = publicRoutes.includes(pathname) || pathname.startsWith("/admin");
 
   if (loading || (!isReady && !isPublic)) {
     return (
