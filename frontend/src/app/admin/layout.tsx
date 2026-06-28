@@ -21,6 +21,7 @@ import {
   User as UserIcon,
   ChevronDown,
   Lock,
+  Brain,
 } from "lucide-react";
 
 const navItems = [
@@ -30,6 +31,7 @@ const navItems = [
   { label: "Appointments", icon: CalendarCheck, href: "/admin/appointments" },
   { label: "Payments", icon: CreditCard, href: "/admin/payments" },
   { label: "System Logs", icon: FileText, href: "/admin/system-logs" },
+  { label: "Knowledge Base", icon: Brain, href: "/admin/knowledge-base" },
   { label: "Reports", icon: BarChart3, href: "/admin/reports" },
   { label: "Settings", icon: Settings, href: "/admin/settings" },
 ];

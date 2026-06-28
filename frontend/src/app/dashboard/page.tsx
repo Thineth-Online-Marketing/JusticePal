@@ -33,7 +33,9 @@ export default function DashboardPage() {
           } else if (data.role === "client") {
             router.replace("/client-dashboard");
           } else if (data.role === "admin") {
-            router.replace("/admin");
+            // Admins are not auto-redirected to /admin — they access it manually.
+            // Send them back to the landing page.
+            router.replace("/");
           } else {
             router.replace("/login");
           }
