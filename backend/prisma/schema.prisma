@@ -8,17 +8,18 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  firebaseUid   String         @unique
-  email         String         @unique
-  name          String
-  role          String         @default("user")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  appointments  Appointment[]
-  lawyerProfile Lawyer?
-  caseFiles     CaseFile[]
-  notifications Notification[]
+  id                   String                @id @default(uuid())
+  firebaseUid          String                @unique
+  email                String                @unique
+  name                 String
+  role                 String                @default("user")
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  appointments         Appointment[]
+  lawyerProfile        Lawyer?
+  caseFiles            CaseFile[]
+  notifications        Notification[]
+  googleCalendarToken  GoogleCalendarToken?
 }
 
 model Lawyer {
@@ -99,4 +100,17 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Google Calendar OAuth Tokens ───────────────────────────────
+model GoogleCalendarToken {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  calendarId   String   @default("primary")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

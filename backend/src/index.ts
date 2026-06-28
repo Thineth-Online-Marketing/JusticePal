@@ -9,6 +9,7 @@ import adminRoutes from './routes/adminRoutes';
 import aiRoutes from './routes/aiRoutes';
 import caseFileRoutes from './routes/caseFileRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import googleCalendarRoutes from './routes/googleCalendarRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 
 dotenv.config();
@@ -51,6 +52,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/case-files', caseFileRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/google-calendar', googleCalendarRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);

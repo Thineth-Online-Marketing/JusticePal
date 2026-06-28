@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 // Define routes that can be accessed without logging in
-const publicRoutes = ["/", "/login", "/register", "/about"];
+const publicRoutes = ["/", "/login", "/register", "/about", "/privacy"];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
