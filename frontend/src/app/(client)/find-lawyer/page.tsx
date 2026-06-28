@@ -4,17 +4,16 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Search, X, Sparkles, MapPin, Star, ChevronDown,
   SlidersHorizontal, CheckCircle2, ArrowUpDown, Shield,
   Filter
 } from "lucide-react";
-import Footer from "../components/Footer";
-import ClientNavbar from "../components/ClientNavbar";
-import { useAuth } from "../context/AuthContext";
-import { useUI } from "../context/UIContext";
-import LawyerCardSkeleton from "../components/LawyerCardSkeleton";
+import Footer from "../../components/Footer";
+import { useAuth } from "../../context/AuthContext";
+import { useUI } from "../../context/UIContext";
+import LawyerCardSkeleton from "../../components/LawyerCardSkeleton";
 
 const translations = {
   en: {
@@ -340,6 +339,7 @@ export default function FindLawyerPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
   const [showSidebar, setShowSidebar] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [dbLawyers, setDbLawyers] = useState<any[]>([]);
@@ -672,10 +672,8 @@ export default function FindLawyerPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8fafc] font-sans">
-      <ClientNavbar />
-
-      <main className="flex-1 max-w-[1100px] w-full mx-auto px-6 pt-28 pb-16">
+    <div className="h-full flex flex-col font-sans">
+      <main className="flex-1 max-w-[1100px] w-full mx-auto px-3 sm:px-6 pt-10 pb-16">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#111827] tracking-tight">{tx.title}</h1>
           <p className="text-gray-500 mt-2 text-base">{tx.subtitle}</p>
@@ -801,10 +799,11 @@ export default function FindLawyerPage() {
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 w-full lg:w-auto">
+                {/* Desktop filter toggle */}
                 <button
                   onClick={() => setShowSidebar(!showSidebar)}
-                  className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
+                  className={`hidden lg:inline-flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
                     showSidebar
                       ? "bg-[#1B3A6B] text-white border-[#1B3A6B]"
                       : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
@@ -820,8 +819,27 @@ export default function FindLawyerPage() {
                     </span>
                   )}
                 </button>
-                <div className="relative group">
-                  <button className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                {/* Mobile filter toggle */}
+                <button
+                  onClick={() => setMobileFiltersOpen(true)}
+                  className={`lg:hidden inline-flex items-center justify-center gap-2 flex-1 min-h-[44px] px-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
+                    mobileFiltersOpen
+                      ? "bg-[#1B3A6B] text-white border-[#1B3A6B]"
+                      : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <Filter className="w-4 h-4" />
+                  {tx.filterTitle}
+                  {activeFilterChips.length > 0 && (
+                    <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${
+                      mobileFiltersOpen ? "bg-white text-[#1B3A6B]" : "bg-[#1B3A6B] text-white"
+                    }`}>
+                      {activeFilterChips.length}
+                    </span>
+                  )}
+                </button>
+                <div className="relative group flex-1 lg:flex-none">
+                  <button className="inline-flex items-center justify-center gap-1.5 w-full lg:w-auto min-h-[44px] px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
                     <ArrowUpDown className="w-3.5 h-3.5" />
                     {sortBy === "match" && tx.sortBestMatch}
                     {sortBy === "rating" && "Sort: Rating"}
@@ -838,7 +856,7 @@ export default function FindLawyerPage() {
                       <button
                         key={opt.key}
                         onClick={() => setSortBy(opt.key)}
-                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl ${
+                        className={`w-full text-left px-4 py-2.5 text-sm min-h-[44px] transition-colors first:rounded-t-xl last:rounded-b-xl ${
                           sortBy === opt.key
                             ? "bg-blue-50 text-blue-700 font-semibold"
                             : "text-gray-600 hover:bg-gray-50"
@@ -878,9 +896,121 @@ export default function FindLawyerPage() {
               </div>
             )}
 
-            <div className="flex gap-6">
+            {/* Mobile filters bottom sheet */}
+            {mobileFiltersOpen && (
+              <div className="fixed inset-0 z-50 lg:hidden">
+                <div
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                  onClick={() => setMobileFiltersOpen(false)}
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl max-h-[80vh] flex flex-col animate-[slideUp_0.3s_ease-out]">
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                    <h3 className="text-base font-bold text-gray-900">{tx.filterTitle}</h3>
+                    <button
+                      onClick={() => setMobileFiltersOpen(false)}
+                      className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                      <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+                    <div>
+                      <h4 className="text-xs font-bold tracking-wider text-gray-400 uppercase mb-3">{tx.specialtyFilter}</h4>
+                      <div className="space-y-1">
+                        {SPECIALTY_OPTIONS.map(spec => (
+                          <label key={spec} className="flex items-center gap-3 cursor-pointer group min-h-[44px]">
+                            <input
+                              type="checkbox"
+                              checked={filters.specialties.includes(spec)}
+                              onChange={() => toggleSpecialty(spec)}
+                              className="w-5 h-5 rounded border-gray-300 text-[#1B3A6B] focus:ring-[#1B3A6B] transition-colors"
+                            />
+                            <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">{spec}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <hr className="border-gray-100" />
+                    <div>
+                      <h4 className="text-xs font-bold tracking-wider text-gray-400 uppercase mb-3">{tx.locationFilter}</h4>
+                      <div className="space-y-1">
+                        {LOCATION_OPTIONS.map(loc => (
+                          <label key={loc} className="flex items-center gap-3 cursor-pointer group min-h-[44px]">
+                            <input
+                              type="checkbox"
+                              checked={filters.locations.includes(loc)}
+                              onChange={() => toggleLocation(loc)}
+                              className="w-5 h-5 rounded border-gray-300 text-[#1B3A6B] focus:ring-[#1B3A6B] transition-colors"
+                            />
+                            <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">{loc}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <hr className="border-gray-100" />
+                    <div>
+                      <h4 className="text-xs font-bold tracking-wider text-gray-400 uppercase mb-3">{tx.budgetFilter}</h4>
+                      <div className="space-y-1">
+                        {BUDGET_OPTIONS.map(opt => (
+                          <label key={opt.label} className="flex items-center gap-3 cursor-pointer group min-h-[44px]">
+                            <input
+                              type="radio"
+                              name="budget-mobile"
+                              checked={filters.budgetMin === opt.min && filters.budgetMax === opt.max}
+                              onChange={() => setBudgetRange(opt.min, opt.max)}
+                              className="w-5 h-5 border-gray-300 text-[#1B3A6B] focus:ring-[#1B3A6B] transition-colors"
+                            />
+                            <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">{opt.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <hr className="border-gray-100" />
+                    <div>
+                      <h4 className="text-xs font-bold tracking-wider text-gray-400 uppercase mb-3">{tx.ratingFilter}</h4>
+                      <div className="space-y-1">
+                        {RATING_OPTIONS.map(r => (
+                          <label key={r} className="flex items-center gap-3 cursor-pointer group min-h-[44px]">
+                            <input
+                              type="radio"
+                              name="rating-mobile"
+                              checked={filters.ratingMin === r}
+                              onChange={() => setRatingMin(r)}
+                              className="w-5 h-5 border-gray-300 text-[#1B3A6B] focus:ring-[#1B3A6B] transition-colors"
+                            />
+                            <span className="flex items-center gap-1 text-sm text-gray-600 group-hover:text-gray-900 transition-colors">
+                              {r}+
+                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
+                    {activeFilterChips.length > 0 && (
+                      <button
+                        onClick={clearAllFilters}
+                        className="flex-1 min-h-[44px] py-3 bg-gray-50 hover:bg-gray-100 text-sm font-semibold text-gray-600 rounded-xl transition-colors"
+                      >
+                        {tx.clearAllFilters}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setMobileFiltersOpen(false)}
+                      className={`${activeFilterChips.length > 0 ? 'flex-1' : 'w-full'} min-h-[44px] py-3 bg-[#1B3A6B] hover:bg-[#112549] text-white text-sm font-semibold rounded-xl transition-colors shadow-lg`}
+                    >
+                      Apply Filters
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Desktop sidebar - hidden on mobile */}
               {showSidebar && (
-                <aside className="w-64 shrink-0 space-y-6">
+                <aside className="hidden lg:block w-80 shrink-0 space-y-6">
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-6">
                     <div>
                       <h4 className="text-xs font-bold tracking-wider text-gray-400 uppercase mb-3">{tx.specialtyFilter}</h4>
@@ -986,7 +1116,7 @@ export default function FindLawyerPage() {
                 </div>
 
                 {isLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                     {[1, 2, 3, 4].map(idx => (
                       <LawyerCardSkeleton key={idx} />
                     ))}
@@ -1007,11 +1137,11 @@ export default function FindLawyerPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                     {filteredLawyers.map((lawyer, idx) => (
                       <div
                         key={`${lawyer.name}-${idx}`}
-                        className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all p-6 flex flex-col relative group"
+                        className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all p-4 sm:p-6 flex flex-col relative group overflow-hidden w-full"
                       >
                         {lawyer.badge && (
                           <span className="absolute top-5 right-5 bg-green-100 text-green-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-green-200">
@@ -1019,18 +1149,18 @@ export default function FindLawyerPage() {
                           </span>
                         )}
 
-                        <div className="flex items-start gap-4 mb-4">
-                          <div className={`w-12 h-12 rounded-full ${lawyer.initialsColor} text-white flex items-center justify-center font-bold text-sm shrink-0`}>
+                        <div className="flex items-start gap-3 sm:gap-4 mb-4">
+                          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${lawyer.initialsColor} text-white flex items-center justify-center font-bold text-xs sm:text-sm shrink-0`}>
                             {lawyer.initials}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{lawyer.name}</h3>
-                            <p className="text-sm font-semibold text-blue-700">{tx.specialties[lawyer.specialty] || lawyer.specialty}</p>
+                            <h3 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-blue-700 transition-colors truncate">{lawyer.name}</h3>
+                            <p className="text-xs sm:text-sm font-semibold text-blue-700 truncate">{tx.specialties[lawyer.specialty] || lawyer.specialty}</p>
                             <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-                              <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                              {lawyer.location}
+                              <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                              <span className="truncate">{lawyer.location}</span>
                             </div>
-                            <div className="flex flex-wrap gap-2 mt-1.5">
+                            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1.5">
                               {lawyer.languages.map((l: string) => (
                                 <span key={l} className="text-[10px] font-semibold text-gray-500 bg-gray-50 px-2 py-0.5 rounded">{l}</span>
                               ))}
@@ -1051,17 +1181,17 @@ export default function FindLawyerPage() {
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 mb-5">
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-5">
                           {lawyer.tags.map((tag: string) => (
-                            <span key={tag} className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${tagColor(tag)}`}>
+                            <span key={tag} className={`text-[10px] font-semibold px-2 sm:px-2.5 py-1 rounded-full border whitespace-nowrap ${tagColor(tag)}`}>
                               {tx.tags[tag] || tag}
                             </span>
                           ))}
                         </div>
 
-                        <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-auto pt-3 border-t border-gray-50 gap-3 sm:gap-0">
                           <div>
-                            <span className="text-base font-bold text-gray-900">{lawyer.rate}</span>
+                            <span className="text-sm sm:text-base font-bold text-gray-900">{lawyer.rate}</span>
                             <span className="text-xs text-gray-400 ml-1">{tx.perHour}</span>
                             {lawyer.verified && (
                               <div className="flex items-center gap-1 text-[10px] text-green-600 font-semibold mt-0.5">
@@ -1070,7 +1200,7 @@ export default function FindLawyerPage() {
                               </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                             <div className="flex items-center gap-1 text-sm">
                               <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                               <span className="font-bold text-gray-800">{lawyer.rating}</span>
@@ -1088,7 +1218,7 @@ export default function FindLawyerPage() {
                                   router.push("/login");
                                 }
                               }}
-                              className="bg-[#1B3A6B] hover:bg-[#112549] text-white px-4 py-2 rounded-lg text-xs font-semibold transition-colors shadow-sm"
+                              className="bg-[#1B3A6B] hover:bg-[#112549] text-white px-4 py-2.5 sm:py-2 rounded-lg text-xs font-semibold transition-colors shadow-sm min-h-[44px] sm:min-h-0 flex-1 sm:flex-none"
                             >
                               {tx.bookBtn}
                             </button>

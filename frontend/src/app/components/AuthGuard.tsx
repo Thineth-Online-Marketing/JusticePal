@@ -8,10 +8,6 @@ import { Loader2 } from "lucide-react";
 // Define routes that can be accessed without logging in
 const publicRoutes = ["/", "/login", "/register", "/about"];
 
-// Routes that logged-in users should be redirected away from (to their dashboard)
-// Note: "/" is NOT here — the landing page handles its own role-based redirect
-const guestOnlyRoutes = ["/login", "/register"];
-
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -20,15 +16,13 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading) {
+      // Allow if it's a public route, OR if the user is authenticated.
+      // Wait, is it exact match for pathname? Yes, and maybe some dynamic public routes?
+      // For now, exact matching on publicRoutes works.
       const isPublic = publicRoutes.includes(pathname);
-      const isGuestOnly = guestOnlyRoutes.includes(pathname);
-
-      if (user && isGuestOnly) {
-        // Logged-in user on a guest-only page → redirect to /dashboard
-        // The /dashboard page handles role-based routing (client/lawyer/admin)
-        router.replace("/dashboard");
-      } else if (!user && !isPublic) {
-        // Not logged in and trying to access a protected route
+      
+      if (!user && !isPublic) {
+        // Use router.replace to avoid building up a huge back stack of redirects
         router.replace("/login");
       } else {
         setIsReady(true);
@@ -51,4 +45,3 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-

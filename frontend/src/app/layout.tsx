@@ -29,6 +29,8 @@ export const metadata: Metadata = {
   },
 };
 
+import AuthGuard from "./components/AuthGuard";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,7 +41,9 @@ export default function RootLayout({
       <body className={`${inter.variable} antialiased`}>
         <UIProvider>
           <AuthProvider>
-            <LanguageProvider>{children}</LanguageProvider>
+            <LanguageProvider>
+              <AuthGuard>{children}</AuthGuard>
+            </LanguageProvider>
           </AuthProvider>
         </UIProvider>
       </body>

@@ -44,7 +44,6 @@ export const verifyFirebaseToken = async (req: AuthRequest, res: Response, next:
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      
       // Developer test rig override to bypass Firebase API clock-drift in VM environments
       if (token === 'api-test-token') {
         req.firebaseUid = 'test-uid-casefiles-2026';

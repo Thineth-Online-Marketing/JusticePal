@@ -65,16 +65,16 @@ export const updateLawyerProfile = async (req: AuthRequest, res: Response, next:
     const lawyer = await prisma.lawyer.upsert({
       where: { userId: req.user.id },
       update: {
-        specialization: specialization || [],
-        location: location || null,
-        bio: bio || null,
-        workExperience: workExperience || null,
-        profilePicture: profilePicture || null,
-        phone: phone || null,
+        specialization: specialization !== undefined ? specialization : undefined,
+        location: location !== undefined ? location : undefined,
+        bio: bio !== undefined ? bio : undefined,
+        workExperience: workExperience !== undefined ? workExperience : undefined,
+        profilePicture: profilePicture !== undefined ? profilePicture : undefined,
+        phone: phone !== undefined ? phone : undefined,
         phoneVerified: phoneVerified !== undefined ? phoneVerified : undefined,
-        idPhotos: idPhotos || undefined,
+        idPhotos: idPhotos !== undefined ? idPhotos : undefined,
         profileCompleted: profileCompleted !== undefined ? profileCompleted : undefined,
-        hourlyRate: hourlyRate ? parseFloat(hourlyRate) : undefined
+        hourlyRate: hourlyRate !== undefined ? parseFloat(hourlyRate) : undefined
       },
       create: {
         userId: req.user.id,
@@ -84,9 +84,9 @@ export const updateLawyerProfile = async (req: AuthRequest, res: Response, next:
         workExperience: workExperience || null,
         profilePicture: profilePicture || null,
         phone: phone || null,
-        phoneVerified: phoneVerified !== undefined ? phoneVerified : false,
+        phoneVerified: phoneVerified || false,
         idPhotos: idPhotos || [],
-        profileCompleted: profileCompleted !== undefined ? profileCompleted : false,
+        profileCompleted: profileCompleted || false,
         hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null
       }
     });
