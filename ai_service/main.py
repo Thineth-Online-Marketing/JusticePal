@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from typing import Optional
 import os
 import json
 import re
@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
+from models import CaseSuggestions, ExtractCaseDetailsResponse
 
 load_dotenv(override=True)
 
@@ -38,29 +39,7 @@ class QueryRequest(BaseModel):
     query: str = Field(..., description="Raw text describing the user's legal situation")
 
 
-class CaseSuggestions(BaseModel):
-    """Strict model for LLM-extracted case metadata chips."""
-    case_type: Optional[str] = Field(
-        None,
-        description="Category of the legal case, e.g. 'Labour Dispute', 'Property Fraud'",
-    )
-    location: Optional[str] = Field(
-        None,
-        description="City or district mentioned in the text, e.g. 'Colombo', 'Galle'",
-    )
-    budget: Optional[Literal["Low", "Medium", "High"]] = Field(
-        None,
-        description="Client's rough budget tier for legal services",
-    )
-    language: Optional[Literal["English", "Sinhala"]] = Field(
-        None,
-        description="Language the user wrote in, or explicitly mentioned",
-    )
-
-
-class ExtractCaseDetailsResponse(BaseModel):
-    success: bool
-    data: CaseSuggestions
+# CaseSuggestions and ExtractCaseDetailsResponse are imported from models.py
 
 
 # ---------------------------------------------------------------------------
