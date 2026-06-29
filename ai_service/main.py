@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
-load_dotenv()
+load_dotenv(override=True)
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -77,7 +77,7 @@ def get_llm() -> ChatGoogleGenerativeAI:
         if not api_key:
             raise RuntimeError("GOOGLE_API_KEY environment variable is not set.")
         _llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",   # fast, cost-efficient
+            model="gemini-2.5-flash",   # fast, cost-efficient
             google_api_key=api_key,
             temperature=0,              # deterministic JSON output
             max_tokens=256,             # extraction needs very little output
