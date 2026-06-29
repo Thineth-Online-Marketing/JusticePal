@@ -1,7 +1,17 @@
+# --- Web framework ---
 fastapi==0.111.0
 uvicorn==0.29.0
-langchain==0.1.20
-google-generativeai==0.5.3
-pinecone-client==4.1.0
+
+# --- LangChain + Gemini ---
+langchain==0.2.16
+langchain-google-genai==1.0.10
+langchain-core==0.2.41
+
+# --- Google AI SDK (used internally by langchain-google-genai) ---
+google-generativeai==0.7.2
+
+# --- Data validation ---
 pydantic==2.7.1
+
+# --- Environment & utilities ---
 python-dotenv==1.0.1
