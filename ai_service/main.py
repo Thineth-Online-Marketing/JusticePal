@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from models import CaseSuggestions, ExtractCaseDetailsResponse
+from matcher import find_matching_lawyers
 
 load_dotenv(override=True)
 
@@ -25,7 +26,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # Tighten in production
+    allow_origins=[
+        "http://localhost:3000",       # Next.js dev server
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,7 +43,127 @@ class QueryRequest(BaseModel):
     query: str = Field(..., description="Raw text describing the user's legal situation")
 
 
+class ManualFilters(BaseModel):
+    specialization: Optional[str] = Field(None, description="Filter by lawyer specialization")
+    location: Optional[str] = Field(None, description="Filter by lawyer location")
+    sort_by: Optional[str] = Field("relevance", description="'relevance' (default) or 'rating'")
+
+
+class MatchLawyersRequest(BaseModel):
+    ai_suggestions: CaseSuggestions = Field(
+        ..., description="Extracted case chips from /api/v1/extract-case-details"
+    )
+    manual_filters: ManualFilters = Field(
+        default_factory=ManualFilters,
+        description="UI dropdown selections for manual filtering",
+    )
+
+
+class MatchLawyersResponse(BaseModel):
+    success: bool
+    count: int
+    lawyers: list[dict]
+
+
 # CaseSuggestions and ExtractCaseDetailsResponse are imported from models.py
+
+
+# ---------------------------------------------------------------------------
+# Mock Lawyer Database (10 Sri Lankan lawyers)
+# ---------------------------------------------------------------------------
+
+MOCK_LAWYERS: list[dict] = [
+    {
+        "id": "L001",
+        "name": "Priya Navaratnam",
+        "specialization": "Labour Law",
+        "location": "Colombo",
+        "rating": 4.8,
+        "bio": "Expert in wrongful dismissal, employment contracts, and workers' rights with 15 years of experience in the Colombo Labour Tribunal.",
+        "image_url": "https://randomuser.me/api/portraits/women/44.jpg",
+    },
+    {
+        "id": "L002",
+        "name": "Rohan De Silva",
+        "specialization": "Property Law",
+        "location": "Galle",
+        "rating": 4.5,
+        "bio": "Specialises in land disputes, title deeds, and property fraud cases across the Southern Province.",
+        "image_url": "https://randomuser.me/api/portraits/men/32.jpg",
+    },
+    {
+        "id": "L003",
+        "name": "Anita Perera",
+        "specialization": "Corporate Law",
+        "location": "Colombo",
+        "rating": 4.9,
+        "bio": "Corporate governance, mergers, acquisitions, and commercial contracts for Fortune 500 clients operating in Sri Lanka.",
+        "image_url": "https://randomuser.me/api/portraits/women/68.jpg",
+    },
+    {
+        "id": "L004",
+        "name": "Kemal Jayawardena",
+        "specialization": "Labour Law",
+        "location": "Kandy",
+        "rating": 4.2,
+        "bio": "Trade union representation, workplace harassment, and termination dispute specialist in the Central Province.",
+        "image_url": "https://randomuser.me/api/portraits/men/75.jpg",
+    },
+    {
+        "id": "L005",
+        "name": "Samanthi Fernando",
+        "specialization": "Family Law",
+        "location": "Colombo",
+        "rating": 4.6,
+        "bio": "Divorce, custody disputes, maintenance claims, and domestic violence cases. Fluent in Sinhala and English.",
+        "image_url": "https://randomuser.me/api/portraits/women/12.jpg",
+    },
+    {
+        "id": "L006",
+        "name": "Nuwan Bandara",
+        "specialization": "Criminal Law",
+        "location": "Matara",
+        "rating": 4.7,
+        "bio": "Criminal defence attorney handling murder, assault, and drug-related cases in Southern Sri Lanka.",
+        "image_url": "https://randomuser.me/api/portraits/men/45.jpg",
+    },
+    {
+        "id": "L007",
+        "name": "Dilini Ratnayake",
+        "specialization": "Property Law",
+        "location": "Colombo",
+        "rating": 4.4,
+        "bio": "Real estate transactions, land registration disputes, and boundary demarcation issues in the Western Province.",
+        "image_url": "https://randomuser.me/api/portraits/women/22.jpg",
+    },
+    {
+        "id": "L008",
+        "name": "Tharindu Wickramasinghe",
+        "specialization": "Family Law",
+        "location": "Kandy",
+        "rating": 4.3,
+        "bio": "Adoption proceedings, matrimonial disputes, and child custody representation with a compassionate approach.",
+        "image_url": "https://randomuser.me/api/portraits/men/58.jpg",
+    },
+    {
+        "id": "L009",
+        "name": "Ishara Gunawardena",
+        "specialization": "Corporate Law",
+        "location": "Galle",
+        "rating": 4.1,
+        "bio": "Company incorporation, intellectual property, and contract disputes for SMEs in the Southern coastal region.",
+        "image_url": "https://randomuser.me/api/portraits/women/35.jpg",
+    },
+    {
+        "id": "L010",
+        "name": "Chaminda Rajapaksha",
+        "specialization": "Criminal Law",
+        "location": "Colombo",
+        "rating": 4.8,
+        "bio": "High-profile criminal defence, financial fraud, and white-collar crime specialist with Supreme Court practice.",
+        "image_url": "https://randomuser.me/api/portraits/men/10.jpg",
+    },
+]
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +277,39 @@ async def extract_case_details(request: QueryRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+
+@app.post("/api/v1/match-lawyers", response_model=MatchLawyersResponse)
+def match_lawyers(request: MatchLawyersRequest):
+    """
+    Accepts AI-extracted case suggestions and optional manual filters,
+    then returns a ranked list of matching lawyers from the database.
+
+    - If manual_filters has values → strict filter mode.
+    - If manual_filters is empty  → AI semantic search via FAISS.
+    """
+    try:
+        # Convert ManualFilters model to a plain dict for matcher.py
+        filters = {
+            k: v
+            for k, v in request.manual_filters.model_dump().items()
+            if v is not None
+        }
+
+        results = find_matching_lawyers(
+            ai_suggestions=request.ai_suggestions,
+            manual_filters=filters,
+            lawyer_database=MOCK_LAWYERS,
+        )
+
+        return MatchLawyersResponse(
+            success=True,
+            count=len(results),
+            lawyers=results,
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Matching error: {str(e)}")
 
 
 # Legacy placeholder kept for backward-compat
