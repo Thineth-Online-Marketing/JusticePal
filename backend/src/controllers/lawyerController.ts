@@ -219,3 +219,97 @@ export const rejectLawyer = async (req: Request, res: Response, next: NextFuncti
     next(error);
   }
 };
+
+// @desc    Get lawyer analytics
+// @route   GET /api/lawyers/:id/analytics
+// @access  Private (Lawyer)
+export const getLawyerAnalytics = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const lawyer = await prisma.lawyer.findUnique({
+      where: { id }
+    });
+
+    if (!lawyer) {
+      res.status(404);
+      throw new Error('Lawyer profile not found');
+    }
+
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999);
+    const currentDate = new Date();
+
+    const earnings = await prisma.payment.aggregate({
+      where: {
+        appointment: { lawyerId: id },
+        status: { in: ['succeeded', 'completed'] },
+        createdAt: { gte: startOfMonth, lte: endOfMonth }
+      },
+      _sum: {
+        amount: true
+      }
+    });
+
+    const totalEarnings = earnings._sum.amount || 0;
+
+    const appointmentBreakdown = await prisma.appointment.groupBy({
+      by: ['status'],
+      where: {
+        lawyerId: id,
+        scheduledAt: { gte: startOfMonth, lte: endOfMonth }
+      },
+      _count: {
+        id: true
+      }
+    });
+
+    let completedAppointments = 0;
+    let cancelledAppointments = 0;
+
+    appointmentBreakdown.forEach((group) => {
+      if (group.status === 'completed') {
+        completedAppointments = group._count.id;
+      } else if (group.status === 'cancelled') {
+        cancelledAppointments = group._count.id;
+      }
+    });
+
+    const upcomingAppointments = await prisma.appointment.count({
+      where: {
+        lawyerId: id,
+        status: { in: ['pending', 'confirmed'] },
+        scheduledAt: { gte: currentDate }
+      }
+    });
+
+    const uniqueClientsResult = await prisma.appointment.findMany({
+      where: {
+        lawyerId: id,
+        scheduledAt: { gte: startOfMonth, lte: endOfMonth }
+      },
+      distinct: ['userId'],
+      select: {
+        userId: true
+      }
+    });
+
+    const uniqueClients = uniqueClientsResult.length;
+
+    res.status(200).json({
+      success: true,
+      analytics: {
+        totalEarnings,
+        completedAppointments,
+        cancelledAppointments,
+        upcomingAppointments,
+        uniqueClients
+      }
+    });
+  } catch (error) {
+    if (res.statusCode === 200) {
+      res.status(500);
+    }
+    next(error);
+  }
+};
