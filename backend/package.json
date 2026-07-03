@@ -18,7 +18,8 @@
     "express": "^4.19.2",
     "firebase-admin": "^13.7.0",
     "googleapis": "^173.0.0",
-    "prisma": "^6.19.2"
+    "prisma": "^6.19.2",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@types/caseless": "^0.12.5",
@@ -27,6 +28,7 @@
     "@types/node": "^20.12.12",
     "@types/request": "^2.48.13",
     "@types/tough-cookie": "^4.0.5",
+    "@types/ws": "^8.18.1",
     "tsx": "^4.22.4",
     "typescript": "^5.4.5"
   }

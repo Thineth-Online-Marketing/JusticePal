@@ -75,6 +75,7 @@ export default function LawyerDashboard() {
   const [dbUser, setDbUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [setupStep, setSetupStep] = useState<1 | 2 | 3 | null>(null);
+  const [upcomingAppointment, setUpcomingAppointment] = useState<any | null>(null);
 
   const fetchDbProfile = async (currentUser: User) => {
     try {
@@ -96,6 +97,23 @@ export default function LawyerDashboard() {
       if (currentUser) {
         setUser(currentUser);
         await fetchDbProfile(currentUser);
+        // Fetch upcoming appointment for the lawyer
+        try {
+          const idToken = await currentUser.getIdToken();
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments`,
+            { headers: { Authorization: `Bearer ${idToken}` } }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const upcoming = data.find(
+              (a: any) => a.status === "scheduled" || a.status === "confirmed"
+            ) || data[0] || null;
+            setUpcomingAppointment(upcoming);
+          }
+        } catch (err) {
+          console.error("Failed to fetch appointments", err);
+        }
         setLoading(false);
       } else {
         router.push("/login");
@@ -297,7 +315,13 @@ export default function LawyerDashboard() {
                 <div className="space-y-4">
                   {/* Schedule Item 1 */}
                   <div 
-                    onClick={() => router.push("/consultation?role=lawyer")}
+                    onClick={() => {
+                      const apptId = upcomingAppointment?.id;
+                      const url = apptId
+                        ? `/consultation?role=lawyer&appointmentId=${apptId}`
+                        : "/consultation?role=lawyer";
+                      router.push(url);
+                    }}
                     className="flex gap-4 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 items-center cursor-pointer hover:bg-gray-100/80 transition-colors group"
                   >
                     <div className="w-20 text-right flex-shrink-0">
