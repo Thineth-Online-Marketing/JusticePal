@@ -23,48 +23,62 @@ JusticePal is a legal assistance platform in Sri Lanka that connects clients wit
 * Start local dev server: `npm run dev` (Runs on `http://localhost:5000` by default)
 * Prisma database generate: `npx prisma generate`
 * Prisma migration deploy: `npx prisma migrate deploy`
+* Prisma db push (for syncing changes directly): `npx prisma db push`
 
 ---
 
-## Video Consultation Feature (June 2026)
+## Video Consultation Feature (June-July 2026)
 
-We implemented a unified Video Consultation / Video Conferencing system.
+We implemented a unified, real-time Video Consultation / Video Conferencing system with a working database and message persistence backend.
 
-### Core Component
-* **Path**: [`frontend/src/app/consultation/page.tsx`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePal/JusticePal/frontend/src/app/consultation/page.tsx)
-* **Design Pattern**:
-  * Dual-perspective page that renders specialized layouts depending on the query parameter `?role=lawyer` or `?role=client`.
-  * **Prerendering Rule**: Wrapped in a Next.js `<Suspense>` boundary to allow build-time optimization while using `useSearchParams`.
+### Core Components
+* **Frontend Consultation Page**: [`frontend/src/app/consultation/page.tsx`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/frontend/src/app/consultation/page.tsx)
+* **Backend Entry & Socket Server**: [`backend/src/index.ts`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/backend/src/index.ts)
+* **Backend Database Schema**: [`backend/prisma/schema.prisma`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/backend/prisma/schema.prisma)
+* **Backend Routes & Logic**: 
+  * [`backend/src/routes/consultationRoutes.ts`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/backend/src/routes/consultationRoutes.ts)
+  * [`backend/src/controllers/consultationController.ts`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/backend/src/controllers/consultationController.ts)
+  * [`backend/src/services/consultationService.ts`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/backend/src/services/consultationService.ts)
+
+### Design Pattern & Architecture
+1. **Prerendering Rule**: The consultation page uses query params (`role`, `appointmentId`) and is wrapped in a Next.js `<Suspense>` boundary to allow build-time optimization while using `useSearchParams`.
+2. **Database Models**:
+   * `ConsultationRoom`: Stores metadata of the room, connected to `Appointment` via `appointmentId`. Tracks status (`waiting`, `active`, `ended`), join times, and AI generated summary.
+   * `ConsultationMessage`: Stores messages with `senderUserId`, `senderRole`, and text.
+3. **Real-time WebSockets (Socket.io)**:
+   * Upgraded Express entry to use Node's `http.createServer()` hosting both the Express app and a Socket.io server.
+   * Connection authentication middleware: Checks the Firebase ID token sent via `socket.handshake.auth.token` and queries the database user profile to set socket properties (`userId`, `userName`, `firebaseUid`).
+   * Events:
+     * `join_consultation` (`appointmentId`): Assigns socket to room `consultation:<appointmentId>` if access check passes, broadcasting `participant_joined`.
+     * `send_message` (`appointmentId`, `text`): Persists message to `ConsultationMessage` and broadcasts `new_message` to everyone in the room.
+     * `typing` (`appointmentId`, `isTyping`): Broadcasts `participant_typing` for visual typing indicators.
+4. **AI Summary Engine**:
+   * Powered by Google Gemini (`@google/generative-ai` with `gemini-1.5-flash`).
+   * Fetches room chat history and parses it alongside the lawyer's notes to return a structured JSON summary (case details, discussion summary, key outcomes, next steps).
 
 ### Key Elements of the Consultation Room
 1. **Role-Based Layouts**:
    * **Lawyer view**: Includes the lawyer dashboard sidebar navigation on the left, top header with details, and active consultation workspace in the middle.
    * **Client view**: Includes the top `ClientNavbar` and takes up the full width for the conference window.
 2. **Secure Video Stream Panel**:
-   * Large container displaying the remote participant (Sarah Chen for lawyers, Advocate Sarah Jenkins for clients).
+   * Large container displaying the remote participant (derived from real user profiles).
    * Floating self-preview window in the corner.
-   * Connection quality tags and End-to-End Encryption indicators.
    * Soundwave sound bars highlighting the active speaker.
-3. **collapsible Workspace Sidebar**:
-   * **Chat Tab**: Real-time communication feed with timestamped bubbles, text input, and mock file uploads.
-   * **People Tab**: List of conference members, active organizer tags, and speaking status.
-   * **Files Tab**: Legal document repository showing preview cards for case files (e.g. surveys, draft deeds).
-4. **Lawyer Workspace Features**:
-   * **Notes Scratchpad**: A textarea for lawyers to log details in real-time.
-   * **AI Consultation Summary**: An analysis engine that outputs an executive summary, agreements reached, and actionable next steps.
-5. **Interactive Simulation Hub**:
-   * A footer control bar enabling real-time toggling of client/lawyer UI, camera feeds, speaking indicators, connection quality, and mock inbound messages for testing.
+3. **Collapsible Workspace Sidebar**:
+   * **Chat Tab**: Real-time communication feed with timestamped bubbles, text input with typing indicator, and case file updates.
+   * **People Tab**: List of active conference members.
+   * **Files Tab**: Case file repository.
+4. **AI Summary**: Lawyer workspace includes a notes pad and a trigger button to compile discussions using Gemini.
 
 ### Navigation Entry Points
-* **Client Dashboard**: Clicking "Join Video Call" navigates to `/consultation?role=client`.
-* **Lawyer Dashboard Schedule**: Clicking "Client Consultation: Sarah Chen" schedule row navigates to `/consultation?role=lawyer`.
-* **Lawyer Calendar**: Clicking the Tuesday "Property Dispute Review" meeting block navigates to `/consultation?role=lawyer`.
+* **Client Dashboard**: Queries upcoming scheduled/confirmed appointments dynamically. "Join Video Call" routes to `/consultation?role=client&appointmentId=<id>` (falls back to demo room without ID).
+* **Lawyer Dashboard Schedule**: Queries upcoming scheduled/confirmed appointments dynamically. Clicking the schedule card routes to `/consultation?role=lawyer&appointmentId=<id>`.
 
 ---
 
 ## Style Guidelines
 
-* **Colors**: Match the core system defined in [`frontend/src/app/globals.css`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePal/JusticePal/frontend/src/app/globals.css):
+* **Colors**: Match the core system defined in [`frontend/src/app/globals.css`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/frontend/src/app/globals.css):
   * Navy Blue (Primary): `#1B3A6B`
   * Dark Navy: `#112549`
   * Orange Accent: `#F97316`

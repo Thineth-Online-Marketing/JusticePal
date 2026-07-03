@@ -1,66 +1,97 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
+import { io, Socket } from "socket.io-client";
 import { 
   Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, 
-  Users, Settings, PhoneOff, Shield, Radio, CheckCircle, 
-  ChevronRight, Send, Paperclip, Plus, FileText, Download, 
-  Sparkles, RefreshCw, X, Loader2, Volume2, ShieldCheck, 
-  FileSignature, ChevronLeft, Calendar, LayoutDashboard, Clock, CircleDot, Trash2
+  Users, Settings, PhoneOff, Shield, Radio,
+  Send, Paperclip, Plus, FileText, Download, 
+  Sparkles, X, Loader2, Volume2, ShieldCheck, 
+  FileSignature, Calendar, LayoutDashboard, Clock, CircleDot, Trash2, Wifi
 } from "lucide-react";
 import ClientNavbar from "../components/ClientNavbar";
 import { useAuth } from "../context/AuthContext";
 import { useUI } from "../context/UIContext";
 
-// Initial simulation data
-const INITIAL_MESSAGES = [
-  { id: "1", sender: "lawyer", text: "Hello Sarah, thank you for joining. Have you had a chance to review the property mediation draft?", time: "10:01 AM" },
-  { id: "2", sender: "client", text: "Hi counselor, yes I did. The proposed split in Section 4 looks fair, but I have a few concerns regarding the timeline.", time: "10:02 AM" },
-  { id: "3", sender: "lawyer", text: "I understand. Let's look at that together. I've uploaded the land registry certificate in the Documents tab for reference.", time: "10:03 AM" }
-];
+// Typed interfaces for real data
+interface ChatMessage {
+  id: string;
+  senderRole: string;
+  text: string;
+  createdAt: string;
+  sender?: { id: string; name: string };
+}
 
-const INITIAL_DOCUMENTS = [
-  { id: "d1", name: "Settlement_Draft_V2.pdf", size: "1.4 MB", type: "pdf", uploadedBy: "Lawyer" },
-  { id: "d2", name: "Land_Registry_Deed_1998.pdf", size: "3.2 MB", type: "pdf", uploadedBy: "Lawyer" },
-  { id: "d3", name: "Property_Division_Map.png", size: "850 KB", type: "image", uploadedBy: "Client" }
-];
+interface Participant {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface RoomInfo {
+  id: string;
+  appointmentId: string;
+  status: string;
+  startedAt?: string;
+  lawyerJoinedAt?: string;
+  clientJoinedAt?: string;
+  summaryJson?: string;
+}
+
+interface AppointmentInfo {
+  id: string;
+  scheduledAt: string;
+  caseDescription: string;
+  status: string;
+}
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 function ConsultationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
   const { showToast } = useUI();
-  
+
   // Detect role from URL query param "?role=lawyer" or "?role=client"
   const urlRole = searchParams.get("role");
   const [currentRole, setCurrentRole] = useState<"lawyer" | "client">("lawyer");
 
-  useEffect(() => {
-    if (urlRole === "client" || urlRole === "lawyer") {
-      setCurrentRole(urlRole);
-    }
-  }, [urlRole]);
+  // ── Real backend state ──────────────────────────────────────────
+  const [roomInfo, setRoomInfo] = useState<RoomInfo | null>(null);
+  const [appointment, setAppointment] = useState<AppointmentInfo | null>(null);
+  const [participants, setParticipants] = useState<{ lawyer: Participant | null; client: Participant | null }>({
+    lawyer: null,
+    client: null,
+  });
+  const [isLoadingRoom, setIsLoadingRoom] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [remoteTyping, setRemoteTyping] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Audio/Video control states (local)
   const [localMuted, setLocalMuted] = useState(false);
   const [localCamOff, setLocalCamOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  
+
   // Right sidebar toggle states
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<"chat" | "participants" | "documents">("chat");
-  
-  // Timer state
-  const [timerString, setTimerString] = useState("00:15:32");
-  
-  // Real-time Chat message states
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+
+  // Session timer
+  const [sessionSeconds, setSessionSeconds] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Chat messages (real, from backend)
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessageText, setNewMessageText] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
-  
+
   // Document state
   const [documents, setDocuments] = useState<any[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -69,6 +100,138 @@ function ConsultationContent() {
 
   // Extract appointment ID from search params
   const appointmentId = searchParams.get("appointmentId");
+
+  // Derived display names
+  const lawyerName = participants.lawyer?.name || "Advocate";
+  const clientName = participants.client?.name || "Client";
+  const remoteName = currentRole === "lawyer" ? clientName : lawyerName;
+  const selfName = currentRole === "lawyer" ? lawyerName : clientName;
+
+  // Format timer as MM:SS
+  const timerString = `${String(Math.floor(sessionSeconds / 60)).padStart(2, "0")}:${String(sessionSeconds % 60).padStart(2, "0")}`;
+
+  // ── Start session timer once room is active ──────────────────────
+  useEffect(() => {
+    if (roomInfo?.status === "active") {
+      timerRef.current = setInterval(() => {
+        setSessionSeconds((s) => s + 1);
+      }, 1000);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [roomInfo?.status]);
+
+  // ── Join room & init Socket.io ───────────────────────────────────
+  useEffect(() => {
+    if (urlRole === "client" || urlRole === "lawyer") {
+      setCurrentRole(urlRole);
+    }
+  }, [urlRole]);
+
+  const joinRoom = useCallback(async () => {
+    if (!user || !appointmentId) return;
+    setIsLoadingRoom(true);
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/api/consultations/${appointmentId}/join`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRoomInfo(data.room);
+        setParticipants(data.participants);
+        setCurrentRole(data.myRole);
+        setAppointment(data.room?.appointment ?? null);
+      } else {
+        console.warn("Room join returned non-OK:", res.status);
+      }
+    } catch (err) {
+      console.error("Error joining room:", err);
+    } finally {
+      setIsLoadingRoom(false);
+    }
+  }, [user, appointmentId]);
+
+  // Load historical messages
+  const fetchMessages = useCallback(async () => {
+    if (!user || !appointmentId) return;
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/api/consultations/${appointmentId}/messages`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data);
+      }
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    }
+  }, [user, appointmentId]);
+
+  // Init on mount
+  useEffect(() => {
+    if (user && appointmentId) {
+      joinRoom();
+      fetchMessages();
+    }
+  }, [user, appointmentId, joinRoom, fetchMessages]);
+
+  // ── Socket.io connection ─────────────────────────────────────────
+  useEffect(() => {
+    if (!user || !appointmentId) return;
+    let socket: Socket;
+
+    const initSocket = async () => {
+      const idToken = await user.getIdToken();
+      socket = io(BACKEND_URL, {
+        auth: { token: idToken },
+        transports: ["websocket", "polling"],
+      });
+
+      socketRef.current = socket;
+
+      socket.on("connect", () => {
+        setSocketConnected(true);
+        socket.emit("join_consultation", { appointmentId });
+      });
+
+      socket.on("disconnect", () => setSocketConnected(false));
+
+      socket.on("new_message", (msg: ChatMessage) => {
+        setMessages((prev) => {
+          // Avoid duplicates
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      });
+
+      socket.on("participant_typing", ({ isTyping: typing }: { isTyping: boolean }) => {
+        setRemoteTyping(typing);
+      });
+
+      socket.on("participant_joined", ({ name, role }: { name: string; role: string }) => {
+        showToast(`${name} has joined the consultation`, "success");
+      });
+
+      socket.on("error", ({ message }: { message: string }) => {
+        console.error("[Socket error]", message);
+        // Show user-friendly toast for known errors
+        if (message === "Appointment not found") {
+          showToast("Could not find this appointment. Make sure you joined via a valid consultation link.", "error");
+        } else if (message === "Access denied") {
+          showToast("You are not a participant in this consultation.", "error");
+        }
+      });
+    };
+
+    initSocket();
+
+    return () => {
+      socket?.disconnect();
+      socketRef.current = null;
+    };
+  }, [user, appointmentId]);
 
   // Format file size helper
   const formatFileSize = (bytes?: number) => {
@@ -155,12 +318,11 @@ function ConsultationContent() {
             fetchCaseFiles(); // Refresh list
 
             // Inject notification message in chat
-            const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             setMessages(prev => [...prev, {
               id: Math.random().toString(36).substr(2, 9),
-              sender: currentRole,
+              senderRole: currentRole,
               text: `📎 Shared a document: ${file.name} (${formatFileSize(file.size)})`,
-              time: timeString
+              createdAt: new Date().toISOString(),
             }]);
           } else {
             const errorData = await response.json();
@@ -236,90 +398,98 @@ function ConsultationContent() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, activeTab]);
 
-  // Handle mock send message
+  // ── Send message via Socket.io ───────────────────────────────────
   const handleSendMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!newMessageText.trim()) return;
+    if (!newMessageText.trim() || !appointmentId) return;
 
-    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const msg = {
-      id: Math.random().toString(36).substr(2, 9),
-      sender: currentRole,
-      text: newMessageText,
-      time: timeString
-    };
-
-    setMessages(prev => [...prev, msg]);
+    if (socketRef.current && socketConnected) {
+      // Send via real-time socket
+      socketRef.current.emit("send_message", { appointmentId, text: newMessageText.trim() });
+    } else {
+      // Fallback to REST if socket is not connected
+      (async () => {
+        try {
+          const idToken = await user!.getIdToken();
+          await fetch(`${BACKEND_URL}/api/consultations/${appointmentId}/messages`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+            body: JSON.stringify({ text: newMessageText.trim() }),
+          });
+        } catch (err) {
+          console.error("REST fallback message failed:", err);
+        }
+      })();
+    }
     setNewMessageText("");
 
-    // Simulate reply after 1.5 seconds if sender is client (or visa-versa)
-    setTimeout(() => {
-      const responses = {
-        lawyer: [
-          "I will look into that clause right away.",
-          "Let's make sure we document this in the official report.",
-          "I will attach the tax guidelines to our shared files shortly.",
-          "Do you have the tax assessment documents ready?"
-        ],
-        client: [
-          "Okay, thank you for clarifying that.",
-          "Yes, I think that makes a lot of sense.",
-          "Let me upload that document now.",
-          "Should I email my land registry documents or upload them here?"
-        ]
-      };
-      
-      const receiverRole = currentRole === "lawyer" ? "client" : "lawyer";
-      const replyList = responses[receiverRole];
-      const randomReply = replyList[Math.floor(Math.random() * replyList.length)];
-
-      setMessages(prev => [...prev, {
-        id: Math.random().toString(36).substr(2, 9),
-        sender: receiverRole,
-        text: randomReply,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }]);
-      showToast(`New message from ${receiverRole === "lawyer" ? "Sarah Jenkins (Lawyer)" : "Sarah Chen"}`, "success");
-    }, 1500);
+    // Clear typing indicator
+    if (socketRef.current && appointmentId) {
+      socketRef.current.emit("typing", { appointmentId, isTyping: false });
+    }
   };
 
-  // AI Summary generator trigger
-  const handleGenerateSummary = () => {
+  // ── Typing indicator ─────────────────────────────────────────────
+  const handleTyping = (val: string) => {
+    setNewMessageText(val);
+    if (!socketRef.current || !appointmentId) return;
+    socketRef.current.emit("typing", { appointmentId, isTyping: true });
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      socketRef.current?.emit("typing", { appointmentId, isTyping: false });
+    }, 2000);
+  };
+
+  // ── AI Summary via real Gemini API ───────────────────────────────
+  const handleGenerateSummary = async () => {
+    if (!user || !appointmentId) return;
     setIsGeneratingSummary(true);
     setGeneratedSummary(null);
     showToast("Generating consultation summary with AI...", "warning");
-    
-    setTimeout(() => {
-      setIsGeneratingSummary(false);
-      setGeneratedSummary({
-        title: "JusticePal Legal Consultation Summary",
-        date: new Date().toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' }),
-        caseId: "CASE #JP-9821",
-        participants: "Sarah Jenkins (Advocate) & Sarah Chen (Client)",
-        summary: "Consultation focused on resolving estate division and property mediation. The client, Sarah Chen, agreed in principle to a 60/40 partition of the estate property. Key discussion points revolved around capital gains tax and the transfer completion timeline.",
-        keyOutcomes: [
-          "60/40 property partition agreed in principle.",
-          "Agreement to complete transaction deeds within 60 days of final court decree.",
-          "Lawyer to amend Clause 4.2 to reflect tax obligations and timeline constraints."
-        ],
-        nextSteps: [
-          "Lawyer will send the finalized mediation draft by June 15, 2026.",
-          "Client will upload the 2025 Tax Assessment certificate.",
-          "Follow-up e-mediation session scheduled for Tuesday, June 18, at 10:00 AM."
-        ]
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/api/consultations/${appointmentId}/summary`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ lawyerNotes }),
       });
-      showToast("Consultation summary generated successfully!", "success");
-    }, 2500);
+      if (res.ok) {
+        const data = await res.json();
+        setGeneratedSummary(data);
+        showToast("Consultation summary generated successfully!", "success");
+      } else {
+        const err = await res.json();
+        showToast(err.message || "Failed to generate summary", "error");
+      }
+    } catch (err) {
+      console.error("Summary error:", err);
+      showToast("Failed to generate summary", "error");
+    } finally {
+      setIsGeneratingSummary(false);
+    }
   };
 
-  // End consultation
-  const handleEndCall = () => {
+  // ── End consultation ─────────────────────────────────────────────
+  const handleEndCall = async () => {
     setIsCallEnding(true);
     showToast("Disconnecting from secure room...", "warning");
+    // Notify backend
+    if (user && appointmentId) {
+      try {
+        const idToken = await user.getIdToken();
+        await fetch(`${BACKEND_URL}/api/consultations/${appointmentId}/leave`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+      } catch (err) {
+        console.error("Leave room error:", err);
+      }
+    }
+    socketRef.current?.disconnect();
+    showToast("Consultation ended. Redirecting to dashboard...", "success");
     setTimeout(() => {
-      showToast("Consultation ended. Redirecting to dashboard...", "success");
-      router.push(currentRole === "lawyer" ? "/lawyer-dashboard" : "/client-dashboard");
-    }, 1500);
+      router.push(currentRole === "lawyer" ? "/lawyer-dashboard" : "/dashboard");
+    }, 1200);
   };
 
   return (
@@ -360,14 +530,23 @@ function ConsultationContent() {
 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
+              {/* Socket.io connection indicator */}
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                socketConnected 
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
+                  : "bg-gray-50 text-gray-500 border-gray-200"
+              }`}>
+                <Wifi className={`w-3 h-3 ${socketConnected ? "text-emerald-600" : "text-gray-400"}`} />
+                {socketConnected ? "Live" : "Connecting..."}
+              </div>
               <div className="flex flex-col text-right">
-                <span className="text-sm font-bold text-gray-900 leading-tight">Sarah Jenkins</span>
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">High Court Advocate</span>
+                <span className="text-sm font-bold text-gray-900 leading-tight">{lawyerName}</span>
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Advocate</span>
               </div>
               <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden relative border border-gray-200">
                 <Image 
                   src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150" 
-                  alt="Sarah Jenkins" 
+                  alt={lawyerName} 
                   fill 
                   className="object-cover" 
                 />
@@ -438,10 +617,12 @@ function ConsultationContent() {
                 </div>
               </div>
               <h2 className="text-lg font-bold text-gray-900 mt-1.5 flex items-center gap-2">
-                Property Mediation Consultation
+                {appointment?.caseDescription
+                  ? appointment.caseDescription.slice(0, 60) + (appointment.caseDescription.length > 60 ? "..." : "")
+                  : "Legal Consultation"}
                 <span className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 text-[#1B3A6B] text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
                   <CircleDot className="w-2.5 h-2.5 text-blue-600 animate-pulse" />
-                  Live Meeting
+                  {roomInfo?.status === "active" ? "Live Meeting" : roomInfo?.status === "ended" ? "Session Ended" : "Waiting"}
                 </span>
               </h2>
             </div>
@@ -490,12 +671,10 @@ function ConsultationContent() {
                 {remoteCamOff ? (
                   <div className="flex flex-col items-center justify-center text-center p-6 space-y-4">
                     <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center border-2 border-gray-700 shadow-inner text-white font-extrabold text-2xl">
-                      {currentRole === "lawyer" ? "SC" : "SJ"}
+                      {remoteName.slice(0, 2).toUpperCase()}
                     </div>
                     <div className="space-y-1">
-                      <p className="font-bold text-gray-200 text-sm">
-                        {currentRole === "lawyer" ? "Sarah Chen" : "Sarah Jenkins (Lawyer)"}
-                      </p>
+                      <p className="font-bold text-gray-200 text-sm">{remoteName}</p>
                       <p className="text-xs text-gray-500">Camera is turned off</p>
                     </div>
                   </div>
@@ -529,9 +708,7 @@ function ConsultationContent() {
 
                 {/* Remote Participant Label (bottom-left) */}
                 <div className="absolute bottom-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2">
-                  <p className="text-xs font-bold text-white">
-                    {currentRole === "lawyer" ? "Sarah Chen" : "Sarah Jenkins"}
-                  </p>
+                  <p className="text-xs font-bold text-white">{remoteName}</p>
                   <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded tracking-wide ${
                     currentRole === "lawyer" 
                       ? "bg-green-500/20 text-green-300 border border-green-500/30" 
@@ -895,12 +1072,21 @@ function ConsultationContent() {
                     <div className="flex flex-col h-full justify-between flex-1">
                       {/* Messages list */}
                       <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1 flex-1 mb-4">
+                        {messages.length === 0 && (
+                          <div className="text-center py-8 text-gray-400">
+                            <p className="text-xs font-medium">No messages yet. Start the conversation!</p>
+                          </div>
+                        )}
                         {messages.map((msg) => {
-                          const isSelf = msg.sender === currentRole;
+                          const isSelf = msg.senderRole === currentRole;
+                          const senderName = msg.senderRole === "lawyer"
+                            ? `Adv. ${lawyerName}`
+                            : clientName;
+                          const timeStr = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                           return (
                             <div key={msg.id} className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}>
                               <span className="text-[9px] text-gray-400 font-bold mb-1 ml-1 mr-1">
-                                {msg.sender === "lawyer" ? "Advocate Sarah Jenkins" : "Sarah Chen (Client)"}
+                                {senderName}
                               </span>
                               <div className={`p-3 rounded-2xl max-w-[85%] text-xs leading-relaxed ${
                                 isSelf 
@@ -909,10 +1095,19 @@ function ConsultationContent() {
                               }`}>
                                 {msg.text}
                               </div>
-                              <span className="text-[9px] text-gray-400 mt-1 ml-1 mr-1">{msg.time}</span>
+                              <span className="text-[9px] text-gray-400 mt-1 ml-1 mr-1">{timeStr}</span>
                             </div>
                           );
                         })}
+                        {remoteTyping && (
+                          <div className="flex items-start">
+                            <div className="bg-gray-100 text-gray-500 text-xs px-3 py-2 rounded-2xl rounded-tl-none flex items-center gap-1">
+                              <span className="animate-bounce">·</span>
+                              <span className="animate-bounce delay-100">·</span>
+                              <span className="animate-bounce delay-200">·</span>
+                            </div>
+                          </div>
+                        )}
                         <div ref={chatEndRef} />
                       </div>
 
@@ -930,8 +1125,8 @@ function ConsultationContent() {
                         <input 
                           type="text"
                           value={newMessageText}
-                          onChange={(e) => setNewMessageText(e.target.value)}
-                          placeholder="Type a message to client..."
+                          onChange={(e) => handleTyping(e.target.value)}
+                          placeholder={`Message ${remoteName}...`}
                           className="flex-1 bg-transparent text-xs border-none outline-none text-gray-700 px-1 py-1"
                         />
 
@@ -965,8 +1160,8 @@ function ConsultationContent() {
                             <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></div>
                           </div>
                           <div>
-                            <h4 className="text-xs font-bold text-gray-900 leading-tight">Sarah Jenkins</h4>
-                            <p className="text-[10px] text-gray-400 font-semibold mt-0.5">High Court Advocate • Organizer</p>
+                            <h4 className="text-xs font-bold text-gray-900 leading-tight">{lawyerName}</h4>
+                            <p className="text-[10px] text-gray-400 font-semibold mt-0.5">Advocate • Organizer</p>
                           </div>
                         </div>
 
@@ -994,7 +1189,7 @@ function ConsultationContent() {
                             <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></div>
                           </div>
                           <div>
-                            <h4 className="text-xs font-bold text-gray-900 leading-tight">Sarah Chen</h4>
+                            <h4 className="text-xs font-bold text-gray-900 leading-tight">{clientName}</h4>
                             <p className="text-[10px] text-gray-400 font-semibold mt-0.5">Client</p>
                           </div>
                         </div>
@@ -1229,14 +1424,14 @@ function ConsultationContent() {
                   "Can you explain the capital gains tax implications again?"
                 ];
                 const text = texts[Math.floor(Math.random() * texts.length)];
-                const msg = {
+                const msg: ChatMessage = {
                   id: Math.random().toString(36).substr(2, 9),
-                  sender: receiverRole,
+                  senderRole: receiverRole,
                   text,
-                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  createdAt: new Date().toISOString(),
                 };
                 setMessages(prev => [...prev, msg]);
-                showToast(`Simulation: Message received from ${receiverRole === "lawyer" ? "Sarah Jenkins (Lawyer)" : "Sarah Chen"}`, "success");
+                showToast(`Simulation: Message received from ${receiverRole === "lawyer" ? lawyerName : clientName}`, "success");
               }}
               className="px-3.5 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-bold shadow-sm transition-colors"
             >

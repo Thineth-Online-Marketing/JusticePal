@@ -19,6 +19,8 @@ export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifLoading, setNotifLoading] = useState(true);
+  const [upcomingAppointment, setUpcomingAppointment] = useState<any | null>(null);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
@@ -92,6 +94,33 @@ export default function ClientDashboard() {
     fetchNotifs();
   }, [roleLoading, user]);
 
+  // Fetch real upcoming appointments
+  useEffect(() => {
+    if (roleLoading || !user) return;
+    const fetchAppointments = async () => {
+      try {
+        const idToken = await user.getIdToken();
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments`,
+          { headers: { Authorization: `Bearer ${idToken}` } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          // Pick the first upcoming (scheduled) appointment
+          const upcoming = data.find(
+            (a: any) => a.status === "scheduled" || a.status === "confirmed"
+          ) || data[0] || null;
+          setUpcomingAppointment(upcoming);
+        }
+      } catch (err) {
+        console.error("Failed to fetch appointments", err);
+      } finally {
+        setAppointmentsLoading(false);
+      }
+    };
+    fetchAppointments();
+  }, [roleLoading, user]);
+
   if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
@@ -146,17 +175,27 @@ export default function ClientDashboard() {
                       <CalendarIcon className="w-4 h-4 mr-1" /> Tomorrow, 10:00 AM
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Consultation with Sarah Jenkins</h3>
-                  <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                    Discussion regarding property settlement and final mediation steps.
-                  </p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      {upcomingAppointment
+                        ? `Consultation with ${upcomingAppointment.lawyer?.user?.name || "your Lawyer"}`
+                        : "Consultation with Sarah Jenkins"}
+                    </h3>
+                    <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                      {upcomingAppointment?.caseDescription || "Discussion regarding property settlement and final mediation steps."}
+                    </p>
                   <div className="flex flex-wrap gap-3">
                     <button 
-                      onClick={() => router.push("/consultation?role=client")}
+                      onClick={() => {
+                        const apptId = upcomingAppointment?.id;
+                        const url = apptId
+                          ? `/consultation?role=client&appointmentId=${apptId}`
+                          : "/consultation?role=client";
+                        router.push(url);
+                      }}
                       className="flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#112549] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-sm"
                     >
                       <Video className="w-4 h-4" />
-                      Join Video Call
+                      {appointmentsLoading ? "Loading..." : "Join Video Call"}
                     </button>
                     <button className="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors">
                       Reschedule
