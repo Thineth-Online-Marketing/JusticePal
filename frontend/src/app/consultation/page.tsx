@@ -295,7 +295,7 @@ function ConsultationContent() {
     }
   }, [user, appointmentId]);
 
-  // Handle case file upload using pre-signed URL (Two-Step Logic)
+  // Handle case file upload — sends file through Express backend (avoids CORS/GCS issues)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -307,60 +307,48 @@ function ConsultationContent() {
     }
 
     setIsUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(10);
     setUploadError(null);
-    showToast(`Preparing upload for ${file.name}...`, "warning");
+    showToast(`Uploading ${file.name}...`, "warning");
 
     try {
       const idToken = await user.getIdToken();
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
-      // Step 1: Fetch Pre-signed URL
-      setUploadProgress(15);
-      const urlResponse = await fetch(`${backendUrl}/api/case-files/upload-url`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`
-        },
-        body: JSON.stringify({
-          fileName: file.name,
-          fileType: file.type,
-          appointmentId: appointmentId || undefined
-        })
-      });
+      // Send file as multipart/form-data — Express backend uploads to Firebase Storage
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("name", file.name);
+      formData.append("fileType", file.type);
+      formData.append("fileSize", String(file.size));
+      if (appointmentId) formData.append("appointmentId", appointmentId);
 
-      if (!urlResponse.ok) {
-        const errorData = await urlResponse.json();
-        throw new Error(errorData.message || "Failed to generate upload URL");
-      }
-
-      const { uploadUrl, fileId } = await urlResponse.json();
       setUploadProgress(40);
 
-      // Step 2: Direct Cloud Put
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type
-        },
-        body: file // Raw file object bypasses Express backend
+      // Do NOT set Content-Type header — browser sets it with boundary automatically
+      const response = await fetch(`${backendUrl}/api/case-files/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+        body: formData,
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error("Failed to upload file to cloud storage");
+      setUploadProgress(90);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Upload failed.");
       }
 
       setUploadProgress(100);
-      showToast("File uploaded successfully to secure storage!", "success");
-      
+      showToast(`Uploaded ${file.name} successfully!`, "success");
+
       fetchCaseFiles(); // Refresh list
 
       // Inject notification message in chat
       setMessages(prev => [...prev, {
         id: Math.random().toString(36).substr(2, 9),
         senderRole: currentRole,
-        text: `📎 Shared a document: ${file.name} (${formatFileSize(file.size)})`,
+        text: `\uD83D\uDCCE Shared a document: ${file.name} (${formatFileSize(file.size)})`,
         createdAt: new Date().toISOString(),
       }]);
 
@@ -405,6 +393,47 @@ function ConsultationContent() {
   const handleAttachFile = () => {
     fileInputRef.current?.click();
   };
+
+  // Download a case file — proxied through Express backend (no direct GCS access)
+  const handleDownloadFile = async (fileId: string, fileName: string) => {
+    if (!user) {
+      showToast("You must be logged in to download files.", "error");
+      return;
+    }
+    try {
+      showToast(`Preparing download for ${fileName}...`, "warning");
+      const idToken = await user.getIdToken();
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+      // Single request — backend streams the file directly, no redirect to GCS
+      const res = await fetch(`${backendUrl}/api/case-files/download/${fileId}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+
+      if (!res.ok) {
+        let message = "Failed to download file.";
+        try { message = (await res.json()).message || message; } catch {}
+        showToast(message, "error");
+        return;
+      }
+
+      // Convert the streamed response to a Blob and trigger a browser download
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+      showToast(`Downloaded ${fileName}`, "success");
+    } catch (err) {
+      console.error("Download error:", err);
+      showToast("Download failed. Please try again.", "error");
+    }
+  };
+
 
   // Lawyer notes state
   const [lawyerNotes, setLawyerNotes] = useState(
@@ -1265,8 +1294,7 @@ function ConsultationContent() {
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    showToast(`Opening ${doc.name}`, "success");
-                                    window.open(doc.url, "_blank");
+                                    handleDownloadFile(doc.id, doc.name);
                                   }}
                                   className="text-gray-400 hover:text-blue-600 rounded-lg p-1 hover:bg-gray-100 transition-all"
                                   title="Download document"
