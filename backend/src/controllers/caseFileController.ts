@@ -148,6 +148,110 @@ export const uploadCaseFile = async (req: AuthRequest, res: Response, next: Next
   }
 };
 
+// @desc    Upload a case file via multipart/form-data (browser-safe, no direct GCS)
+// @route   POST /api/case-files/upload
+// @access  Private
+export const uploadCaseFileMultipart = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const fileBuffer = (req as any).file?.buffer as Buffer | undefined;
+    const originalName = (req as any).file?.originalname as string | undefined;
+    const mimeType = (req as any).file?.mimetype as string | undefined;
+    const fileSize = (req as any).file?.size as number | undefined;
+
+    const { name, fileType, appointmentId } = req.body;
+
+    const fileName = name || originalName;
+    const resolvedMime = fileType || mimeType || 'application/octet-stream';
+
+    if (!fileBuffer || !fileName) {
+      res.status(400).json({ message: 'Please provide a file and a name' });
+      return;
+    }
+
+    const uploadedBy = req.user.role === 'lawyer' ? 'lawyer' : 'client';
+
+    if (appointmentId) {
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        include: { lawyer: true }
+      });
+      if (!appointment) {
+        res.status(404).json({ message: 'Linked appointment not found' });
+        return;
+      }
+      const isClient = appointment.userId === req.user.id;
+      const isLawyer = appointment.lawyer.userId === req.user.id;
+      if (!isClient && !isLawyer && req.user.role !== 'admin') {
+        res.status(403).json({ message: 'Not authorized to link files to this appointment' });
+        return;
+      }
+    }
+
+    let url = '';
+
+    try {
+      const bucket = admin.storage().bucket();
+      const uniqueFilename = `${Date.now()}_${fileName}`;
+      const filePath = appointmentId
+        ? `cases/${appointmentId}/${uniqueFilename}`
+        : `case-files/${req.user.id}/${uniqueFilename}`;
+      const fileRef = bucket.file(filePath);
+
+      await fileRef.save(fileBuffer, { metadata: { contentType: resolvedMime } });
+
+      // Store raw path — download is proxied through Express (no signed URL needed)
+      url = filePath;
+    } catch (storageError: any) {
+      console.warn('Firebase Storage upload failed, using base64 fallback:', storageError.message);
+      url = `data:${resolvedMime};base64,${fileBuffer.toString('base64')}`;
+    }
+
+    const caseFile = await prisma.caseFile.create({
+      data: {
+        name: fileName,
+        url,
+        fileType: resolvedMime,
+        fileSize: fileSize ?? fileBuffer.length,
+        uploadedBy,
+        userId: req.user.id,
+        appointmentId: appointmentId || null,
+      },
+      include: {
+        user: { select: { name: true, role: true, firebaseUid: true } }
+      }
+    });
+
+    res.status(201).json(caseFile);
+
+    // Notify the other party
+    if (appointmentId) {
+      try {
+        const appointment = await prisma.appointment.findUnique({
+          where: { id: appointmentId },
+          include: { lawyer: { select: { userId: true } }, user: { select: { id: true } } },
+        });
+        if (appointment) {
+          const recipientUserId =
+            req.user.id === appointment.user.id
+              ? appointment.lawyer.userId
+              : appointment.user.id;
+          await createNotification({
+            userId: recipientUserId,
+            title: 'New Document Uploaded',
+            message: `"${fileName}" has been uploaded to your consultation.`,
+            type: 'info',
+          });
+        }
+      } catch (notifErr) {
+        console.error('Failed to create file-upload notification:', notifErr);
+      }
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 // @desc    Get all accessible case files
 // @route   GET /api/case-files
 // @access  Private
@@ -312,10 +416,10 @@ export const generateUploadUrl = async (req: AuthRequest, res: Response, next: N
   }
 };
 
-// @desc    Generate a secure read/download URL for authorized users
-// @route   GET /api/case-files/download-url/:fileId
+// @desc    Proxy-stream a case file from Firebase Storage through Express to the browser
+// @route   GET /api/case-files/download/:fileId
 // @access  Private
-export const generateDownloadUrl = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const proxyDownloadFile = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { fileId } = req.params;
 
@@ -325,8 +429,8 @@ export const generateDownloadUrl = async (req: AuthRequest, res: Response, next:
     });
 
     if (!file) {
-      res.status(404);
-      throw new Error('Case file not found');
+      res.status(404).json({ message: 'Case file not found' });
+      return;
     }
 
     // Verify ownership or assignment
@@ -336,36 +440,68 @@ export const generateDownloadUrl = async (req: AuthRequest, res: Response, next:
 
     if (file.appointment) {
       isAssignedClient = file.appointment.userId === req.user.id;
-      isAssignedLawyer = file.appointment.lawyer.userId === req.user.id;
+      isAssignedLawyer = file.appointment.lawyer?.userId === req.user.id;
     }
 
     if (!isOwner && !isAssignedClient && !isAssignedLawyer && req.user.role !== 'admin') {
-      res.status(403);
-      throw new Error('Not authorized to access this file');
+      res.status(403).json({ message: 'Not authorized to access this file' });
+      return;
     }
 
+    // Handle legacy data-URL fallback (base64 encoded content stored directly in url)
+    if (file.url.startsWith('data:')) {
+      const matches = file.url.match(/^data:([^;]+);base64,(.+)$/);
+      if (matches) {
+        const mimeType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.name)}"`);
+        res.setHeader('Content-Length', buffer.length);
+        res.send(buffer);
+        return;
+      }
+    }
+
+    // Resolve storage path — could be a raw path or an old-style full GCS URL
     let filePath = file.url;
-    // Extract actual storage path if it's stored as a full old-style public URL
     if (filePath.startsWith('http')) {
-       filePath = getStoragePathFromUrl(filePath) || filePath;
+      filePath = getStoragePathFromUrl(filePath) || filePath;
     }
 
     const bucket = admin.storage().bucket();
     const fileRef = bucket.file(filePath);
 
-    // Generate a 15 minute read URL
-    const expiresDate = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-    const [downloadUrl] = await fileRef.getSignedUrl({
-      version: 'v4',
-      action: 'read',
-      expires: expiresDate,
-    });
+    // Verify the file exists before streaming
+    const [exists] = await fileRef.exists();
+    if (!exists) {
+      res.status(404).json({ message: 'File not found in storage. It may have failed to upload.' });
+      return;
+    }
 
-    res.status(200).json({
-      downloadUrl,
-      expiresAt: expiresDate
+    // Get file metadata for content-type
+    const [metadata] = await fileRef.getMetadata();
+    const contentType = (metadata.contentType as string) || file.fileType || 'application/octet-stream';
+
+    // Set response headers for download
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.name)}"`);
+    if (metadata.size) {
+      res.setHeader('Content-Length', metadata.size as string);
+    }
+
+    // Pipe the Firebase Storage read stream directly to the HTTP response
+    const readStream = fileRef.createReadStream();
+    readStream.on('error', (err) => {
+      console.error('Storage read stream error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ message: 'Failed to stream file from storage' });
+      }
     });
+    readStream.pipe(res);
   } catch (error) {
     next(error);
   }
 };
+
+// Keep old export name as alias for backward compatibility
+export const generateDownloadUrl = proxyDownloadFile;
