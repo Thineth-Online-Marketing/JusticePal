@@ -16,6 +16,7 @@ import notificationRoutes from './routes/notificationRoutes';
 import googleCalendarRoutes from './routes/googleCalendarRoutes';
 import consultationRoutes from './routes/consultationRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
+import { initNotificationSocket } from './utils/notificationHelper';
 import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
@@ -57,6 +58,9 @@ export const io = new SocketIOServer(httpServer, {
   },
 });
 
+// Initialize global notification emitter
+initNotificationSocket(io);
+
 // Socket.io — authentication middleware (verify Firebase token)
 io.use(async (socket, next) => {
   const token = socket.handshake.auth?.token;
@@ -91,6 +95,12 @@ io.use(async (socket, next) => {
 io.on('connection', (socket) => {
   const userId: string = (socket as any).userId;
   const userName: string = (socket as any).userName;
+
+  // Real-Time Notifications infrastructure: Join private user room
+  if (userId) {
+    socket.join(`user:${userId}`);
+    console.log(`User [${userId}] connected to private notification room`);
+  }
 
   // Join a consultation room (identified by appointmentId)
   socket.on('join_consultation', async ({ appointmentId }: { appointmentId: string }) => {

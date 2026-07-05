@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Bell, Check, CheckCheck, Calendar, FileText, Info, CreditCard, AlertTriangle } from "lucide-react";
+import { io, Socket } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
+import { useUI } from "../context/UIContext";
 
 interface Notification {
   id: string;
@@ -64,6 +66,7 @@ function timeAgo(dateStr: string): string {
 
 export default function NotificationBell() {
   const { user } = useAuth();
+  const { showToast } = useUI();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -142,12 +145,62 @@ export default function NotificationBell() {
     }
   };
 
-  // Poll for unread count
+  // Poll for unread count as fallback
   useEffect(() => {
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
+
+  // Real-time socket.io connection for instant notifications
+  useEffect(() => {
+    if (!user) return;
+
+    let socket: Socket;
+
+    const initSocket = async () => {
+      try {
+        const idToken = await user.getIdToken();
+        socket = io(API_BASE, {
+          auth: { token: idToken },
+          transports: ["websocket", "polling"],
+        });
+
+        socket.on("new_notification", (notification: Notification) => {
+          // Play a subtle notification sound if browser permits
+          try {
+            const audio = new Audio('/notification-sound.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log('Audio playback prevented:', e));
+          } catch (e) {
+            // Ignore audio errors
+          }
+
+          // Display dynamic toast
+          if (showToast) {
+            showToast(notification.title, notification.type === "warning" ? "warning" : "success");
+          }
+
+          // Update component states instantly without reloading
+          setNotifications((prev) => [notification, ...prev]);
+          setUnreadCount((prev) => prev + 1);
+        });
+
+      } catch (err) {
+        console.error("Failed to initialize notification socket:", err);
+      }
+    };
+
+    initSocket();
+
+    // Proper cleanup to prevent memory leaks
+    return () => {
+      if (socket) {
+        socket.off("new_notification");
+        socket.disconnect();
+      }
+    };
+  }, [user, showToast]);
 
   // Fetch full list when dropdown opens
   useEffect(() => {
