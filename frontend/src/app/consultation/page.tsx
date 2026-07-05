@@ -96,6 +96,8 @@ function ConsultationContent() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Extract appointment ID from search params
@@ -276,7 +278,7 @@ function ConsultationContent() {
     }
   }, [user, appointmentId]);
 
-  // Handle case file upload
+  // Handle case file upload using pre-signed URL (Two-Step Logic)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -288,60 +290,70 @@ function ConsultationContent() {
     }
 
     setIsUploading(true);
-    showToast(`Uploading ${file.name}...`, "warning");
+    setUploadProgress(0);
+    setUploadError(null);
+    showToast(`Preparing upload for ${file.name}...`, "warning");
 
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        try {
-          const base64String = (reader.result as string).split(",")[1];
-          const idToken = await user.getIdToken();
-          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const idToken = await user.getIdToken();
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
-          const response = await fetch(`${backendUrl}/api/case-files`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${idToken}`
-            },
-            body: JSON.stringify({
-              name: file.name,
-              fileContent: base64String,
-              fileType: file.type,
-              fileSize: file.size,
-              appointmentId: appointmentId || undefined
-            })
-          });
+      // Step 1: Fetch Pre-signed URL
+      setUploadProgress(15);
+      const urlResponse = await fetch(`${backendUrl}/api/case-files/upload-url`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+          appointmentId: appointmentId || undefined
+        })
+      });
 
-          if (response.ok) {
-            showToast(`Uploaded file: ${file.name}`, "success");
-            fetchCaseFiles(); // Refresh list
+      if (!urlResponse.ok) {
+        const errorData = await urlResponse.json();
+        throw new Error(errorData.message || "Failed to generate upload URL");
+      }
 
-            // Inject notification message in chat
-            setMessages(prev => [...prev, {
-              id: Math.random().toString(36).substr(2, 9),
-              senderRole: currentRole,
-              text: `📎 Shared a document: ${file.name} (${formatFileSize(file.size)})`,
-              createdAt: new Date().toISOString(),
-            }]);
-          } else {
-            const errorData = await response.json();
-            showToast(errorData.message || "Failed to upload file.", "error");
-          }
-        } catch (err) {
-          console.error("Error sending upload request:", err);
-          showToast("Upload failed.", "error");
-        } finally {
-          setIsUploading(false);
-          // Reset file input value
-          if (fileInputRef.current) fileInputRef.current.value = "";
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      console.error("FileReader error:", err);
-      showToast("Failed to read file.", "error");
+      const { uploadUrl, fileId } = await urlResponse.json();
+      setUploadProgress(40);
+
+      // Step 2: Direct Cloud Put
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type
+        },
+        body: file // Raw file object bypasses Express backend
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload file to cloud storage");
+      }
+
+      setUploadProgress(100);
+      showToast("File uploaded successfully to secure storage!", "success");
+      
+      fetchCaseFiles(); // Refresh list
+
+      // Inject notification message in chat
+      setMessages(prev => [...prev, {
+        id: Math.random().toString(36).substr(2, 9),
+        senderRole: currentRole,
+        text: `📎 Shared a document: ${file.name} (${formatFileSize(file.size)})`,
+        createdAt: new Date().toISOString(),
+      }]);
+
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      setUploadError(err.message || "Upload failed.");
+      showToast(err.message || "Upload failed.", "error");
+    } finally {
       setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -1239,11 +1251,30 @@ function ConsultationContent() {
                       </div>
 
                       {isUploading && (
-                        <div className="bg-blue-50/50 border border-dashed border-blue-200 rounded-2xl p-3.5 flex gap-3 items-center">
-                          <Loader2 className="w-4 h-4 animate-spin text-[#1B3A6B] shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-blue-900 leading-snug">Uploading file...</p>
+                        <div className="bg-blue-50/50 border border-dashed border-blue-200 rounded-2xl p-3.5 flex flex-col gap-2">
+                          <div className="flex gap-3 items-center">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#1B3A6B] shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-blue-900 leading-snug">
+                                Uploading file... {uploadProgress > 0 && `${uploadProgress}%`}
+                              </p>
+                            </div>
                           </div>
+                          <div className="w-full bg-blue-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                            <div 
+                              className="bg-blue-600 h-1.5 rounded-full transition-all duration-300 ease-out" 
+                              style={{ width: `${uploadProgress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {uploadError && (
+                        <div className="bg-red-50 border border-red-200 rounded-2xl p-3 text-red-600 text-[10px] font-bold flex items-center justify-between">
+                          <span>{uploadError}</span>
+                          <button onClick={() => setUploadError(null)} className="text-red-400 hover:text-red-700">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       )}
 
