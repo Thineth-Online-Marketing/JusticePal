@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { createNotification } from './notificationController';
 import { sendRealTimeNotification } from '../utils/notificationHelper';
+import { io } from '../index';
 
 const prisma = new PrismaClient();
 
@@ -58,7 +59,13 @@ export const createAppointment = async (req: Request, res: Response, next: NextF
         
         // Instantly push to the lawyer's private socket room
         sendRealTimeNotification(lawyer.userId, savedNotification);
+        
+        // Broadcast dashboard update to lawyer
+        io.to(`user:${lawyer.userId}`).emit("dashboard_update", { type: "new_booking_received", appointment });
       }
+
+      // Broadcast dashboard update to client
+      io.to(`user:${userId}`).emit("dashboard_update", { type: "booking_created" });
     } catch (notifErr) {
       console.error('Failed to create booking notification:', notifErr);
       // Don't fail the appointment creation if notification fails

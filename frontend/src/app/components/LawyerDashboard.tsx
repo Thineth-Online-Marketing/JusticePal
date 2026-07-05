@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import { io, Socket } from "socket.io-client";
 import LawyerOnboarding from "./LawyerOnboarding";
 import PendingApproval from "./PendingApproval";
 
@@ -122,6 +123,7 @@ export default function LawyerDashboard() {
   };
 
   useEffect(() => {
+    let socket: Socket;
     const unsubscribe = onAuthStateChanged(auth, async (currentUser: User | null) => {
       if (currentUser) {
         setUser(currentUser);
@@ -134,40 +136,65 @@ export default function LawyerDashboard() {
         }
 
         // Fetch upcoming appointment for the lawyer
-        try {
-          const idToken = await currentUser.getIdToken();
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments`,
-            { headers: { Authorization: `Bearer ${idToken}` } }
-          );
-          if (res.ok) {
-            const data = await res.json();
-            const upcoming = data.find(
-              (a: any) => a.status === "scheduled" || a.status === "confirmed"
-            ) || data[0] || null;
-            setUpcomingAppointment(upcoming);
+        const fetchAppointmentsForLawyer = async () => {
+          try {
+            const idToken = await currentUser.getIdToken();
+            const res = await fetch(
+              `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments`,
+              { headers: { Authorization: `Bearer ${idToken}` } }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              const upcoming = data.find(
+                (a: any) => a.status === "scheduled" || a.status === "confirmed"
+              ) || data[0] || null;
+              setUpcomingAppointment(upcoming);
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            
-            const todays = data.filter((a: any) => {
-              const apptDate = new Date(a.scheduledAt);
-              return apptDate >= today && apptDate < tomorrow && (a.status === "scheduled" || a.status === "confirmed");
-            });
-            setTodayAppointments(todays);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const tomorrow = new Date(today);
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              
+              const todays = data.filter((a: any) => {
+                const apptDate = new Date(a.scheduledAt);
+                return apptDate >= today && apptDate < tomorrow && (a.status === "scheduled" || a.status === "confirmed");
+              });
+              setTodayAppointments(todays);
+            }
+          } catch (err) {
+            console.error("Failed to fetch appointments", err);
           }
-        } catch (err) {
-          console.error("Failed to fetch appointments", err);
-        }
+        };
+
+        await fetchAppointmentsForLawyer();
+
         setLoading(false);
+        setLoading(false);
+
+        // Setup Socket for real-time dashboard updates
+        const idToken = await currentUser.getIdToken();
+        socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000", {
+          auth: { token: idToken },
+          transports: ["websocket", "polling"],
+        });
+
+        socket.on("dashboard_update", async (data) => {
+          if (data.type === "new_booking_received") {
+            if (profile?.lawyerProfile?.id) {
+              fetchAnalytics(currentUser, profile.lawyerProfile.id);
+            }
+            await fetchAppointmentsForLawyer();
+          }
+        });
       } else {
         router.push("/login");
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      socket?.disconnect();
+    };
   }, [router]);
 
   if (loading || analyticsLoading) {
