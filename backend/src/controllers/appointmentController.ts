@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { createNotification } from './notificationController';
+import { sendRealTimeNotification } from '../utils/notificationHelper';
 
 const prisma = new PrismaClient();
 
@@ -48,12 +49,15 @@ export const createAppointment = async (req: Request, res: Response, next: NextF
         select: { name: true },
       });
       if (lawyer) {
-        await createNotification({
+        const savedNotification = await createNotification({
           userId: lawyer.userId,
           title: 'New Consultation Request',
           message: `${client?.name || 'A client'} has booked a consultation for ${new Date(scheduledAt).toLocaleDateString()}.`,
           type: 'booking',
         });
+        
+        // Instantly push to the lawyer's private socket room
+        sendRealTimeNotification(lawyer.userId, savedNotification);
       }
     } catch (notifErr) {
       console.error('Failed to create booking notification:', notifErr);

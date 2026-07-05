@@ -237,3 +237,135 @@ export const deleteCaseFile = async (req: AuthRequest, res: Response, next: Next
     next(error);
   }
 };
+
+// @desc    Generate a pre-signed URL for uploading a case file directly to cloud storage
+// @route   POST /api/case-files/upload-url
+// @access  Private
+export const generateUploadUrl = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { fileName, fileType, appointmentId, caseDescription } = req.body;
+
+    if (!fileName || !fileType) {
+      res.status(400);
+      throw new Error('Please provide fileName and fileType');
+    }
+
+    const uploadedBy = req.user.role === 'lawyer' ? 'lawyer' : 'client';
+
+    if (appointmentId) {
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        include: { lawyer: true }
+      });
+
+      if (!appointment) {
+        res.status(404);
+        throw new Error('Linked appointment not found');
+      }
+
+      const isClient = appointment.userId === req.user.id;
+      const isLawyer = appointment.lawyer.userId === req.user.id;
+      if (!isClient && !isLawyer && req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Not authorized to link files to this appointment');
+      }
+    }
+
+    const uniqueFilename = `${Date.now()}_${fileName}`;
+    const filePath = appointmentId 
+      ? `cases/${appointmentId}/${uniqueFilename}`
+      : `case-files/${req.user.id}/${uniqueFilename}`;
+    
+    // Using Firebase Admin Storage to generate signed URLs 
+    // (AWS S3 equivalent would use @aws-sdk/client-s3 and @aws-sdk/s3-request-presigner)
+    const bucket = admin.storage().bucket();
+    const fileRef = bucket.file(filePath);
+
+    const expiresDate = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    const [uploadUrl] = await fileRef.getSignedUrl({
+      version: 'v4',
+      action: 'write',
+      expires: expiresDate,
+      contentType: fileType,
+    });
+
+    // Create a record in Prisma CaseFile model with a placeholder/storage path
+    const caseFile = await prisma.caseFile.create({
+      data: {
+        name: fileName,
+        url: filePath,
+        fileType,
+        uploadedBy,
+        userId: req.user.id,
+        appointmentId: appointmentId || null,
+      }
+    });
+
+    res.status(200).json({
+      uploadUrl,
+      fileId: caseFile.id,
+      expiresAt: expiresDate
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Generate a secure read/download URL for authorized users
+// @route   GET /api/case-files/download-url/:fileId
+// @access  Private
+export const generateDownloadUrl = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { fileId } = req.params;
+
+    const file = await prisma.caseFile.findUnique({
+      where: { id: fileId },
+      include: { appointment: { include: { lawyer: true } } }
+    });
+
+    if (!file) {
+      res.status(404);
+      throw new Error('Case file not found');
+    }
+
+    // Verify ownership or assignment
+    const isOwner = file.userId === req.user.id;
+    let isAssignedClient = false;
+    let isAssignedLawyer = false;
+
+    if (file.appointment) {
+      isAssignedClient = file.appointment.userId === req.user.id;
+      isAssignedLawyer = file.appointment.lawyer.userId === req.user.id;
+    }
+
+    if (!isOwner && !isAssignedClient && !isAssignedLawyer && req.user.role !== 'admin') {
+      res.status(403);
+      throw new Error('Not authorized to access this file');
+    }
+
+    let filePath = file.url;
+    // Extract actual storage path if it's stored as a full old-style public URL
+    if (filePath.startsWith('http')) {
+       filePath = getStoragePathFromUrl(filePath) || filePath;
+    }
+
+    const bucket = admin.storage().bucket();
+    const fileRef = bucket.file(filePath);
+
+    // Generate a 15 minute read URL
+    const expiresDate = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const [downloadUrl] = await fileRef.getSignedUrl({
+      version: 'v4',
+      action: 'read',
+      expires: expiresDate,
+    });
+
+    res.status(200).json({
+      downloadUrl,
+      expiresAt: expiresDate
+    });
+  } catch (error) {
+    next(error);
+  }
+};
