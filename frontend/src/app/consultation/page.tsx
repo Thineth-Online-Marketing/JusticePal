@@ -13,6 +13,7 @@ import {
   FileSignature, Calendar, LayoutDashboard, Clock, CircleDot, Trash2, Wifi
 } from "lucide-react";
 import ClientNavbar from "../components/ClientNavbar";
+import JusticePalLogo from "../components/JusticePalLogo";
 import { useAuth } from "../context/AuthContext";
 import { useUI } from "../context/UIContext";
 
@@ -200,11 +201,27 @@ function ConsultationContent() {
 
       socket.on("new_message", (msg: ChatMessage) => {
         setMessages((prev) => {
-          // Avoid duplicates
+          // If exact ID already exists, ignore
           if (prev.some((m) => m.id === msg.id)) return prev;
+
+          // Replace an optimistic copy from the same sender with the same text
+          const optimisticIdx = prev.findIndex(
+            (m) =>
+              m.id.startsWith("optimistic-") &&
+              m.senderRole === msg.senderRole &&
+              m.text === msg.text
+          );
+          if (optimisticIdx !== -1) {
+            const updated = [...prev];
+            updated[optimisticIdx] = msg;
+            return updated;
+          }
+
+          // Otherwise it's a message from the other participant — append it
           return [...prev, msg];
         });
       });
+
 
       socket.on("participant_typing", ({ isTyping: typing }: { isTyping: boolean }) => {
         setRemoteTyping(typing);
@@ -401,33 +418,57 @@ function ConsultationContent() {
   // ── Send message via Socket.io ───────────────────────────────────
   const handleSendMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!newMessageText.trim() || !appointmentId) return;
+    const text = newMessageText.trim();
+    if (!text) return;
 
-    if (socketRef.current && socketConnected) {
-      // Send via real-time socket
-      socketRef.current.emit("send_message", { appointmentId, text: newMessageText.trim() });
-    } else {
-      // Fallback to REST if socket is not connected
-      (async () => {
-        try {
-          const idToken = await user!.getIdToken();
-          await fetch(`${BACKEND_URL}/api/consultations/${appointmentId}/messages`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
-            body: JSON.stringify({ text: newMessageText.trim() }),
-          });
-        } catch (err) {
-          console.error("REST fallback message failed:", err);
-        }
-      })();
-    }
+    // Optimistically add the message to local state immediately
+    // so it appears in the UI without waiting for a server round-trip
+    const optimisticMsg: ChatMessage = {
+      id: `optimistic-${Date.now()}`,
+      senderRole: currentRole,
+      text,
+      createdAt: new Date().toISOString(),
+      sender: { id: "me", name: selfName },
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
     setNewMessageText("");
 
     // Clear typing indicator
     if (socketRef.current && appointmentId) {
       socketRef.current.emit("typing", { appointmentId, isTyping: false });
     }
+
+    // If no appointmentId, we're in demo mode — message is already shown locally
+    if (!appointmentId) return;
+
+    if (socketRef.current && socketConnected) {
+      // Send via Socket.io — server will broadcast `new_message` back which
+      // we deduplicate by checking id, so the optimistic copy stays visible
+      socketRef.current.emit("send_message", { appointmentId, text });
+    } else {
+      // Fallback to REST if socket is not connected
+      (async () => {
+        try {
+          const idToken = await user!.getIdToken();
+          const res = await fetch(`${BACKEND_URL}/api/consultations/${appointmentId}/messages`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+            body: JSON.stringify({ text }),
+          });
+          if (res.ok) {
+            const saved: ChatMessage = await res.json();
+            // Replace the optimistic message with the real persisted one
+            setMessages((prev) =>
+              prev.map((m) => (m.id === optimisticMsg.id ? saved : m))
+            );
+          }
+        } catch (err) {
+          console.error("REST fallback message failed:", err);
+        }
+      })();
+    }
   };
+
 
   // ── Typing indicator ─────────────────────────────────────────────
   const handleTyping = (val: string) => {
@@ -502,107 +543,21 @@ function ConsultationContent() {
           <ClientNavbar />
         </div>
       ) : (
-        // Lawyer Navbar (takes 64px)
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-30 shadow-sm flex-shrink-0">
-          <div className="flex items-center gap-3 w-64">
-            <Link href="/lawyer-dashboard" className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-sm flex items-center justify-center bg-blue-50/55">
-                <Image 
-                  src="https://res.cloudinary.com/dluwvqdaz/image/upload/v1775969976/Navy_Blue_JusticePal_Logo_with_Dove_Fusion_new_uhyjl0.png" 
-                  alt="JusticePal Logo" 
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex flex-col leading-tight">
-                <span className="font-extrabold text-xl tracking-tight text-[#1B3A6B]">JusticePal</span>
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#3b6fd4] uppercase">Sri Lanka</span>
-              </div>
-            </Link>
-          </div>
-          
-          <div className="flex-1 max-w-2xl px-8 hidden md:block">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></div>
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Video Session</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3">
-              {/* Socket.io connection indicator */}
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
-                socketConnected 
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
-                  : "bg-gray-50 text-gray-500 border-gray-200"
-              }`}>
-                <Wifi className={`w-3 h-3 ${socketConnected ? "text-emerald-600" : "text-gray-400"}`} />
-                {socketConnected ? "Live" : "Connecting..."}
-              </div>
-              <div className="flex flex-col text-right">
-                <span className="text-sm font-bold text-gray-900 leading-tight">{lawyerName}</span>
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Advocate</span>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden relative border border-gray-200">
-                <Image 
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150" 
-                  alt={lawyerName} 
-                  fill 
-                  className="object-cover" 
-                />
-              </div>
-            </div>
-          </div>
-        </header>
+        // Standard Lawyer Navbar — matches lawyer-dashboard layout exactly
+        <LawyerConsultationHeader
+          user={user}
+          lawyerName={lawyerName}
+          lawyerProfilePic={participants.lawyer ? undefined : undefined}
+          socketConnected={socketConnected}
+        />
       )}
 
       {/* ────────────────── main body area ────────────────── */}
       <div className="flex flex-1 overflow-hidden relative">
         
-        {/* Lawyer Left Sidebar (Only visible if lawyer role is active) */}
-        {currentRole === "lawyer" && (
-          <aside className="w-64 bg-white border-r border-gray-200 flex flex-col justify-between py-6 flex-shrink-0 hidden lg:flex">
-            <nav className="space-y-1 px-4">
-              <Link 
-                href="/lawyer-dashboard"
-                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-              >
-                <LayoutDashboard className="w-5 h-5 text-gray-400" />
-                Dashboard
-              </Link>
-              <Link 
-                href="/lawyer-dashboard/calendar"
-                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-              >
-                <Calendar className="w-5 h-5 text-gray-400" />
-                Calendar
-              </Link>
-              <Link 
-                href="/lawyer-dashboard/cases"
-                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-              >
-                <FileSignature className="w-5 h-5 text-gray-400" />
-                Active Cases
-              </Link>
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-bold bg-[#EBF1F9] text-[#1B3A6B]">
-                <Radio className="w-5 h-5 text-[#1B3A6B]" />
-                Video Room
-              </div>
-            </nav>
-            
-            <div className="px-4">
-              <button 
-                onClick={handleEndCall}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <PhoneOff className="w-5 h-5 text-red-500" />
-                Exit Consultation
-              </button>
-            </div>
-          </aside>
-        )}
 
         {/* Video meeting content area */}
+
         <div className="flex-1 flex flex-col overflow-y-auto min-w-0 p-4 lg:p-6 space-y-6">
           
           {/* Header Dashboard section */}
@@ -1443,6 +1398,175 @@ function ConsultationContent() {
       </footer>
 
     </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// LawyerConsultationHeader — identical to lawyer-dashboard layout.tsx header
+// ──────────────────────────────────────────────────────────────────────────────
+function LawyerConsultationHeader({
+  user,
+  lawyerName,
+  lawyerProfilePic,
+  socketConnected,
+}: {
+  user: { displayName?: string | null; email?: string | null } | null;
+  lawyerName: string;
+  lawyerProfilePic?: string;
+  socketConnected: boolean;
+}) {
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = React.useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const { signOut } = await import("firebase/auth");
+    const { auth } = await import("../lib/firebase");
+    await signOut(auth);
+    router.push("/");
+  };
+
+  const navLinks = [
+    { name: "Dashboard", href: "/lawyer-dashboard" },
+    { name: "Calendar", href: "/lawyer-dashboard/calendar" },
+    { name: "Active Cases", href: "/lawyer-dashboard/cases" },
+    { name: "Messages", href: "/lawyer-dashboard/messages" },
+    { name: "Settings", href: "/lawyer-dashboard/settings" },
+  ];
+
+  return (
+    <header className="h-[72px] flex items-center justify-between z-30 flex-shrink-0 px-6 bg-white shadow-sm border-b border-gray-100 transition-all duration-300">
+
+      {/* Left Side: Logo */}
+      <div className="flex items-center h-full shrink-0">
+        <Link href="/" className="hover:opacity-90 transition-opacity duration-200">
+          <JusticePalLogo />
+        </Link>
+      </div>
+
+      {/* Navigation Links - Centered */}
+      <nav className="hidden lg:flex items-center justify-center flex-1 h-full mx-4 space-x-1">
+        {navLinks.map((item, idx) => {
+          const isConsultation = item.href === "/lawyer-dashboard";
+          return (
+            <Link
+              key={idx}
+              href={item.href}
+              className={`flex items-center px-4 h-full text-sm font-medium transition-colors border-b-2 ${
+                isConsultation
+                  ? "border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                  : "border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              {item.name}
+            </Link>
+          );
+        })}
+        {/* Active Video Session indicator in nav */}
+        <span className="flex items-center gap-1.5 px-3 h-full border-b-2 border-[#1B3A6B] text-[#1B3A6B] bg-blue-50/50 text-sm font-medium">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping inline-block" />
+          Video Session
+        </span>
+      </nav>
+
+      {/* Right Actions */}
+      <div className="flex items-center gap-4 shrink-0">
+
+        {/* Socket status pill */}
+        <div className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+          socketConnected
+            ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+            : "bg-gray-50 text-gray-500 border-gray-200"
+        }`}>
+          <Wifi className={`w-3 h-3 ${socketConnected ? "text-emerald-600" : "text-gray-400"}`} />
+          {socketConnected ? "Live" : "Connecting..."}
+        </div>
+
+        {/* Search Bar */}
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#f1f5f9] border border-gray-200">
+          <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search case files, appointments..."
+            className="bg-transparent outline-none text-[13px] w-48 text-slate-900 placeholder:text-slate-400"
+          />
+        </div>
+
+        {/* Notification Bell */}
+        <button className="relative p-2 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors">
+          <svg className="w-[20px] h-[20px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white" />
+        </button>
+
+        {/* Profile Dropdown */}
+        <div className="relative ml-2">
+          <button
+            onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+            className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            <div className="text-right leading-tight hidden sm:block">
+              <p className="text-[13px] font-semibold text-slate-800">Counselor {lawyerName}</p>
+              <p className="text-[10px] font-bold tracking-wider text-[#3b82f6]">HIGH COURT ADVOCATE</p>
+            </div>
+            <div className="flex items-center gap-1">
+              <div
+                className="w-9 h-9 rounded-full overflow-hidden relative flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
+                style={{ background: "linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%)" }}
+              >
+                {lawyerProfilePic ? (
+                  <Image src={lawyerProfilePic} alt={lawyerName} fill className="object-cover" />
+                ) : (
+                  lawyerName.charAt(0)
+                )}
+              </div>
+              <svg
+                className={`w-3.5 h-3.5 text-slate-400 hidden sm:block transition-transform ${isProfileDropdownOpen ? "rotate-180" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </button>
+
+          {isProfileDropdownOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setIsProfileDropdownOpen(false)} />
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50 text-slate-800">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="text-sm font-bold text-gray-900">{user?.displayName || lawyerName}</p>
+                  <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email}</p>
+                </div>
+                <div className="p-2">
+                  <Link
+                    href="/lawyer-dashboard/settings"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Settings
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-1"
+                  >
+                    <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </header>
   );
 }
 
