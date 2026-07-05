@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import { Bell, Mail } from "lucide-react";
 import JusticePalLogo from "../components/JusticePalLogo";
 
 const content = {
@@ -114,7 +115,6 @@ export default function LawyerDashboardLayout({ children }: { children: ReactNod
             { name: tx.dashboard, href: "/lawyer-dashboard" },
             { name: tx.calendar, href: "/lawyer-dashboard/calendar" },
             { name: tx.cases, href: "/lawyer-dashboard/cases" },
-            { name: tx.messages, href: "/lawyer-dashboard/messages" },
             { name: tx.settings, href: "/lawyer-dashboard/settings" },
           ].map((item, idx) => {
             const active = pathname === item.href;
@@ -150,12 +150,23 @@ export default function LawyerDashboardLayout({ children }: { children: ReactNod
           </div>
 
           {/* Notification Bell */}
-          <button className="relative p-2 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors">
-            <svg className="w-[20px] h-[20px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white" />
+          <button className={`relative flex items-center justify-center w-10 h-10 shrink-0 rounded-xl transition-colors border bg-gray-50 hover:bg-gray-100 border-gray-100`}>
+            <Bell className="w-5 h-5 text-gray-600" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
           </button>
+
+          {/* Messages Mail */}
+          <Link 
+            href="/lawyer-dashboard/messages" 
+            className={`relative flex items-center justify-center w-10 h-10 shrink-0 rounded-xl transition-colors border ${
+              pathname.startsWith('/lawyer-dashboard/messages') 
+                ? 'bg-blue-50 border-blue-200' 
+                : 'bg-gray-50 hover:bg-gray-100 border-gray-100'
+            }`}
+          >
+            <Mail className={`w-5 h-5 ${pathname.startsWith('/lawyer-dashboard/messages') ? 'text-blue-600' : 'text-gray-600'}`} />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full border-2 border-white"></span>
+          </Link>
           
           {/* Profile Dropdown Area */}
           <div className="relative ml-2">
