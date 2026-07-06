@@ -30,13 +30,35 @@ export const createAppointment = async (req: Request, res: Response, next: NextF
   try {
     const { userId, lawyerId, scheduledAt, caseDescription } = req.body;
 
-    const appointment = await prisma.appointment.create({
-      data: {
-        userId,
-        lawyerId,
-        scheduledAt: new Date(scheduledAt),
-        caseDescription
-      }
+    const appointment = await prisma.$transaction(async (tx) => {
+      // Step A: Create the Appointment record
+      const newAppointment = await tx.appointment.create({
+        data: {
+          userId,
+          lawyerId,
+          scheduledAt: new Date(scheduledAt),
+          status: 'scheduled',
+          caseDescription
+        }
+      });
+
+      // Fetch lawyer to get hourlyRate
+      const lawyer = await tx.lawyer.findUnique({
+        where: { id: lawyerId }
+      });
+      const amount = lawyer?.hourlyRate || 5000; // Default amount if not set
+
+      // Step B: Create corresponding Payment record
+      await tx.payment.create({
+        data: {
+          appointmentId: newAppointment.id,
+          amount,
+          status: 'pending',
+          currency: 'LKR'
+        }
+      });
+
+      return newAppointment;
     });
 
     // ── Auto-trigger: notify the lawyer about the new booking ──
