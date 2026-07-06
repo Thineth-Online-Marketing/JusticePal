@@ -5,6 +5,8 @@ import { useLanguage } from "../context/LanguageContext";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { io, Socket } from "socket.io-client";
+import { FileDown } from "lucide-react";
+import { useUI } from "../context/UIContext";
 import LawyerOnboarding from "./LawyerOnboarding";
 import PendingApproval from "./PendingApproval";
 
@@ -69,6 +71,7 @@ const content = {
 
 export default function LawyerDashboard() {
   const { lang } = useLanguage();
+  const { showToast } = useUI();
   const tx = content[lang as keyof typeof content] || content.en;
   const router = useRouter();
 
@@ -102,6 +105,35 @@ export default function LawyerDashboard() {
       setAnalyticsError("Failed to load analytics");
     } finally {
       setAnalyticsLoading(false);
+    }
+  };
+
+  const handlePreviewReport = async () => {
+    if (!user) return;
+    try {
+      showToast("Loading live print preview...", "success");
+      const idToken = await user.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/lawyers/report/download`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to generate report");
+      }
+
+      const blob = new Blob([await res.blob()], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Instantly open the inline PDF in a clean independent workspace layer
+      window.open(url, '_blank');
+      
+      // Cleanup ObjectURL after a slight delay to ensure browser captures it
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      
+      showToast("Preview loaded successfully!", "success");
+    } catch (error) {
+      console.error("Error previewing report", error);
+      showToast("Failed to load report preview", "error");
     }
   };
 
@@ -318,6 +350,16 @@ export default function LawyerDashboard() {
         </div>
 
         <div className="w-full space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-[#1B3A6B]">{tx.dashboard} Analytics</h2>
+            <button
+              onClick={handlePreviewReport}
+              className="flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#112549] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+            >
+              <FileDown className="w-4 h-4" />
+              Download Financial Report
+            </button>
+          </div>
           
           {/* Top Stat Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

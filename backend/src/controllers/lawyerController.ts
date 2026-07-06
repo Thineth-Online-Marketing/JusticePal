@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/authMiddleware';
+import PDFDocument from 'pdfkit';
 
 const prisma = new PrismaClient();
 
@@ -310,6 +311,101 @@ export const getLawyerAnalytics = async (req: AuthRequest, res: Response, next: 
     if (res.statusCode === 200) {
       res.status(500);
     }
+    next(error);
+  }
+};
+
+// @desc    Generate Lawyer Financial Summary PDF Report
+// @route   GET /api/lawyers/report/download
+// @access  Private (Lawyer)
+export const generateFinancialReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user.id;
+
+    const lawyer = await prisma.lawyer.findUnique({
+      where: { userId },
+      include: {
+        user: { select: { name: true } }
+      }
+    });
+
+    if (!lawyer) {
+      return res.status(404).json({ message: 'Lawyer profile not found' });
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        lawyerId: lawyer.id,
+        status: { in: ['confirmed', 'scheduled'] }
+      },
+      include: {
+        user: { select: { name: true } },
+        payments: {
+          where: { status: 'succeeded' }
+        }
+      },
+      orderBy: { scheduledAt: 'desc' }
+    });
+
+    let totalEarnings = 0;
+    const reportData = appointments.map(appt => {
+      const fee = appt.payments.reduce((acc, p) => acc + p.amount, 0);
+      totalEarnings += fee;
+      return {
+        date: new Date(appt.scheduledAt).toLocaleDateString(),
+        clientName: appt.user.name,
+        caseDesc: appt.caseDescription.substring(0, 30) + (appt.caseDescription.length > 30 ? '...' : ''),
+        fee
+      };
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename=Lawyer_Financial_Summary.pdf');
+
+    const doc = new PDFDocument({ margin: 50 });
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(20).text('JusticePal Legal Network — Financial Summary Report', { align: 'center' });
+    doc.moveDown();
+
+    // Metadata
+    doc.fontSize(12).text(`Date Generated: ${new Date().toLocaleDateString()}`);
+    doc.text(`Lawyer Name: ${lawyer.user.name}`);
+    doc.text(`Specialization: ${lawyer.specialization.join(', ')}`);
+    doc.text(`Total Consultations: ${appointments.length}`);
+    doc.moveDown(2);
+
+    // Table Header
+    doc.fontSize(12).font('Helvetica-Bold');
+    doc.text('Date', 50, doc.y, { continued: true, width: 100 });
+    doc.text('Client Name', 150, doc.y, { continued: true, width: 150 });
+    doc.text('Case Description', 300, doc.y, { continued: true, width: 180 });
+    doc.text('Fee (LKR)', 480, doc.y);
+    
+    doc.moveTo(50, doc.y + 5).lineTo(550, doc.y + 5).stroke();
+    doc.moveDown();
+
+    // Table Rows
+    doc.font('Helvetica');
+    reportData.forEach(row => {
+      const y = doc.y;
+      doc.text(row.date, 50, y, { width: 100 });
+      doc.text(row.clientName, 150, y, { width: 150 });
+      doc.text(row.caseDesc, 300, y, { width: 180 });
+      doc.text(row.fee.toString(), 480, y);
+      doc.moveDown(0.5);
+    });
+
+    doc.moveDown();
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveDown();
+
+    // Footer Summary
+    doc.fontSize(14).font('Helvetica-Bold').text(`Total Earnings: ${totalEarnings} LKR`, { align: 'right' });
+
+    doc.end();
+  } catch (error) {
     next(error);
   }
 };
