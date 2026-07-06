@@ -6,8 +6,9 @@ import { useRouter, usePathname } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { Bell, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import JusticePalLogo from "../components/JusticePalLogo";
+import NotificationBell from "../components/NotificationBell";
 
 const content = {
   en: {
@@ -150,10 +151,7 @@ export default function LawyerDashboardLayout({ children }: { children: ReactNod
           </div>
 
           {/* Notification Bell */}
-          <button className={`relative flex items-center justify-center w-10 h-10 shrink-0 rounded-xl transition-colors border bg-gray-50 hover:bg-gray-100 border-gray-100`}>
-            <Bell className="w-5 h-5 text-gray-600" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-          </button>
+          <NotificationBell />
 
           {/* Messages Mail */}
           <Link 
