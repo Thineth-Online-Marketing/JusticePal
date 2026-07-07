@@ -7,17 +7,20 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   logout: async () => {},
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updateTrigger, setUpdateTrigger] = useState(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: User | null) => {
@@ -34,8 +37,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setUpdateTrigger(prev => prev + 1); // Force a re-render
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, logout }}>
+    <AuthContext.Provider value={{ user: auth.currentUser || user, loading, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

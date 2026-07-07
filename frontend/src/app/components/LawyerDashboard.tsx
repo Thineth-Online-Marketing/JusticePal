@@ -266,88 +266,90 @@ export default function LawyerDashboard() {
 
   // Determine profile strength and task completion
   const lawyerProfile = dbUser?.lawyerProfile;
-  const isVerified = lawyerProfile?.isVerified;
-  const hasBioData = lawyerProfile && lawyerProfile.specialization?.length > 0 && !!lawyerProfile.location && !!lawyerProfile.bio;
-  const hasVerifiedPhone = !!lawyerProfile?.phoneVerified;
-  const hasIdUploaded = lawyerProfile?.idPhotos?.length > 0;
+  const isLawyer = dbUser?.role === "lawyer";
   
-  const showPendingApproval = dbUser?.role === "lawyer" && !isVerified && lawyerProfile?.profileCompleted;
-  const showBioTask = dbUser?.role === "lawyer" && !hasBioData && !showPendingApproval;
-  const showPhoneTask = dbUser?.role === "lawyer" && !isVerified && !hasVerifiedPhone && !showPendingApproval;
-  const showIdTask = dbUser?.role === "lawyer" && !isVerified && !hasIdUploaded && !showPendingApproval;
+  const showBioTask = isLawyer && (!lawyerProfile?.bio || !lawyerProfile?.specialization || lawyerProfile.specialization.length === 0);
+  const showPhoneTask = isLawyer && (!lawyerProfile?.phoneVerified);
+  const showIdTask = isLawyer && (!lawyerProfile?.isVerified);
+  
+  const showPendingApproval = isLawyer && !lawyerProfile?.isVerified && lawyerProfile?.profileCompleted;
+
+  const hasOnboardingTasks = showBioTask || showPhoneTask || showIdTask || showPendingApproval;
 
   return (
     <>
       <main className="flex-1 overflow-y-auto p-8 relative h-full">
         {/* Action Task Cards Container */}
-        <div className="w-full space-y-4 mb-8">
-          
-          {showBioTask && (
-            <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
-              <div>
-                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+        {hasOnboardingTasks && (
+          <div className="w-full space-y-4 mb-8">
+            
+            {showBioTask && (
+              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    Add Bio Data
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">Complete your profile details including your picture, specialization, and work experience.</p>
+                </div>
+                <button onClick={() => setSetupStep(1)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
                   Add Bio Data
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">Complete your profile details including your picture, specialization, and work experience.</p>
+                </button>
               </div>
-              <button onClick={() => setSetupStep(1)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
-                Add Bio Data
-              </button>
-            </div>
-          )}
+            )}
 
-          {showPhoneTask && (
-            <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
-              <div>
-                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                  Verify Mobile Number
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">Verify your phone number with OTP to secure your account and communicate with clients.</p>
+            {showPhoneTask && (
+              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    Verify Mobile Number
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">Verify your phone number with OTP to secure your account and communicate with clients.</p>
+                </div>
+                <button onClick={() => setSetupStep(2)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
+                  Verify Number
+                </button>
               </div>
-              <button onClick={() => setSetupStep(2)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
-                Verify Number
-              </button>
-            </div>
-          )}
+            )}
 
-          {showIdTask && (
-            <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500 opacity-90">
-              <div>
-                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
-                  Verify Lawyer Account
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  Upload your official Lawyer ID to get verified by our administration team.
-                </p>
+            {showIdTask && (
+              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500 opacity-90">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
+                    Verify Lawyer Account
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Upload your official Lawyer ID to get verified by our administration team.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setSetupStep(3)} 
+                  className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap"
+                >
+                  Verify Account
+                </button>
               </div>
-              <button 
-                onClick={() => setSetupStep(3)} 
-                className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap"
-              >
-                Verify Account
-              </button>
-            </div>
-          )}
+            )}
 
-          {showPendingApproval && (
-            <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-orange-500">
-              <div>
-                <h3 className="text-base font-bold text-orange-800 flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  Pending Admin Approval
-                </h3>
-                <p className="text-xs text-orange-700 mt-1">Your Lawyer ID is currently being reviewed. You will have full access once approved.</p>
+            {showPendingApproval && (
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-orange-500">
+                <div>
+                  <h3 className="text-base font-bold text-orange-800 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Pending Admin Approval
+                  </h3>
+                  <p className="text-xs text-orange-700 mt-1">Your Lawyer ID is currently being reviewed. You will have full access once approved.</p>
+                </div>
+                <button disabled className="mt-3 md:mt-0 px-5 py-2 bg-orange-200 text-orange-800 rounded-lg text-xs font-medium cursor-not-allowed whitespace-nowrap">
+                  Under Review
+                </button>
               </div>
-              <button disabled className="mt-3 md:mt-0 px-5 py-2 bg-orange-200 text-orange-800 rounded-lg text-xs font-medium cursor-not-allowed whitespace-nowrap">
-                Under Review
-              </button>
-            </div>
-          )}
+            )}
 
-        </div>
+          </div>
+        )}
 
         <div className="w-full space-y-6">
           <div className="flex justify-between items-center">
@@ -596,9 +598,14 @@ export default function LawyerDashboard() {
             <LawyerOnboarding 
               dbUser={dbUser} 
               initialStep={setupStep}
-              onComplete={() => {
+              onComplete={async () => {
                 setSetupStep(null);
-                if (user) fetchDbProfile(user);
+                if (user) {
+                  const updatedProfile = await fetchDbProfile(user);
+                  if (updatedProfile?.lawyerProfile?.id) {
+                    fetchAnalytics(user, updatedProfile.lawyerProfile.id);
+                  }
+                }
               }} 
             />
           </div>
