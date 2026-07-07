@@ -15,6 +15,7 @@ import caseFileRoutes from './routes/caseFileRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import googleCalendarRoutes from './routes/googleCalendarRoutes';
 import consultationRoutes from './routes/consultationRoutes';
+import profileRoutes from './routes/profileRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 import { initNotificationSocket } from './utils/notificationHelper';
 import { PrismaClient } from '@prisma/client';
@@ -203,6 +204,7 @@ app.use('/api/case-files', caseFileRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/google-calendar', googleCalendarRoutes);
 app.use('/api/consultations', consultationRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);
