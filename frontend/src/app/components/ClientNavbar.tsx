@@ -39,7 +39,7 @@ export default function ClientNavbar() {
         
         {/* Left Side: Logo and Brand */}
         <div className="w-1/3 flex items-center h-full shrink-0">
-          <Link href="/" className="hover:opacity-90 transition-opacity duration-200 shrink-0 flex items-center">
+          <Link href="/?redirect=false" className="hover:opacity-90 transition-opacity duration-200 shrink-0 flex items-center">
             <JusticePalLogo />
           </Link>
         </div>
