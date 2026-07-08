@@ -16,8 +16,10 @@ import notificationRoutes from './routes/notificationRoutes';
 import googleCalendarRoutes from './routes/googleCalendarRoutes';
 import consultationRoutes from './routes/consultationRoutes';
 import profileRoutes from './routes/profileRoutes';
+import clientRoutes from './routes/clientRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 import { initNotificationSocket } from './utils/notificationHelper';
+import { initReminderScheduler } from './utils/reminderScheduler';
 import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
@@ -61,6 +63,9 @@ export const io = new SocketIOServer(httpServer, {
 
 // Initialize global notification emitter
 initNotificationSocket(io);
+
+// Initialize background cron scheduler for appointment reminders
+initReminderScheduler();
 
 // Socket.io — authentication middleware (verify Firebase token)
 io.use(async (socket, next) => {
@@ -205,6 +210,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/google-calendar', googleCalendarRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/clients', clientRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);

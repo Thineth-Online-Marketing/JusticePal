@@ -54,6 +54,7 @@ model Appointment {
   lawyerId         String
   scheduledAt      DateTime
   status           String             @default("pending")
+  reminderSent     Boolean            @default(false)
   caseDescription  String
   meetingLink      String?
   createdAt        DateTime           @default(now())
