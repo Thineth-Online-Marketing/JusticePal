@@ -59,7 +59,7 @@ export default function DashboardProfileDropdown() {
 
           <div className="p-2 flex flex-col gap-1">
             <Link
-              href="/dashboard/profile"
+              href="/client-dashboard/profile"
               onClick={() => setIsOpen(false)}
               className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-[#1B3A6B] rounded-xl transition-colors"
             >
@@ -88,7 +88,7 @@ export default function DashboardProfileDropdown() {
             <div className="h-px bg-slate-100 my-1 mx-2"></div>
 
             <Link
-              href="/"
+              href="/?redirect=false"
               onClick={() => setIsOpen(false)}
               className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-[#059669] hover:bg-emerald-50 rounded-xl transition-colors"
             >
