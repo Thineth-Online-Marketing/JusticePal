@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { createNotification } from './notificationController';
+import { sendRealTimeNotification } from '../utils/notificationHelper';
+import { io } from '../index';
 
 const prisma = new PrismaClient();
 
@@ -28,13 +30,35 @@ export const createAppointment = async (req: Request, res: Response, next: NextF
   try {
     const { userId, lawyerId, scheduledAt, caseDescription } = req.body;
 
-    const appointment = await prisma.appointment.create({
-      data: {
-        userId,
-        lawyerId,
-        scheduledAt: new Date(scheduledAt),
-        caseDescription
-      }
+    const appointment = await prisma.$transaction(async (tx) => {
+      // Step A: Create the Appointment record
+      const newAppointment = await tx.appointment.create({
+        data: {
+          userId,
+          lawyerId,
+          scheduledAt: new Date(scheduledAt),
+          status: 'scheduled',
+          caseDescription
+        }
+      });
+
+      // Fetch lawyer to get hourlyRate
+      const lawyer = await tx.lawyer.findUnique({
+        where: { id: lawyerId }
+      });
+      const amount = lawyer?.hourlyRate || 5000; // Default amount if not set
+
+      // Step B: Create corresponding Payment record
+      await tx.payment.create({
+        data: {
+          appointmentId: newAppointment.id,
+          amount,
+          status: 'pending',
+          currency: 'LKR'
+        }
+      });
+
+      return newAppointment;
     });
 
     // ── Auto-trigger: notify the lawyer about the new booking ──
@@ -48,13 +72,22 @@ export const createAppointment = async (req: Request, res: Response, next: NextF
         select: { name: true },
       });
       if (lawyer) {
-        await createNotification({
+        const savedNotification = await createNotification({
           userId: lawyer.userId,
           title: 'New Consultation Request',
           message: `${client?.name || 'A client'} has booked a consultation for ${new Date(scheduledAt).toLocaleDateString()}.`,
           type: 'booking',
         });
+        
+        // Instantly push to the lawyer's private socket room
+        sendRealTimeNotification(lawyer.userId, savedNotification);
+        
+        // Broadcast dashboard update to lawyer
+        io.to(`user:${lawyer.userId}`).emit("dashboard_update", { type: "new_booking_received", appointment });
       }
+
+      // Broadcast dashboard update to client
+      io.to(`user:${userId}`).emit("dashboard_update", { type: "booking_created" });
     } catch (notifErr) {
       console.error('Failed to create booking notification:', notifErr);
       // Don't fail the appointment creation if notification fails

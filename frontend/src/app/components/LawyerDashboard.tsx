@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import { io, Socket } from "socket.io-client";
+import { FileDown } from "lucide-react";
+import { useUI } from "../context/UIContext";
 import LawyerOnboarding from "./LawyerOnboarding";
 import PendingApproval from "./PendingApproval";
 
@@ -68,6 +71,7 @@ const content = {
 
 export default function LawyerDashboard() {
   const { lang } = useLanguage();
+  const { showToast } = useUI();
   const tx = content[lang as keyof typeof content] || content.en;
   const router = useRouter();
 
@@ -76,6 +80,62 @@ export default function LawyerDashboard() {
   const [loading, setLoading] = useState(true);
   const [setupStep, setSetupStep] = useState<1 | 2 | 3 | null>(null);
   const [upcomingAppointment, setUpcomingAppointment] = useState<any | null>(null);
+  const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
+  
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+
+  const fetchAnalytics = async (currentUser: User, lawyerId: string) => {
+    try {
+      const idToken = await currentUser.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/lawyers/${lawyerId}/analytics`, {
+        headers: { Authorization: `Bearer ${idToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setAnalyticsData(data.analytics);
+        }
+      } else {
+        setAnalyticsError("Failed to load analytics");
+      }
+    } catch (error) {
+      console.error("Failed to fetch analytics", error);
+      setAnalyticsError("Failed to load analytics");
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  const handlePreviewReport = async () => {
+    if (!user) return;
+    try {
+      showToast("Loading live print preview...", "success");
+      const idToken = await user.getIdToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/lawyers/report/download`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to generate report");
+      }
+
+      const blob = new Blob([await res.blob()], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Instantly open the inline PDF in a clean independent workspace layer
+      window.open(url, '_blank');
+      
+      // Cleanup ObjectURL after a slight delay to ensure browser captures it
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      
+      showToast("Preview loaded successfully!", "success");
+    } catch (error) {
+      console.error("Error previewing report", error);
+      showToast("Failed to load report preview", "error");
+    }
+  };
 
   const fetchDbProfile = async (currentUser: User) => {
     try {
@@ -86,51 +146,121 @@ export default function LawyerDashboard() {
       if (res.ok) {
         const data = await res.json();
         setDbUser(data);
+        return data;
       }
     } catch (error) {
       console.error("Failed to fetch DB user", error);
     }
+    return null;
   };
 
   useEffect(() => {
+    let socket: Socket;
     const unsubscribe = onAuthStateChanged(auth, async (currentUser: User | null) => {
       if (currentUser) {
         setUser(currentUser);
-        await fetchDbProfile(currentUser);
-        // Fetch upcoming appointment for the lawyer
-        try {
-          const idToken = await currentUser.getIdToken();
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments`,
-            { headers: { Authorization: `Bearer ${idToken}` } }
-          );
-          if (res.ok) {
-            const data = await res.json();
-            const upcoming = data.find(
-              (a: any) => a.status === "scheduled" || a.status === "confirmed"
-            ) || data[0] || null;
-            setUpcomingAppointment(upcoming);
-          }
-        } catch (err) {
-          console.error("Failed to fetch appointments", err);
+        const profile = await fetchDbProfile(currentUser);
+        
+        if (profile?.lawyerProfile?.id) {
+          fetchAnalytics(currentUser, profile.lawyerProfile.id);
+        } else {
+          setAnalyticsLoading(false);
         }
+
+        // Fetch upcoming appointment for the lawyer
+        const fetchAppointmentsForLawyer = async () => {
+          try {
+            const idToken = await currentUser.getIdToken();
+            const res = await fetch(
+              `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments`,
+              { headers: { Authorization: `Bearer ${idToken}` } }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              const upcoming = data.find(
+                (a: any) => a.status === "scheduled" || a.status === "confirmed"
+              ) || data[0] || null;
+              setUpcomingAppointment(upcoming);
+
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const tomorrow = new Date(today);
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              
+              const todays = data.filter((a: any) => {
+                const apptDate = new Date(a.scheduledAt);
+                return apptDate >= today && apptDate < tomorrow && (a.status === "scheduled" || a.status === "confirmed");
+              });
+              setTodayAppointments(todays);
+            }
+          } catch (err) {
+            console.error("Failed to fetch appointments", err);
+          }
+        };
+
+        await fetchAppointmentsForLawyer();
+
         setLoading(false);
+        setLoading(false);
+
+        // Setup Socket for real-time dashboard updates
+        const idToken = await currentUser.getIdToken();
+        socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000", {
+          auth: { token: idToken },
+          transports: ["websocket", "polling"],
+        });
+
+        socket.on("dashboard_update", async (data) => {
+          if (data.type === "new_booking_received") {
+            if (profile?.lawyerProfile?.id) {
+              fetchAnalytics(currentUser, profile.lawyerProfile.id);
+            }
+            await fetchAppointmentsForLawyer();
+          }
+        });
       } else {
         router.push("/login");
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      socket?.disconnect();
+    };
   }, [router]);
 
-  if (loading) {
+  if (loading || analyticsLoading) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-transparent">
-        <svg className="animate-spin h-10 w-10 text-[#1B3A6B]" viewBox="0 0 24 24" fill="none">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-        </svg>
-      </div>
+      <main className="flex-1 overflow-y-auto p-8 relative h-full">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-xl p-5 border border-gray-100 h-32 animate-pulse flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                <div className="h-4 bg-gray-200 rounded w-20"></div>
+                <div className="w-10 h-10 rounded-lg bg-gray-100"></div>
+              </div>
+              <div className="h-8 bg-gray-200 rounded w-16 mt-2"></div>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white rounded-xl h-[400px] animate-pulse p-6 border border-gray-100">
+             <div className="h-6 bg-gray-200 rounded w-1/4 mb-6"></div>
+             <div className="space-y-4">
+                <div className="h-20 bg-gray-50 rounded-xl"></div>
+                <div className="h-20 bg-gray-50 rounded-xl"></div>
+             </div>
+          </div>
+          <div className="bg-white rounded-xl h-[400px] animate-pulse p-6 border border-gray-100">
+             <div className="h-6 bg-gray-200 rounded w-1/3 mb-6"></div>
+             <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="h-20 bg-gray-50 rounded-xl"></div>
+                <div className="h-20 bg-gray-50 rounded-xl"></div>
+             </div>
+             <div className="h-32 bg-gray-50 rounded-xl"></div>
+          </div>
+        </div>
+      </main>
     );
   }
 
@@ -220,6 +350,16 @@ export default function LawyerDashboard() {
         </div>
 
         <div className="w-full space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-[#1B3A6B]">{tx.dashboard} Analytics</h2>
+            <button
+              onClick={handlePreviewReport}
+              className="flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#112549] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+            >
+              <FileDown className="w-4 h-4" />
+              Download Financial Report
+            </button>
+          </div>
           
           {/* Top Stat Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -229,7 +369,7 @@ export default function LawyerDashboard() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{tx.upcomingAppointments}</h3>
-                  <p className="text-3xl font-bold text-gray-900">8</p>
+                  <p className="text-3xl font-bold text-gray-900">{analyticsData?.upcomingAppointments || 0}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -241,61 +381,61 @@ export default function LawyerDashboard() {
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
-                {tx.fromLastWeek}
+                Updated Live
               </p>
             </div>
 
-            {/* Active Cases */}
+            {/* Total Earnings */}
             <div className="bg-white rounded-xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{tx.activeCases}</h3>
-                  <p className="text-3xl font-bold text-gray-900">12</p>
+                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Total Earnings (Month)</h3>
+                  <p className="text-2xl font-bold text-gray-900">Rs. {(analyticsData?.totalEarnings || 0).toLocaleString()}</p>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-gray-50 text-gray-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>
-              <p className="text-gray-500 text-xs font-medium mt-4">
-                {tx.stableWorkload}
+              <p className="text-emerald-600 text-xs font-semibold mt-4">
+                Payments Processed
               </p>
             </div>
 
-            {/* New Requests */}
+            {/* Unique Clients */}
             <div className="bg-white rounded-xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{tx.newRequests}</h3>
-                  <p className="text-3xl font-bold text-amber-600">3</p>
+                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Unique Clients</h3>
+                  <p className="text-3xl font-bold text-amber-600">{analyticsData?.uniqueClients || 0}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
               </div>
               <p className="text-amber-600 text-xs font-bold mt-4">
-                {tx.awaitingReview}
+                Growing Network
               </p>
             </div>
 
-            {/* Unread Messages */}
+            {/* Completed Appointments */}
             <div className="bg-white rounded-xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{tx.unreadMessages}</h3>
-                  <p className="text-3xl font-bold text-gray-900">5</p>
+                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Completed (Month)</h3>
+                  <p className="text-3xl font-bold text-gray-900">{analyticsData?.completedAppointments || 0}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>
               <p className="text-purple-600 text-xs font-semibold mt-4">
-                {tx.urgentPriority}
+                Successful Consultations
               </p>
             </div>
           </div>
@@ -313,68 +453,45 @@ export default function LawyerDashboard() {
                 </div>
                 
                 <div className="space-y-4">
-                  {/* Schedule Item 1 */}
-                  <div 
-                    onClick={() => {
-                      const apptId = upcomingAppointment?.id;
-                      const url = apptId
-                        ? `/consultation?role=lawyer&appointmentId=${apptId}`
-                        : "/consultation?role=lawyer";
-                      router.push(url);
-                    }}
-                    className="flex gap-4 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 items-center cursor-pointer hover:bg-gray-100/80 transition-colors group"
-                  >
-                    <div className="w-20 text-right flex-shrink-0">
-                      <p className="font-bold text-gray-900 text-sm">09:00 AM</p>
-                      <p className="text-xs text-gray-500 font-medium mt-0.5">60 min</p>
+                  {todayAppointments && todayAppointments.length > 0 ? (
+                    todayAppointments.map((appt, idx) => (
+                      <div 
+                        key={appt.id || idx}
+                        onClick={() => {
+                          const url = `/consultation?role=lawyer&appointmentId=${appt.id}`;
+                          router.push(url);
+                        }}
+                        className="flex gap-4 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 items-center cursor-pointer hover:bg-gray-100/80 transition-colors group"
+                      >
+                        <div className="w-20 text-right flex-shrink-0">
+                          <p className="font-bold text-gray-900 text-sm">
+                            {new Date(appt.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                          <p className="text-xs text-gray-500 font-medium mt-0.5">60 min</p>
+                        </div>
+                        <div className={`w-1 rounded-full h-12 ${idx % 2 === 0 ? 'bg-blue-500' : 'bg-orange-400'}`}></div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-900 text-sm truncate group-hover:text-[#1B3A6B] transition-colors">{appt.caseDescription || "Client Consultation"}</p>
+                          <p className="text-xs text-gray-500 font-medium mt-1 truncate">Virtual Meeting • Case #{appt.id.substring(0, 4)}</p>
+                        </div>
+                        <div className="w-8 h-8 rounded-lg text-gray-400 group-hover:text-[#1B3A6B] group-hover:bg-blue-50 flex items-center justify-center flex-shrink-0 transition-all">
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-10 bg-[#F9FAFC] border border-dashed border-gray-200 rounded-xl">
+                      <div className="w-12 h-12 bg-blue-50 text-blue-300 rounded-full flex items-center justify-center mb-3">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-900 font-medium text-sm">No consultations scheduled for today</p>
+                      <p className="text-gray-400 text-xs mt-1">Take a break or review pending cases.</p>
                     </div>
-                    <div className="w-1 rounded-full bg-blue-500 h-12"></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 text-sm truncate group-hover:text-[#1B3A6B] transition-colors">Client Consultation: Sarah Chen</p>
-                      <p className="text-xs text-gray-500 font-medium mt-1 truncate">Virtual Meeting • Civil Dispute #4421</p>
-                    </div>
-                    <div className="w-8 h-8 rounded-lg text-gray-400 group-hover:text-[#1B3A6B] group-hover:bg-blue-50 flex items-center justify-center flex-shrink-0 transition-all">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* Schedule Item 2 */}
-                  <div className="flex gap-4 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 items-center">
-                    <div className="w-20 text-right flex-shrink-0">
-                      <p className="font-bold text-gray-900 text-sm">11:30 AM</p>
-                      <p className="text-xs text-gray-500 font-medium mt-0.5">90 min</p>
-                    </div>
-                    <div className="w-1 rounded-full bg-blue-500 h-12"></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 text-sm truncate">Court Hearing: Case #2944</p>
-                      <p className="text-xs text-gray-500 font-medium mt-1 truncate">District Court Room 4B • Criminal Defense</p>
-                    </div>
-                    <div className="w-8 h-8 rounded-lg text-gray-400 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* Schedule Item 3 */}
-                  <div className="flex gap-4 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 items-center">
-                    <div className="w-20 text-right flex-shrink-0">
-                      <p className="font-bold text-gray-900 text-sm">03:00 PM</p>
-                      <p className="text-xs text-gray-500 font-medium mt-0.5">90 min</p>
-                    </div>
-                    <div className="w-1 rounded-full bg-orange-400 h-12"></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 text-sm truncate">Document Review: Estate Planning</p>
-                      <p className="text-xs text-gray-500 font-medium mt-1 truncate">Office • Private Estate #102</p>
-                    </div>
-                    <div className="w-8 h-8 rounded-lg text-gray-400 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -390,64 +507,15 @@ export default function LawyerDashboard() {
                 </div>
                 
                 <div className="space-y-6">
-                  <div className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0 mt-0.5">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  {/* Empty state for activities */}
+                  <div className="flex flex-col items-center justify-center py-10">
+                    <div className="w-12 h-12 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mb-3">
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900"><span className="font-bold">New Document Uploaded:</span> Affidavit_Signed.pdf by John Doe</p>
-                      <p className="text-xs text-gray-500 mt-1">2 hours ago • Case #4412</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 mt-0.5">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900"><span className="font-bold">Case Status Changed:</span> Case #2944 marked as <span className="text-emerald-600 font-bold">In Progress</span></p>
-                      <p className="text-xs text-gray-500 mt-1">5 hours ago</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0 mt-0.5">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900"><span className="font-bold">New Message:</span> From Opposing Counsel regarding Case #1105</p>
-                      <p className="text-xs text-gray-500 mt-1">Yesterday • 04:45 PM</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0 mt-0.5">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900"><span className="font-bold">New Booking Requested:</span> by Sarah Chen</p>
-                      <p className="text-xs text-gray-500 mt-1">2 hours ago</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0 mt-0.5">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900"><span className="font-bold">Payment Verified:</span> For Case #2944</p>
-                      <p className="text-xs text-gray-500 mt-1">5 hours ago</p>
-                    </div>
+                    <p className="text-gray-500 font-medium text-sm">No recent activities</p>
+                    <p className="text-gray-400 text-xs mt-1">Your feed will update when cases change.</p>
                   </div>
                 </div>
               </div>
@@ -493,38 +561,13 @@ export default function LawyerDashboard() {
                 <h2 className="text-lg font-bold text-gray-900 mb-6">{tx.priorityCases}</h2>
                 
                 <div className="space-y-6">
-                  {/* Priority Case 1 */}
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-bold text-red-500 tracking-wider uppercase">{tx.urgent}</span>
-                      <span className="text-[10px] text-gray-400 font-medium">#4412</span>
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <div className="w-12 h-12 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mb-3">
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
                     </div>
-                    <h3 className="text-sm font-bold text-gray-900 mb-3">State vs. Harrison</h3>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-red-500 h-full rounded-full" style={{ width: '75%' }}></div>
-                      </div>
-                      <span className="text-xs font-bold text-gray-700">75%</span>
-                    </div>
-                    <p className="text-[10px] text-gray-500 font-medium">Trial Date: Oct 24</p>
-                  </div>
-
-                  <div className="w-full h-px bg-gray-100"></div>
-
-                  {/* Priority Case 2 */}
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-bold text-blue-500 tracking-wider uppercase">{tx.onTrack}</span>
-                      <span className="text-[10px] text-gray-400 font-medium">#3190</span>
-                    </div>
-                    <h3 className="text-sm font-bold text-gray-900 mb-3">Miller Property Trust</h3>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-blue-500 h-full rounded-full" style={{ width: '30%' }}></div>
-                      </div>
-                      <span className="text-xs font-bold text-gray-700">30%</span>
-                    </div>
-                    <p className="text-[10px] text-gray-500 font-medium">Reviewing Docs</p>
+                    <p className="text-gray-500 font-medium text-sm">No priority cases currently</p>
                   </div>
                 </div>
 

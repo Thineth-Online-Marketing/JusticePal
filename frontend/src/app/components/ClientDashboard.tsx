@@ -11,6 +11,7 @@ import {
   MessageSquare, CalendarCheck, Headset
 } from "lucide-react";
 import Image from "next/image";
+import { io, Socket } from "socket.io-client";
 
 export default function ClientDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -21,6 +22,7 @@ export default function ClientDashboard() {
   const [notifLoading, setNotifLoading] = useState(true);
   const [upcomingAppointment, setUpcomingAppointment] = useState<any | null>(null);
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<any>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -94,31 +96,49 @@ export default function ClientDashboard() {
     fetchNotifs();
   }, [roleLoading, user]);
 
-  // Fetch real upcoming appointments
+  const fetchClientAnalytics = async () => {
+    if (!user) return;
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/clients/analytics`,
+        { headers: { Authorization: `Bearer ${idToken}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setAnalytics(data);
+        if (data.upcomingAppointments && data.upcomingAppointments.length > 0) {
+          setUpcomingAppointment(data.upcomingAppointments[0]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch analytics", err);
+    } finally {
+      setAppointmentsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (roleLoading || !user) return;
-    const fetchAppointments = async () => {
-      try {
-        const idToken = await user.getIdToken();
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments`,
-          { headers: { Authorization: `Bearer ${idToken}` } }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          // Pick the first upcoming (scheduled) appointment
-          const upcoming = data.find(
-            (a: any) => a.status === "scheduled" || a.status === "confirmed"
-          ) || data[0] || null;
-          setUpcomingAppointment(upcoming);
+    fetchClientAnalytics();
+
+    let socket: Socket;
+    user.getIdToken().then(token => {
+      socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000", {
+        auth: { token },
+        transports: ["websocket", "polling"],
+      });
+
+      socket.on("dashboard_update", (data) => {
+        if (data.type === "booking_created") {
+          fetchClientAnalytics();
         }
-      } catch (err) {
-        console.error("Failed to fetch appointments", err);
-      } finally {
-        setAppointmentsLoading(false);
-      }
+      });
+    });
+
+    return () => {
+      socket?.disconnect();
     };
-    fetchAppointments();
   }, [roleLoading, user]);
 
   if (authLoading || roleLoading) {
@@ -145,10 +165,10 @@ export default function ClientDashboard() {
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Active Cases" value="3" icon={<Scale className="w-5 h-5 text-blue-600" />} />
-          <StatCard title="Pending Docs" value="5" icon={<FileText className="w-5 h-5 text-orange-500" />} />
-          <StatCard title="Hours Billed" value="12.5" icon={<Clock className="w-5 h-5 text-green-500" />} />
-          <StatCard title="Total Spent" value="$4,250" icon={<DollarSign className="w-5 h-5 text-indigo-600" />} />
+          <StatCard title="Active Cases" value={analytics?.activeCases || "0"} icon={<Scale className="w-5 h-5 text-blue-600" />} />
+          <StatCard title="Total Consultations" value={analytics?.totalConsultations || "0"} icon={<FileText className="w-5 h-5 text-orange-500" />} />
+          <StatCard title="Total Spent" value={`$${analytics?.totalSpent || 0}`} icon={<DollarSign className="w-5 h-5 text-indigo-600" />} />
+          <StatCard title="Pending Docs" value="0" icon={<Clock className="w-5 h-5 text-green-500" />} />
         </div>
 
         {/* Main Grid Layout */}

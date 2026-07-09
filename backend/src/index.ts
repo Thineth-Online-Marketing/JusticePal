@@ -15,7 +15,11 @@ import caseFileRoutes from './routes/caseFileRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import googleCalendarRoutes from './routes/googleCalendarRoutes';
 import consultationRoutes from './routes/consultationRoutes';
+import profileRoutes from './routes/profileRoutes';
+import clientRoutes from './routes/clientRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
+import { initNotificationSocket } from './utils/notificationHelper';
+import { initReminderScheduler } from './utils/reminderScheduler';
 import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
@@ -57,6 +61,12 @@ export const io = new SocketIOServer(httpServer, {
   },
 });
 
+// Initialize global notification emitter
+initNotificationSocket(io);
+
+// Initialize background cron scheduler for appointment reminders
+initReminderScheduler();
+
 // Socket.io — authentication middleware (verify Firebase token)
 io.use(async (socket, next) => {
   const token = socket.handshake.auth?.token;
@@ -91,6 +101,12 @@ io.use(async (socket, next) => {
 io.on('connection', (socket) => {
   const userId: string = (socket as any).userId;
   const userName: string = (socket as any).userName;
+
+  // Real-Time Notifications infrastructure: Join private user room
+  if (userId) {
+    socket.join(`user:${userId}`);
+    console.log(`User [${userId}] connected to private notification room`);
+  }
 
   // Join a consultation room (identified by appointmentId)
   socket.on('join_consultation', async ({ appointmentId }: { appointmentId: string }) => {
@@ -193,6 +209,8 @@ app.use('/api/case-files', caseFileRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/google-calendar', googleCalendarRoutes);
 app.use('/api/consultations', consultationRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/clients', clientRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);
