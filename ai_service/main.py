@@ -13,7 +13,15 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from models import CaseSuggestions, ExtractCaseDetailsResponse
 from matcher import find_matching_lawyers
 
-load_dotenv(override=True)
+from pathlib import Path
+
+# Load env vars: first from project root .env (has DATABASE_URL),
+# then from local ai_service/.env (has GOOGLE_API_KEY).
+# override=False means the first loaded value wins, so local takes priority
+# if the same key exists in both files.
+_root_env = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(_root_env)        # root .env  → DATABASE_URL, etc.
+load_dotenv(override=True)    # local .env → GOOGLE_API_KEY (overrides root if duplicate)
 
 # ---------------------------------------------------------------------------
 # App setup
