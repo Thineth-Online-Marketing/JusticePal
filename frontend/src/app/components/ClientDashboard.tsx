@@ -181,7 +181,7 @@ export default function ClientDashboard() {
             <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-800">Upcoming Appointments</h2>
-                <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">View Calendar</a>
+                <button onClick={() => router.push('/client-dashboard/calendar')} className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">View Calendar</button>
               </div>
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row gap-6 items-start">
                 <div className="w-32 h-32 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
