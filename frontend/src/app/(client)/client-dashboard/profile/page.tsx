@@ -308,7 +308,7 @@ export default function ClientProfilePage() {
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-center -mt-12 sm:-mt-14 pb-6 sm:pb-8 px-4 sm:px-6">
+                    <div className="flex flex-col items-center -mt-12 sm:-mt-14 pb-6 sm:pb-8 px-4 sm:px-6 relative z-10">
                         {/* Avatar */}
                         <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#1e3a8a] flex items-center justify-center text-white text-2xl sm:text-3xl font-bold shadow-lg border-4 border-white ring-4 ring-[#1e3a8a]/10 transition-transform duration-200 hover:scale-105">
                             {getInitials(profile.name)}
