@@ -21,6 +21,15 @@ export default function Home() {
   useEffect(() => {
     if (loading) return;
 
+    // Local check for redirect=false query parameter to bypass dashboard redirect
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("redirect") === "false") {
+        setChecking(false);
+        return;
+      }
+    }
+
     // Not logged in — show landing page
     if (!user) {
       setChecking(false);

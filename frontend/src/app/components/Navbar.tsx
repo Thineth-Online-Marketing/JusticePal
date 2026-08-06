@@ -119,7 +119,7 @@ export default function Navbar() {
                     
                     <div className="h-px bg-gray-100 my-1 mx-2"></div>
                     
-                    <Link href="/profile" onClick={() => setProfileOpen(false)} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-xl transition-colors">
+                    <Link href="/client-dashboard/profile" onClick={() => setProfileOpen(false)} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-xl transition-colors">
                       <User className="w-4 h-4 text-gray-400" />
                       {tx.profile}
                     </Link>
@@ -220,7 +220,7 @@ export default function Navbar() {
                 {tx.dashboard}
               </Link>
               
-              <Link href="/profile" onClick={() => setMenuOpen(false)} className="mx-2 flex items-center gap-3 px-4 py-2.5 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
+              <Link href="/client-dashboard/profile" onClick={() => setMenuOpen(false)} className="mx-2 flex items-center gap-3 px-4 py-2.5 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
                 <User className="w-5 h-5 text-gray-400" />
                 {tx.profile}
               </Link>

@@ -15,6 +15,7 @@ import caseFileRoutes from './routes/caseFileRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import googleCalendarRoutes from './routes/googleCalendarRoutes';
 import consultationRoutes from './routes/consultationRoutes';
+import profileRoutes from './routes/profileRoutes';
 import clientRoutes from './routes/clientRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 import { initNotificationSocket } from './utils/notificationHelper';
@@ -208,6 +209,7 @@ app.use('/api/case-files', caseFileRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/google-calendar', googleCalendarRoutes);
 app.use('/api/consultations', consultationRoutes);
+app.use('/api/profile', profileRoutes);
 app.use('/api/clients', clientRoutes);
 
 // Error Handling Middleware

@@ -6,13 +6,22 @@ import os
 import json
 import re
 from dotenv import load_dotenv
+import asyncpg
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from models import CaseSuggestions, ExtractCaseDetailsResponse
 from matcher import find_matching_lawyers
 
-load_dotenv(override=True)
+from pathlib import Path
+
+# Load env vars: first from project root .env (has DATABASE_URL),
+# then from local ai_service/.env (has GOOGLE_API_KEY).
+# override=False means the first loaded value wins, so local takes priority
+# if the same key exists in both files.
+_root_env = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(_root_env)        # root .env  → DATABASE_URL, etc.
+load_dotenv(override=True)    # local .env → GOOGLE_API_KEY (overrides root if duplicate)
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -69,101 +78,57 @@ class MatchLawyersResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Mock Lawyer Database (10 Sri Lankan lawyers)
+# PostgreSQL Database Connection
 # ---------------------------------------------------------------------------
 
-MOCK_LAWYERS: list[dict] = [
-    {
-        "id": "L001",
-        "name": "Priya Navaratnam",
-        "specialization": "Labour Law",
-        "location": "Colombo",
-        "rating": 4.8,
-        "bio": "Expert in wrongful dismissal, employment contracts, and workers' rights with 15 years of experience in the Colombo Labour Tribunal.",
-        "image_url": "https://randomuser.me/api/portraits/women/44.jpg",
-    },
-    {
-        "id": "L002",
-        "name": "Rohan De Silva",
-        "specialization": "Property Law",
-        "location": "Galle",
-        "rating": 4.5,
-        "bio": "Specialises in land disputes, title deeds, and property fraud cases across the Southern Province.",
-        "image_url": "https://randomuser.me/api/portraits/men/32.jpg",
-    },
-    {
-        "id": "L003",
-        "name": "Anita Perera",
-        "specialization": "Corporate Law",
-        "location": "Colombo",
-        "rating": 4.9,
-        "bio": "Corporate governance, mergers, acquisitions, and commercial contracts for Fortune 500 clients operating in Sri Lanka.",
-        "image_url": "https://randomuser.me/api/portraits/women/68.jpg",
-    },
-    {
-        "id": "L004",
-        "name": "Kemal Jayawardena",
-        "specialization": "Labour Law",
-        "location": "Kandy",
-        "rating": 4.2,
-        "bio": "Trade union representation, workplace harassment, and termination dispute specialist in the Central Province.",
-        "image_url": "https://randomuser.me/api/portraits/men/75.jpg",
-    },
-    {
-        "id": "L005",
-        "name": "Samanthi Fernando",
-        "specialization": "Family Law",
-        "location": "Colombo",
-        "rating": 4.6,
-        "bio": "Divorce, custody disputes, maintenance claims, and domestic violence cases. Fluent in Sinhala and English.",
-        "image_url": "https://randomuser.me/api/portraits/women/12.jpg",
-    },
-    {
-        "id": "L006",
-        "name": "Nuwan Bandara",
-        "specialization": "Criminal Law",
-        "location": "Matara",
-        "rating": 4.7,
-        "bio": "Criminal defence attorney handling murder, assault, and drug-related cases in Southern Sri Lanka.",
-        "image_url": "https://randomuser.me/api/portraits/men/45.jpg",
-    },
-    {
-        "id": "L007",
-        "name": "Dilini Ratnayake",
-        "specialization": "Property Law",
-        "location": "Colombo",
-        "rating": 4.4,
-        "bio": "Real estate transactions, land registration disputes, and boundary demarcation issues in the Western Province.",
-        "image_url": "https://randomuser.me/api/portraits/women/22.jpg",
-    },
-    {
-        "id": "L008",
-        "name": "Tharindu Wickramasinghe",
-        "specialization": "Family Law",
-        "location": "Kandy",
-        "rating": 4.3,
-        "bio": "Adoption proceedings, matrimonial disputes, and child custody representation with a compassionate approach.",
-        "image_url": "https://randomuser.me/api/portraits/men/58.jpg",
-    },
-    {
-        "id": "L009",
-        "name": "Ishara Gunawardena",
-        "specialization": "Corporate Law",
-        "location": "Galle",
-        "rating": 4.1,
-        "bio": "Company incorporation, intellectual property, and contract disputes for SMEs in the Southern coastal region.",
-        "image_url": "https://randomuser.me/api/portraits/women/35.jpg",
-    },
-    {
-        "id": "L010",
-        "name": "Chaminda Rajapaksha",
-        "specialization": "Criminal Law",
-        "location": "Colombo",
-        "rating": 4.8,
-        "bio": "High-profile criminal defence, financial fraud, and white-collar crime specialist with Supreme Court practice.",
-        "image_url": "https://randomuser.me/api/portraits/men/10.jpg",
-    },
-]
+async def get_lawyers_from_db() -> list[dict]:
+    db_url = os.environ.get("DATABASE_URL")
+    if not db_url:
+        print("DATABASE_URL not found, returning empty list.")
+        return []
+        
+    try:
+        conn = await asyncpg.connect(db_url)
+        
+        query = """
+        SELECT 
+            l.id, 
+            u.name, 
+            l.specialization, 
+            l.location, 
+            l.bio, 
+            l."hourlyRate", 
+            l."profilePicture" as image_url
+        FROM "Lawyer" l
+        JOIN "User" u ON l."userId" = u.id
+        WHERE l."isVerified" = true
+        """
+        rows = await conn.fetch(query)
+        await conn.close()
+        
+        lawyers = []
+        for row in rows:
+            lawyer = dict(row)
+            
+            # Format specialization array into a comma-separated string if it exists
+            if isinstance(lawyer.get("specialization"), list):
+                lawyer["specialization"] = ", ".join(lawyer["specialization"])
+            elif not lawyer.get("specialization"):
+                lawyer["specialization"] = "General Practice"
+                
+            # Default rating to 4.5 for UI consistency
+            lawyer["rating"] = 4.5
+            
+            # Provide fallback image if missing
+            if not lawyer.get("image_url"):
+                lawyer["image_url"] = f"https://ui-avatars.com/api/?name={lawyer['name'].replace(' ', '+')}&background=random"
+                
+            lawyers.append(lawyer)
+            
+        return lawyers
+    except Exception as e:
+        print(f"Database error: {e}")
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -280,7 +245,7 @@ async def extract_case_details(request: QueryRequest):
 
 
 @app.post("/api/v1/match-lawyers", response_model=MatchLawyersResponse)
-def match_lawyers(request: MatchLawyersRequest):
+async def match_lawyers(request: MatchLawyersRequest):
     """
     Accepts AI-extracted case suggestions and optional manual filters,
     then returns a ranked list of matching lawyers from the database.
@@ -296,10 +261,13 @@ def match_lawyers(request: MatchLawyersRequest):
             if v is not None
         }
 
+        # Fetch real lawyers from Postgres
+        real_lawyers = await get_lawyers_from_db()
+
         results = find_matching_lawyers(
             ai_suggestions=request.ai_suggestions,
             manual_filters=filters,
-            lawyer_database=MOCK_LAWYERS,
+            lawyer_database=real_lawyers,
         )
 
         return MatchLawyersResponse(

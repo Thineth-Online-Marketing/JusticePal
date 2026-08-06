@@ -451,7 +451,7 @@ export default function LawyerDashboard() {
               <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-bold text-gray-900">{tx.todaysSchedule}</h2>
-                  <button className="text-sm font-semibold text-[#1B3A6B] hover:underline">{tx.viewFullCalendar}</button>
+                  <button onClick={() => router.push('/lawyer-dashboard/calendar')} className="text-sm font-semibold text-[#1B3A6B] hover:underline">{tx.viewFullCalendar}</button>
                 </div>
                 
                 <div className="space-y-4">
