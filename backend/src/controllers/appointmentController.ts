@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { createNotification } from './notificationController';
 import { sendRealTimeNotification } from '../utils/notificationHelper';
 import { io } from '../index';
+import { sendBookingConfirmation } from '../services/emailService';
 
 const prisma = new PrismaClient();
 
@@ -93,9 +94,30 @@ export const createAppointment = async (req: Request, res: Response, next: NextF
       // Don't fail the appointment creation if notification fails
     }
 
+    // ── Auto-trigger: send booking confirmation email to client ──
+    try {
+      const clientUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      });
+      const lawyerUser = await prisma.lawyer.findUnique({
+        where: { id: lawyerId },
+        include: { user: { select: { name: true } } },
+      });
+      if (clientUser && lawyerUser) {
+        await sendBookingConfirmation({
+          toEmail: clientUser.email,
+          clientName: clientUser.name,
+          lawyerName: lawyerUser.user.name,
+          scheduledAt: new Date(scheduledAt),
+        });
+      }
+    } catch (emailErr) {
+      console.error('Failed to send booking email:', emailErr);
+    }
+
     res.status(201).json(appointment);
   } catch (error) {
     next(error);
   }
 };
-

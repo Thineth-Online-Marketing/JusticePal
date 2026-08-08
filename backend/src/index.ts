@@ -3,8 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
-import admin from 'firebase-admin';
-
+import admin from './config/firebase';
 import userRoutes from './routes/userRoutes';
 import lawyerRoutes from './routes/lawyerRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
@@ -17,6 +16,7 @@ import googleCalendarRoutes from './routes/googleCalendarRoutes';
 import consultationRoutes from './routes/consultationRoutes';
 import profileRoutes from './routes/profileRoutes';
 import clientRoutes from './routes/clientRoutes';
+import paymentRoutes from './routes/paymentRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 import { initNotificationSocket } from './utils/notificationHelper';
 import { initReminderScheduler } from './utils/reminderScheduler';
@@ -31,16 +31,28 @@ const port = process.env.PORT || 5000;
 const prisma = new PrismaClient();
 
 // ── Allowed origins ──────────────────────────────────────────────
+const frontendUrl = process.env.FRONTEND_URL;
 const allowedOrigins = [
+  frontendUrl,
   'https://justicepal.akalankanime11.workers.dev',
+  'https://justice-pal.vercel.app',
   'http://localhost:3000',
-];
+  'http://localhost:3001',
+].filter(Boolean) as string[];
 
 // ── CORS ─────────────────────────────────────────────────────────
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) return callback(null, true);
+
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.workers.dev') ||
+        origin.endsWith('.pages.dev') ||
+        origin.endsWith('.vercel.app');
+
+      if (isAllowed) {
         callback(null, true);
       } else {
         callback(new Error(`CORS policy: origin ${origin} not allowed`));
@@ -50,13 +62,27 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: any, _res, buf) => {
+    // Store raw body for Stripe webhook signature verification
+    req.rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // ── Socket.io server ─────────────────────────────────────────────
 export const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.workers.dev') ||
+        origin.endsWith('.pages.dev') ||
+        origin.endsWith('.vercel.app');
+      callback(null, isAllowed);
+    },
     credentials: true,
   },
 });
@@ -199,6 +225,7 @@ app.use('/api/google-calendar', googleCalendarRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/clients', clientRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);

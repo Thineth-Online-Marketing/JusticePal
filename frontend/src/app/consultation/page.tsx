@@ -267,7 +267,7 @@ function ConsultationContent() {
     setIsLoadingDocs(true);
     try {
       const idToken = await user.getIdToken();
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
       let url = `${backendUrl}/api/case-files`;
       if (appointmentId) {
         url += `?appointmentId=${appointmentId}`;
@@ -313,7 +313,7 @@ function ConsultationContent() {
 
     try {
       const idToken = await user.getIdToken();
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
 
       // Send file as multipart/form-data — Express backend uploads to Firebase Storage
       const formData = new FormData();
@@ -371,7 +371,7 @@ function ConsultationContent() {
     if (!confirm("Are you sure you want to delete this case file?")) return;
     try {
       const idToken = await user.getIdToken();
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
       const res = await fetch(`${backendUrl}/api/case-files/${fileId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${idToken}` }

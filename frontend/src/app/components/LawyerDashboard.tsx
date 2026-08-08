@@ -140,7 +140,7 @@ export default function LawyerDashboard() {
   const fetchDbProfile = async (currentUser: User) => {
     try {
       const idToken = await currentUser.getIdToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/users/profile`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/users/profile`, {
         headers: { Authorization: `Bearer ${idToken}` }
       });
       if (res.ok) {
