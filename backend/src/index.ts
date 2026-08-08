@@ -218,7 +218,7 @@ if (!process.env.VERCEL && !process.env.CLOUDFLARE_WORKERS) {
 const serverlessHandler = serverless(app);
 
 export default {
-  async fetch(request: Request, env: any, ctx: any) {
-    return serverlessHandler(request, env, ctx);
+  async fetch(request: any, env: any, ctx: any) {
+    return (serverlessHandler as any)(request, env, ctx);
   },
 };
