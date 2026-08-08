@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import admin from 'firebase-admin';
+import serverless from 'serverless-http';
 
 import userRoutes from './routes/userRoutes';
 import lawyerRoutes from './routes/lawyerRoutes';
@@ -32,7 +33,7 @@ const prisma = new PrismaClient();
 
 // ── Allowed origins ──────────────────────────────────────────────
 const allowedOrigins = [
-  'https://justice-pal.vercel.app',
+  'https://justicepal.akalankanime11.workers.dev',
   'http://localhost:3000',
 ];
 
@@ -102,16 +103,13 @@ io.on('connection', (socket) => {
   const userId: string = (socket as any).userId;
   const userName: string = (socket as any).userName;
 
-  // Real-Time Notifications infrastructure: Join private user room
   if (userId) {
     socket.join(`user:${userId}`);
     console.log(`User [${userId}] connected to private notification room`);
   }
 
-  // Join a consultation room (identified by appointmentId)
   socket.on('join_consultation', async ({ appointmentId }: { appointmentId: string }) => {
     try {
-      // Verify access
       const appt = await prisma.appointment.findUnique({
         where: { id: appointmentId },
         include: { lawyer: { select: { userId: true } } },
@@ -127,7 +125,6 @@ io.on('connection', (socket) => {
       const roomKey = `consultation:${appointmentId}`;
       socket.join(roomKey);
 
-      // Notify others in room
       socket.to(roomKey).emit('participant_joined', {
         userId,
         name: userName,
@@ -140,12 +137,10 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Send a chat message
   socket.on('send_message', async ({ appointmentId, text }: { appointmentId: string; text: string }) => {
     try {
       if (!text?.trim() || !appointmentId) return;
 
-      // Verify access and get role
       const appt = await prisma.appointment.findUnique({
         where: { id: appointmentId },
         include: { lawyer: { select: { userId: true } } },
@@ -158,13 +153,11 @@ io.on('connection', (socket) => {
 
       const senderRole = isLawyer ? 'lawyer' : 'client';
 
-      // Get or create room
       let room = await prisma.consultationRoom.findUnique({ where: { appointmentId } });
       if (!room) {
         room = await prisma.consultationRoom.create({ data: { appointmentId } });
       }
 
-      // Persist message
       const message = await prisma.consultationMessage.create({
         data: {
           roomId: room.id,
@@ -175,7 +168,6 @@ io.on('connection', (socket) => {
         include: { sender: { select: { id: true, name: true } } },
       });
 
-      // Broadcast to everyone in the room (including sender)
       const roomKey = `consultation:${appointmentId}`;
       io.to(roomKey).emit('new_message', message);
     } catch (err) {
@@ -184,15 +176,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Typing indicator
   socket.on('typing', ({ appointmentId, isTyping }: { appointmentId: string; isTyping: boolean }) => {
     const roomKey = `consultation:${appointmentId}`;
     socket.to(roomKey).emit('participant_typing', { userId, name: userName, isTyping });
   });
 
-  socket.on('disconnect', () => {
-    // Could broadcast disconnect to room here if needed
-  });
+  socket.on('disconnect', () => {});
 });
 
 // ── REST Routes ──────────────────────────────────────────────────
@@ -215,13 +204,21 @@ app.use('/api/clients', clientRoutes);
 // Error Handling Middleware
 app.use(errorHandler);
 
-// Start server locally — Vercel handles this automatically in production
-if (!process.env.VERCEL) {
+// ── Execution & Exports ──────────────────────────────────────────
+
+// 1. Local / Traditional Server Startup
+if (!process.env.VERCEL && !process.env.CLOUDFLARE_WORKERS) {
   httpServer.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
     console.log(`Socket.io is ready for real-time consultation chat`);
   });
 }
 
-// Export for Vercel serverless
-export default app;
+// 2. Serverless Adapter Export (for Cloudflare Workers or AWS Lambda)
+const serverlessHandler = serverless(app);
+
+export default {
+  async fetch(request: Request, env: any, ctx: any) {
+    return serverlessHandler(request, env, ctx);
+  },
+};
