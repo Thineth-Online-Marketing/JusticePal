@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import admin from 'firebase-admin';
-import serverless from 'serverless-http';
 
 import userRoutes from './routes/userRoutes';
 import lawyerRoutes from './routes/lawyerRoutes';
@@ -204,21 +203,10 @@ app.use('/api/clients', clientRoutes);
 // Error Handling Middleware
 app.use(errorHandler);
 
-// ── Execution & Exports ──────────────────────────────────────────
+// ── Native Node.js HTTP Listener ─────────────────────────────────
+httpServer.listen(port, () => {
+  console.log(`Server is running at http://localhost:${port}`);
+  console.log(`Socket.io is ready for real-time consultation chat`);
+});
 
-// 1. Local / Traditional Server Startup
-if (!process.env.VERCEL && !process.env.CLOUDFLARE_WORKERS) {
-  httpServer.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
-    console.log(`Socket.io is ready for real-time consultation chat`);
-  });
-}
-
-// 2. Serverless Adapter Export (for Cloudflare Workers or AWS Lambda)
-const serverlessHandler = serverless(app);
-
-export default {
-  async fetch(request: any, env: any, ctx: any) {
-    return (serverlessHandler as any)(request, env, ctx);
-  },
-};
+export default app;
