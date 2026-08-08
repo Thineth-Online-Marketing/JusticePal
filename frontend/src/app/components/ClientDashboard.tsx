@@ -38,7 +38,7 @@ export default function ClientDashboard() {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/users/profile`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/users/profile`,
           {
             headers: { Authorization: `Bearer ${idToken}` },
           }
@@ -78,7 +78,7 @@ export default function ClientDashboard() {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/notifications`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/notifications`,
           {
             headers: { Authorization: `Bearer ${idToken}` },
           }
@@ -169,6 +169,64 @@ export default function ClientDashboard() {
           <StatCard title="Total Consultations" value={analytics?.totalConsultations || "0"} icon={<FileText className="w-5 h-5 text-orange-500" />} />
           <StatCard title="Total Spent" value={`$${analytics?.totalSpent || 0}`} icon={<DollarSign className="w-5 h-5 text-indigo-600" />} />
           <StatCard title="Pending Docs" value="0" icon={<Clock className="w-5 h-5 text-green-500" />} />
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button 
+              onClick={() => router.push("/find-lawyer")}
+              className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left flex items-center gap-3 group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#1B3A6B] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Scale className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-bold text-gray-900 text-sm">Find Lawyer</p>
+                <p className="text-xs text-gray-400">Match with experts</p>
+              </div>
+            </button>
+            
+            <button 
+              onClick={() => router.push("/chat-ai")}
+              className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left flex items-center gap-3 group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-bold text-gray-900 text-sm">AI Legal Chat</p>
+                <p className="text-xs text-gray-400">Instant answers</p>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => router.push("/document-drafting")}
+              className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left flex items-center gap-3 group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <FileSignature className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-bold text-gray-900 text-sm">Draft Document</p>
+                <p className="text-xs text-gray-400">AI legal drafts</p>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => router.push("/consultation?role=client")}
+              className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left flex items-center gap-3 group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Video className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-bold text-gray-900 text-sm">Video Room</p>
+                <p className="text-xs text-gray-400">Join consultation</p>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Main Grid Layout */}

@@ -136,7 +136,7 @@ function CalendarContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
 
   const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Week');
   const [isConnected, setIsConnected] = useState(false);

@@ -34,7 +34,7 @@ import {
   Cell,
 } from "recharts";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
 
 /* ── mock chart data ─────────────────────────────────────── */
 const userGrowthData = [
