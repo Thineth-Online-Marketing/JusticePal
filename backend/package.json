@@ -1,6 +1,7 @@
 {
   "name": "justicepal-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Backend for JusticePal",
   "main": "src/index.ts",
   "scripts": {
