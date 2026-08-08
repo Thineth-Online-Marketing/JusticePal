@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "build": "npx prisma generate && esbuild src/index.ts --bundle --outfile=dist/index.js --platform=browser --target=es2022 --format=esm --external:prisma --external:@prisma/client",
+    "build": "npx prisma generate && esbuild src/index.ts --bundle --outfile=dist/index.js --platform=node --format=esm --target=es2022 --packages=external",
     "postinstall": "prisma generate"
   },
   "dependencies": {
