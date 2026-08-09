@@ -10,8 +10,7 @@ import LegalCategories from "./components/LegalCategories";
 import CTABanner from "./components/CTABanner";
 import Footer from "./components/Footer";
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
 
 export default function Home() {
   const { user, loading } = useAuth();

@@ -8,7 +8,7 @@ import { createUserWithEmailAndPassword, updateProfile, signOut } from "firebase
 import { auth } from "../lib/firebase";
 import { signInWithGoogle } from "../lib/googleAuth";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
 
 const content = {
   en: {
@@ -109,18 +109,34 @@ export default function RegisterPage() {
       const idToken = await firebaseUser.getIdToken();
 
       // Step 4: Sync user to PostgreSQL backend
-      const res = await fetch(`${BACKEND_URL}/api/auth/sync`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({ email: firebaseUser.email, name, role }),
-      });
+      let res: Response;
+      try {
+        res = await fetch(`${BACKEND_URL}/api/auth/sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ email: firebaseUser.email, name, role }),
+        });
+      } catch (err: unknown) {
+        throw new Error(`Cannot reach backend server at ${BACKEND_URL}. Please verify NEXT_PUBLIC_BACKEND_URL in Cloudflare settings.`);
+      }
+
+      const contentType = res.headers.get("content-type");
+      const isJson = contentType && contentType.includes("application/json");
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to sync user with server");
+        if (isJson) {
+          const data = await res.json();
+          throw new Error(data.message || "Failed to sync user with server");
+        } else {
+          throw new Error(`Backend error (${res.status}). Please verify NEXT_PUBLIC_BACKEND_URL and Railway backend status.`);
+        }
+      }
+
+      if (!isJson) {
+        throw new Error(`Server returned non-JSON response. Please check NEXT_PUBLIC_BACKEND_URL variable.`);
       }
 
       const userData = await res.json();
