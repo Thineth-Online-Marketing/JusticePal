@@ -4,11 +4,13 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ClientNavbar from "./ClientNavbar";
 import Footer from "./Footer";
+import LegalNewsWidget from "./LegalNewsWidget";
 import { useAuth } from "../context/AuthContext";
 import { 
-  Scale, FileText, Clock, DollarSign, 
-  Video, Calendar as CalendarIcon, FileSignature, 
-  MessageSquare, CalendarCheck, Headset
+  Scale, FileText, DollarSign, Clock, 
+  Calendar as CalendarIcon, Video, CheckCircle, 
+  XCircle, FileSignature, MessageSquare, 
+  CalendarCheck, Headset 
 } from "lucide-react";
 import Image from "next/image";
 import { io, Socket } from "socket.io-client";
@@ -20,7 +22,8 @@ export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifLoading, setNotifLoading] = useState(true);
-  const [upcomingAppointment, setUpcomingAppointment] = useState<any | null>(null);
+  const [upcomingAppointment, setUpcomingAppointment] = useState<any>(null);
+  const [appointments, setAppointments] = useState<any[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any>(null);
 
@@ -120,7 +123,27 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     if (roleLoading || !user) return;
+    
+    const fetchAppointments = async () => {
+      try {
+        const idToken = await user.getIdToken();
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments`,
+          { headers: { Authorization: `Bearer ${idToken}` } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setAppointments(data);
+          setAppointmentsLoading(false);
+        }
+      } catch (err) {
+        console.error("Failed to fetch appointments", err);
+        setAppointmentsLoading(false);
+      }
+    };
+
     fetchClientAnalytics();
+    fetchAppointments();
 
     let socket: Socket;
     user.getIdToken().then(token => {
@@ -130,8 +153,9 @@ export default function ClientDashboard() {
       });
 
       socket.on("dashboard_update", (data) => {
-        if (data.type === "booking_created") {
+        if (data.type === "booking_created" || data.type === "booking_updated") {
           fetchClientAnalytics();
+          fetchAppointments();
         }
       });
     });
@@ -180,48 +204,56 @@ export default function ClientDashboard() {
             {/* Upcoming Appointments */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Upcoming Appointments</h2>
+                <h2 className="text-xl font-bold text-gray-800">My Appointments</h2>
                 <button onClick={() => router.push('/client-dashboard/calendar')} className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">View Calendar</button>
               </div>
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row gap-6 items-start">
-                <div className="w-32 h-32 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
-                  {/* Placeholder for lawyer portrait */}
-                  <Image src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=400&h=400" alt="Sarah Jenkins" fill className="object-cover" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">Family Law</span>
-                    <span className="flex items-center text-sm text-gray-500 font-medium">
-                      <CalendarIcon className="w-4 h-4 mr-1" /> Tomorrow, 10:00 AM
-                    </span>
-                  </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      {upcomingAppointment
-                        ? `Consultation with ${upcomingAppointment.lawyer?.user?.name || "your Lawyer"}`
-                        : "Consultation with Sarah Jenkins"}
-                    </h3>
-                    <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                      {upcomingAppointment?.caseDescription || "Discussion regarding property settlement and final mediation steps."}
-                    </p>
-                  <div className="flex flex-wrap gap-3">
-                    <button 
-                      onClick={() => {
-                        const apptId = upcomingAppointment?.id;
-                        const url = apptId
-                          ? `/consultation?role=client&appointmentId=${apptId}`
-                          : "/consultation?role=client";
-                        router.push(url);
-                      }}
-                      className="flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#112549] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-sm"
-                    >
-                      <Video className="w-4 h-4" />
-                      {appointmentsLoading ? "Loading..." : "Join Video Call"}
-                    </button>
-                    <button className="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors">
-                      Reschedule
-                    </button>
-                  </div>
-                </div>
+              <div className="space-y-4">
+                {appointments.length === 0 && !appointmentsLoading ? (
+                  <p className="text-gray-500 text-sm">No appointments found.</p>
+                ) : (
+                  appointments.map((appt) => (
+                    <div key={appt.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row gap-6 items-start">
+                      <div className="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
+                        <Image src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=400&h=400" alt="Lawyer" fill className="object-cover" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                            appt.status === 'CONFIRMED' ? 'bg-green-50 text-green-700' :
+                            appt.status === 'REJECTED' ? 'bg-red-50 text-red-700' :
+                            'bg-yellow-50 text-yellow-700'
+                          }`}>
+                            {appt.status || 'PENDING'}
+                          </span>
+                          <span className="flex items-center text-sm text-gray-500 font-medium">
+                            <CalendarIcon className="w-4 h-4 mr-1" /> 
+                            {new Date(appt.scheduledAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                          Consultation with {appt.lawyer?.user?.name || "Lawyer"}
+                        </h3>
+                        <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                          {appt.caseDescription || "No specific notes."}
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          <button 
+                            onClick={() => router.push(`/consultation?role=client&appointmentId=${appt.id}`)}
+                            disabled={appt.status !== 'CONFIRMED'}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-sm ${
+                              appt.status === 'CONFIRMED' 
+                                ? 'bg-[#1B3A6B] hover:bg-[#112549] text-white'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
+                          >
+                            <Video className="w-4 h-4" />
+                            Join Video Call
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
 
@@ -319,6 +351,11 @@ export default function ClientDashboard() {
               </button>
             </section>
             
+            {/* Legal News Widget */}
+            <div className="h-[450px]">
+              <LegalNewsWidget />
+            </div>
+
           </div>
         </div>
       </main>

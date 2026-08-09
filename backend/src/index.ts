@@ -17,6 +17,8 @@ import googleCalendarRoutes from './routes/googleCalendarRoutes';
 import consultationRoutes from './routes/consultationRoutes';
 import profileRoutes from './routes/profileRoutes';
 import clientRoutes from './routes/clientRoutes';
+import newsRoutes from './routes/newsRoutes';
+import aiV1Routes from './routes/aiV1Routes';
 import { errorHandler } from './middleware/errorMiddleware';
 import { initNotificationSocket } from './utils/notificationHelper';
 import { initReminderScheduler } from './utils/reminderScheduler';
@@ -211,6 +213,8 @@ app.use('/api/google-calendar', googleCalendarRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/clients', clientRoutes);
+app.use('/api', newsRoutes);
+app.use('/api/v1', aiV1Routes);
 
 // Error Handling Middleware
 app.use(errorHandler);

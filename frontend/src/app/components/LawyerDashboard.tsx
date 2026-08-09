@@ -5,10 +5,12 @@ import { useLanguage } from "../context/LanguageContext";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { io, Socket } from "socket.io-client";
-import { FileDown } from "lucide-react";
+import { FileDown, CheckCircle, XCircle } from "lucide-react";
 import { useUI } from "../context/UIContext";
+import { useAuth } from "../context/AuthContext";
 import LawyerOnboarding from "./LawyerOnboarding";
 import PendingApproval from "./PendingApproval";
+import LegalNewsWidget from "./LegalNewsWidget";
 
 const content = {
   en: {
@@ -78,7 +80,10 @@ export default function LawyerDashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [dbUser, setDbUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [setupStep, setSetupStep] = useState<1 | 2 | 3 | null>(null);
+  const [setupStep, setSetupStep] = useState<number | null>(null);
+  
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [upcomingAppointment, setUpcomingAppointment] = useState<any | null>(null);
   const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
   
@@ -447,39 +452,93 @@ export default function LawyerDashboard() {
             {/* Left Column (Main) */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Today's Schedule */}
+              {/* Appointments */}
               <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-gray-900">{tx.todaysSchedule}</h2>
+                  <h2 className="text-lg font-bold text-gray-900">Consultations</h2>
                   <button onClick={() => router.push('/lawyer-dashboard/calendar')} className="text-sm font-semibold text-[#1B3A6B] hover:underline">{tx.viewFullCalendar}</button>
                 </div>
                 
                 <div className="space-y-4">
-                  {todayAppointments && todayAppointments.length > 0 ? (
-                    todayAppointments.map((appt, idx) => (
+                  {appointments.length > 0 ? (
+                    appointments.map((appt, idx) => (
                       <div 
                         key={appt.id || idx}
-                        onClick={() => {
-                          const url = `/consultation?role=lawyer&appointmentId=${appt.id}`;
-                          router.push(url);
-                        }}
-                        className="flex gap-4 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 items-center cursor-pointer hover:bg-gray-100/80 transition-colors group"
+                        className="flex flex-col gap-3 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 transition-colors group"
                       >
-                        <div className="w-20 text-right flex-shrink-0">
-                          <p className="font-bold text-gray-900 text-sm">
-                            {new Date(appt.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                          <p className="text-xs text-gray-500 font-medium mt-0.5">60 min</p>
-                        </div>
-                        <div className={`w-1 rounded-full h-12 ${idx % 2 === 0 ? 'bg-blue-500' : 'bg-orange-400'}`}></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-gray-900 text-sm truncate group-hover:text-[#1B3A6B] transition-colors">{appt.caseDescription || "Client Consultation"}</p>
-                          <p className="text-xs text-gray-500 font-medium mt-1 truncate">Virtual Meeting • Case #{appt.id.substring(0, 4)}</p>
-                        </div>
-                        <div className="w-8 h-8 rounded-lg text-gray-400 group-hover:text-[#1B3A6B] group-hover:bg-blue-50 flex items-center justify-center flex-shrink-0 transition-all">
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
+                        <div className="flex gap-4 items-center">
+                          <div className="w-20 text-right flex-shrink-0">
+                            <p className="font-bold text-gray-900 text-sm">
+                              {new Date(appt.scheduledAt).toLocaleDateString()}<br/>
+                              {new Date(appt.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <div className={`w-1 rounded-full h-12 ${appt.status === 'CONFIRMED' ? 'bg-green-500' : appt.status === 'REJECTED' ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
+                          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => {
+                            if (appt.status === 'CONFIRMED') {
+                              router.push(`/consultation?role=lawyer&appointmentId=${appt.id}`);
+                            }
+                          }}>
+                            <p className="font-bold text-gray-900 text-sm truncate group-hover:text-[#1B3A6B] transition-colors">{appt.caseDescription || "Client Consultation"}</p>
+                            <p className="text-xs text-gray-500 font-medium mt-1 truncate">Client: {appt.user?.name || 'Unknown'}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                              appt.status === 'CONFIRMED' ? 'bg-green-50 text-green-700' :
+                              appt.status === 'REJECTED' ? 'bg-red-50 text-red-700' :
+                              'bg-yellow-50 text-yellow-700'
+                            }`}>
+                              {appt.status || 'PENDING'}
+                            </span>
+                            {appt.status !== 'CONFIRMED' && appt.status !== 'REJECTED' && (
+                              <div className="flex gap-2 ml-2">
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const idToken = await auth.currentUser?.getIdToken();
+                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments/${appt.id}/status`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+                                        body: JSON.stringify({ status: 'CONFIRMED' })
+                                      });
+                                      if (res.ok) {
+                                        setAppointments(prev => prev.map(a => a.id === appt.id ? { ...a, status: 'CONFIRMED' } : a));
+                                      }
+                                    } catch (err) {
+                                      console.error(err);
+                                    }
+                                  }}
+                                  className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors"
+                                  title="Confirm"
+                                >
+                                  <CheckCircle size={16} />
+                                </button>
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const idToken = await auth.currentUser?.getIdToken();
+                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments/${appt.id}/status`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+                                        body: JSON.stringify({ status: 'REJECTED' })
+                                      });
+                                      if (res.ok) {
+                                        setAppointments(prev => prev.map(a => a.id === appt.id ? { ...a, status: 'REJECTED' } : a));
+                                      }
+                                    } catch (err) {
+                                      console.error(err);
+                                    }
+                                  }}
+                                  className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
+                                  title="Reject"
+                                >
+                                  <XCircle size={16} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))
@@ -490,8 +549,7 @@ export default function LawyerDashboard() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <p className="text-gray-900 font-medium text-sm">No consultations scheduled for today</p>
-                      <p className="text-gray-400 text-xs mt-1">Take a break or review pending cases.</p>
+                      <p className="text-gray-900 font-medium text-sm">No consultations scheduled</p>
                     </div>
                   )}
                 </div>
@@ -578,6 +636,11 @@ export default function LawyerDashboard() {
                 </button>
               </div>
               
+              {/* Legal News Widget */}
+              <div className="h-[450px]">
+                <LegalNewsWidget />
+              </div>
+              
             </div>
           </div>
         </div>
@@ -597,7 +660,7 @@ export default function LawyerDashboard() {
             </button>
             <LawyerOnboarding 
               dbUser={dbUser} 
-              initialStep={setupStep}
+              initialStep={setupStep as 1 | 2 | 3}
               onComplete={async () => {
                 setSetupStep(null);
                 if (user) {

@@ -118,10 +118,22 @@ export const updateLawyerProfile = async (req: AuthRequest, res: Response, next:
 // @access  Private (Admin only)
 export const getPendingLawyers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const lawyers = await prisma.lawyer.findMany({
+    // Auto-create missing lawyer profiles
+    const usersWithoutProfile = await prisma.user.findMany({
       where: {
-        profileCompleted: true
-      },
+        role: { in: ['lawyer', 'LAWYER'] },
+        lawyerProfile: null
+      }
+    });
+
+    for (const u of usersWithoutProfile) {
+      await prisma.lawyer.create({
+        data: { userId: u.id }
+      });
+    }
+
+    // Fetch all lawyers so the UI tabs (Pending, Approved, Rejected) can filter them
+    const lawyers = await prisma.lawyer.findMany({
       include: {
         user: {
           select: { name: true, email: true }

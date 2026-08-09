@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Calendar, Clock, Video, User, Briefcase } from "lucide-react";
+import { auth } from "../lib/firebase";
 
 interface BookingModalProps {
   lawyerId: string;
@@ -23,6 +24,7 @@ export default function BookingModal({
   onClose
 }: BookingModalProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [notes, setNotes] = useState<string>("");
   const [cardNumber, setCardNumber] = useState<string>("");
   const [expiry, setExpiry] = useState<string>("");
   const [cvv, setCvv] = useState<string>("");
@@ -54,16 +56,23 @@ export default function BookingModal({
     
     const finalPayload = {
       lawyerId,
-      selectedDate,
-      selectedTime,
+      date: selectedDate,
+      timeSlot: selectedTime,
       consultationType,
-      totalAmount
+      totalAmount,
+      notes
     };
 
     try {
-      await fetch("/api/appointments/book", {
+      const user = auth.currentUser;
+      const idToken = user ? await user.getIdToken() : '';
+      
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
         body: JSON.stringify(finalPayload)
       });
     } catch (error) {
@@ -147,6 +156,16 @@ export default function BookingModal({
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Reason for Consultation (Optional)</label>
+                      <textarea 
+                        rows={2}
+                        placeholder="E.g., Consultation regarding property deed"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white outline-none transition-all resize-none"
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Card Number</label>
                       <input 
