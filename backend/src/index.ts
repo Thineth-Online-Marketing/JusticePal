@@ -137,6 +137,8 @@ io.on('connection', (socket) => {
     console.log(`User [${userId}] connected to private notification room`);
   }
 
+  // ── Consultation Events ──────────────────────────────────────────
+
   socket.on('join_consultation', async ({ appointmentId }: { appointmentId: string }) => {
     try {
       const appt = await prisma.appointment.findUnique({
@@ -209,6 +211,40 @@ io.on('connection', (socket) => {
     const roomKey = `consultation:${appointmentId}`;
     socket.to(roomKey).emit('participant_typing', { userId, name: userName, isTyping });
   });
+
+  // ── Inbox / Direct Messaging Events ─────────────────────────────
+
+  socket.on('join_inbox', () => {
+    if (!userId) return;
+    const inboxRoom = `inbox_${userId}`;
+    socket.join(inboxRoom);
+    console.log(`User [${userId}] joined inbox room: ${inboxRoom}`);
+  });
+
+  socket.on('send_direct_message', async ({
+    conversationId,
+    receiverId,
+    messageData,
+  }: {
+    conversationId: string;
+    receiverId: string;
+    messageData: { id: string; text: string; senderId: string; createdAt: string };
+  }) => {
+    try {
+      if (!conversationId || !receiverId || !messageData) return;
+
+      // Broadcast to the receiver's inbox room only
+      io.to(`inbox_${receiverId}`).emit('receive_direct_message', {
+        conversationId,
+        message: messageData,
+      });
+    } catch (err) {
+      console.error('[Socket] send_direct_message error:', err);
+      socket.emit('error', { message: 'Failed to relay direct message' });
+    }
+  });
+
+  // ── Disconnect ──────────────────────────────────────────────────
 
   socket.on('disconnect', () => {});
 });
