@@ -6,10 +6,17 @@ import { createNotification } from './notificationController';
 
 const prisma = new PrismaClient();
 
-// Initialize Stripe (test mode)
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2026-07-29.dahlia' as any,
-});
+// Lazy Stripe client — only initialised when a payment route is actually called.
+// This prevents startup crashes when STRIPE_SECRET_KEY is not set in .env.
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
+    _stripe = new Stripe(key, { apiVersion: '2026-07-29.dahlia' as any });
+  }
+  return _stripe;
+}
 
 /**
  * POST /api/payments/create-checkout
@@ -46,7 +53,7 @@ export const createCheckoutSession = async (req: AuthRequest, res: Response, nex
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
     // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
       customer_email: appointment.user.email,
@@ -101,7 +108,7 @@ export const handleStripeWebhook = async (req: AuthRequest, res: Response, next:
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       (req as any).rawBody || req.body,
       sig,
       webhookSecret
