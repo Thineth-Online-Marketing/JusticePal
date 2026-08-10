@@ -1,8 +1,10 @@
 import express from 'express';
-import { getAppointments, createAppointment } from '../controllers/appointmentController';
+import { getAppointments, createAppointment, updateAppointmentStatus } from '../controllers/appointmentController';
+import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-router.route('/').get(getAppointments).post(createAppointment);
+router.route('/').get(protect, getAppointments).post(protect, createAppointment);
+router.route('/:id/status').patch(protect, updateAppointmentStatus);
 
 export default router;

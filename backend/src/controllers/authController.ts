@@ -25,7 +25,8 @@ export const syncUser = async (req: AuthRequest, res: Response, next: NextFuncti
 
     const resolvedEmail = email || req.firebaseUser?.email || '';
     const isAdmin = resolvedEmail === 'admin@justicepal.com' || resolvedEmail?.endsWith('@justicepal.admin');
-    const resolvedRole = isAdmin ? 'admin' : (role || 'user');
+    const inputRole = (role || 'user').toLowerCase();
+    const resolvedRole = isAdmin ? 'admin' : inputRole;
 
     if (!user) {
       // Create user if they don't exist (initial sign-up context)
@@ -55,7 +56,7 @@ export const syncUser = async (req: AuthRequest, res: Response, next: NextFuncti
       }
       
       // If user exists and is a lawyer but doesn't have a profile yet (legacy check)
-      if (user.role === 'lawyer' && !user.lawyerProfile) {
+      if (user.role.toLowerCase() === 'lawyer' && !user.lawyerProfile) {
         await prisma.lawyer.create({
           data: { userId: user.id }
         });

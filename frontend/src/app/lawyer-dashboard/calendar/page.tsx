@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from "../../context/LanguageContext";
 import { auth } from "../../lib/firebase";
 
@@ -11,14 +10,14 @@ const content = {
     day: "Day",
     week: "Week",
     month: "Month",
-    sync: "Sync with Google",
+    sync: "Refresh Bookings",
     schedule: "Schedule Availability",
-    connectTitle: "Connect Google Calendar",
-    connectDesc: "Sync your schedule with Google Calendar to manage appointments, court dates, and consultations all in one place.",
-    connectBtn: "Connect Google Calendar",
-    connectedBadge: "Google Calendar Connected",
-    disconnect: "Disconnect",
-    disconnectConfirm: "Are you sure you want to disconnect your Google Calendar?",
+    connectTitle: "Cal.com Scheduling",
+    connectDesc: "Your bookings from Cal.com appear here automatically. Set up your scheduling page at cal.com to let clients book consultations — free, no Google account needed.",
+    connectBtn: "Open Cal.com Dashboard",
+    connectedBadge: "Cal.com Connected",
+    disconnect: "",
+    disconnectConfirm: "",
     pendingTitle: "Pending Booking Request",
     pendingDesc: "New consultation request from Alex Reed for tomorrow at 10:00 AM.",
     reschedule: "Reschedule",
@@ -56,14 +55,14 @@ const content = {
     day: "දින",
     week: "සති",
     month: "මාස",
-    sync: "Google සමග සමමුහුර්ත කරන්න",
+    sync: "වෙන් කිරීම් නැවුම් කරන්න",
     schedule: "ලබා ගත හැකි වේලාවන්",
-    connectTitle: "Google Calendar සම්බන්ධ කරන්න",
-    connectDesc: "ඔබගේ හමුවීම්, අධිකරණ දිනයන් සහ උපදේශන එකම තැනකින් කළමනාකරණය කිරීමට Google Calendar සමග ඔබගේ කාලසටහන සමමුහුර්ත කරන්න.",
-    connectBtn: "Google Calendar සම්බන්ධ කරන්න",
-    connectedBadge: "Google Calendar සම්බන්ධිතයි",
-    disconnect: "විසන්ධි කරන්න",
-    disconnectConfirm: "ඔබට ඔබගේ Google Calendar විසන්ධි කිරීමට අවශ්‍ය බව විශ්වාසද?",
+    connectTitle: "Cal.com කාල නির්ණය",
+    connectDesc: "ඔබගේ Cal.com වෙන් කිරීම් ස්වයංක්‍රීයව මෙහි දිස්වේ. Google ගිණුමක් නොමැතිව ඔබේ නියමිත කාල රාමු සකසන්න.",
+    connectBtn: "Cal.com Dashboard විවෘත කරන්න",
+    connectedBadge: "Cal.com සම්බන්ධිතයි",
+    disconnect: "",
+    disconnectConfirm: "",
     pendingTitle: "පොරොත්තු වෙන් කිරීමේ ඉල්ලීම",
     pendingDesc: "Alex Reed ගෙන් හෙට පෙ.ව. 10:00 සඳහා නව උපදේශන ඉල්ලීමක්.",
     reschedule: "කාලසටහන වෙනස් කරන්න",
@@ -133,13 +132,11 @@ function getEventColor(colorId: string) {
 function CalendarContent() {
   const { lang } = useLanguage();
   const tx = content[lang as keyof typeof content] || content.en;
-  const router = useRouter();
-  const searchParams = useSearchParams();
   
-  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
 
   const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Week');
-  const [isConnected, setIsConnected] = useState(false);
+  const [calConfigured, setCalConfigured] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
@@ -176,28 +173,26 @@ function CalendarContent() {
     return await user.getIdToken();
   };
 
-  // Check connection status
-  const checkConnection = useCallback(async () => {
+  // Check if Cal.com API key is configured on the backend
+  const checkCalComStatus = useCallback(async () => {
     try {
       const token = await getToken();
-      const res = await fetch(`${BACKEND_URL}/api/google-calendar/status`, {
+      const res = await fetch(`${BACKEND_URL}/api/cal-com/status`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
-        setIsConnected(data.connected);
+        setCalConfigured(data.configured);
       }
     } catch (err) {
-      console.error('Error checking calendar status:', err);
+      console.error('Error checking Cal.com status:', err);
     } finally {
       setIsLoading(false);
     }
   }, [BACKEND_URL]);
 
-  // Fetch events for the current week
-  const fetchEvents = useCallback(async () => {
-    if (!isConnected) return;
-    
+  // Fetch Cal.com bookings for the current week
+  const fetchCalComBookings = useCallback(async () => {
     try {
       setSyncing(true);
       const token = await getToken();
@@ -205,7 +200,7 @@ function CalendarContent() {
       weekEnd.setDate(weekEnd.getDate() + 7);
 
       const res = await fetch(
-        `${BACKEND_URL}/api/google-calendar/events?timeMin=${currentWeekStart.toISOString()}&timeMax=${weekEnd.toISOString()}`,
+        `${BACKEND_URL}/api/cal-com/bookings?startTime=${currentWeekStart.toISOString()}&endTime=${weekEnd.toISOString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -214,166 +209,86 @@ function CalendarContent() {
         setEvents(data.events || []);
       }
     } catch (err) {
-      console.error('Error fetching events:', err);
+      console.error('Error fetching Cal.com bookings:', err);
     } finally {
       setSyncing(false);
     }
-  }, [isConnected, currentWeekStart, BACKEND_URL]);
+  }, [currentWeekStart, BACKEND_URL]);
 
   // Initial load
   useEffect(() => {
-    checkConnection();
-  }, [checkConnection]);
+    checkCalComStatus();
+  }, [checkCalComStatus]);
 
-  // Handle OAuth callback
+  // Fetch bookings whenever week changes
   useEffect(() => {
-    if (searchParams.get('connected') === 'true') {
-      setIsConnected(true);
-      setFeedback({ type: 'success', msg: tx.syncSuccess });
-      setTimeout(() => setFeedback(null), 4000);
-      // Clean URL
-      router.replace('/lawyer-dashboard/calendar');
-    }
-    if (searchParams.get('error')) {
-      setFeedback({ type: 'error', msg: tx.error });
-      setTimeout(() => setFeedback(null), 4000);
-      router.replace('/lawyer-dashboard/calendar');
-    }
-  }, [searchParams, router, tx.syncSuccess, tx.error]);
+    fetchCalComBookings();
+  }, [fetchCalComBookings]);
 
-  // Fetch events when connected or week changes
-  useEffect(() => {
-    if (isConnected) {
-      fetchEvents();
-    }
-  }, [isConnected, fetchEvents]);
-
-  // Connect Google Calendar
-  const handleConnect = async () => {
-    try {
-      const token = await getToken();
-      const res = await fetch(`${BACKEND_URL}/api/google-calendar/auth`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        // Redirect to Google consent
-        window.location.href = data.authUrl;
-      }
-    } catch (err) {
-      console.error('Error initiating auth:', err);
-      setFeedback({ type: 'error', msg: tx.error });
-      setTimeout(() => setFeedback(null), 4000);
-    }
-  };
-
-  // Disconnect
-  const handleDisconnect = async () => {
-    if (!confirm(tx.disconnectConfirm)) return;
-    try {
-      const token = await getToken();
-      await fetch(`${BACKEND_URL}/api/google-calendar/disconnect`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setIsConnected(false);
-      setEvents([]);
-    } catch (err) {
-      console.error('Error disconnecting:', err);
-    }
-  };
-
-  // Sync / Refresh
+  // Refresh handler
   const handleSync = async () => {
-    if (!isConnected) {
-      handleConnect();
-      return;
-    }
-    await fetchEvents();
+    await fetchCalComBookings();
     setFeedback({ type: 'success', msg: tx.syncSuccess });
     setTimeout(() => setFeedback(null), 3000);
   };
 
-  // Create event
-  const handleCreateEvent = async () => {
-    try {
-      const token = await getToken();
-      const res = await fetch(`${BACKEND_URL}/api/google-calendar/events`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: eventForm.title,
-          description: eventForm.description,
-          start: new Date(eventForm.start).toISOString(),
-          end: new Date(eventForm.end).toISOString(),
-          location: eventForm.location,
-        }),
-      });
-
-      if (res.ok) {
-        setShowEventModal(false);
-        setEventForm({ title: '', description: '', start: '', end: '', location: '' });
-        await fetchEvents();
-        setFeedback({ type: 'success', msg: 'Event created successfully!' });
-        setTimeout(() => setFeedback(null), 3000);
-      }
-    } catch (err) {
-      console.error('Error creating event:', err);
-      setFeedback({ type: 'error', msg: tx.error });
-      setTimeout(() => setFeedback(null), 3000);
-    }
+  // Create local event (stored in component state — Cal.com bookings are read-only)
+  const handleCreateEvent = () => {
+    const newEvent: CalendarEvent = {
+      id: `local-${Date.now()}`,
+      title: eventForm.title,
+      description: eventForm.description,
+      start: new Date(eventForm.start).toISOString(),
+      end: new Date(eventForm.end).toISOString(),
+      location: eventForm.location,
+      colorId: '6',  // Orange — distinguishes local events from Cal.com bookings
+      htmlLink: '',
+      status: 'confirmed',
+    };
+    setEvents(prev => [...prev, newEvent]);
+    setShowEventModal(false);
+    setEventForm({ title: '', description: '', start: '', end: '', location: '' });
+    setFeedback({ type: 'success', msg: 'Event added to calendar!' });
+    setTimeout(() => setFeedback(null), 3000);
   };
 
-  // Update event
-  const handleUpdateEvent = async () => {
+  // Update local event
+  const handleUpdateEvent = () => {
     if (!editingEvent) return;
-    try {
-      const token = await getToken();
-      const res = await fetch(`${BACKEND_URL}/api/google-calendar/events/${editingEvent.id}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: eventForm.title,
-          description: eventForm.description,
-          start: new Date(eventForm.start).toISOString(),
-          end: new Date(eventForm.end).toISOString(),
-          location: eventForm.location,
-        }),
-      });
-
-      if (res.ok) {
-        setEditingEvent(null);
-        setShowEventModal(false);
-        setEventForm({ title: '', description: '', start: '', end: '', location: '' });
-        await fetchEvents();
-      }
-    } catch (err) {
-      console.error('Error updating event:', err);
-      setFeedback({ type: 'error', msg: tx.error });
-      setTimeout(() => setFeedback(null), 3000);
-    }
+    setEvents(prev => prev.map(e => e.id === editingEvent.id ? {
+      ...e,
+      title: eventForm.title,
+      description: eventForm.description,
+      start: new Date(eventForm.start).toISOString(),
+      end: new Date(eventForm.end).toISOString(),
+      location: eventForm.location,
+    } : e));
+    setEditingEvent(null);
+    setShowEventModal(false);
+    setEventForm({ title: '', description: '', start: '', end: '', location: '' });
+    setFeedback({ type: 'success', msg: 'Event updated!' });
+    setTimeout(() => setFeedback(null), 3000);
   };
 
-  // Delete event
+  // Delete local event or cancel Cal.com booking
   const handleDeleteEvent = async (eventId: string) => {
-    try {
-      const token = await getToken();
-      await fetch(`${BACKEND_URL}/api/google-calendar/events/${eventId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setEditingEvent(null);
-      setShowEventModal(false);
-      await fetchEvents();
-    } catch (err) {
-      console.error('Error deleting event:', err);
+    const event = events.find(e => e.id === eventId);
+    if (event && (event as any).source === 'cal.com') {
+      // Cancel via Cal.com API
+      try {
+        const token = await getToken();
+        await fetch(`${BACKEND_URL}/api/cal-com/bookings/${eventId}/cancel`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: 'Cancelled by lawyer' }),
+        });
+      } catch (err) {
+        console.error('Error cancelling Cal.com booking:', err);
+      }
     }
+    setEvents(prev => prev.filter(e => e.id !== eventId));
+    setEditingEvent(null);
+    setShowEventModal(false);
   };
 
   // Open edit modal
@@ -540,19 +455,13 @@ function CalendarContent() {
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Connection status badge */}
-            {isConnected && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-xs font-bold text-emerald-700">{tx.connectedBadge}</span>
-                <button 
-                  onClick={handleDisconnect}
-                  className="ml-1 text-xs text-emerald-600 hover:text-red-600 transition-colors font-medium underline underline-offset-2"
-                >
-                  {tx.disconnect}
-                </button>
-              </div>
-            )}
+            {/* Cal.com status badge */}
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${calConfigured ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+              <div className={`w-2 h-2 rounded-full ${calConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`}></div>
+              <span className={`text-xs font-bold ${calConfigured ? 'text-emerald-700' : 'text-amber-700'}`}>
+                {calConfigured ? 'Cal.com Active' : 'Cal.com Not Configured'}
+              </span>
+            </div>
 
             <button 
               onClick={handleSync}
@@ -564,56 +473,46 @@ function CalendarContent() {
               </svg>
               {tx.sync}
             </button>
-            {isConnected && (
-              <button 
-                onClick={openCreateModal}
-                className="px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-semibold hover:bg-[#112549] transition-colors shadow-sm flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                {tx.newEvent}
-              </button>
-            )}
+            <button 
+              onClick={openCreateModal}
+              className="px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-semibold hover:bg-[#112549] transition-colors shadow-sm flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              {tx.newEvent}
+            </button>
           </div>
         </div>
 
-        {/* Google Calendar Connect Card (shown when not connected) */}
-        {!isConnected && (
-          <div className="bg-gradient-to-r from-[#1B3A6B] to-[#2563EB] rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-64 h-64 opacity-10">
-              <svg viewBox="0 0 200 200" fill="currentColor">
-                <path d="M 100 0 L 200 100 L 100 200 L 0 100 Z" />
-              </svg>
+        {/* Cal.com Info Card (shown when key is not yet configured) */}
+        {!calConfigured && (
+          <div className="bg-gradient-to-r from-[#0f172a] to-[#1e293b] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 opacity-5">
+              <svg viewBox="0 0 200 200" fill="currentColor"><path d="M 100 0 L 200 100 L 100 200 L 0 100 Z" /></svg>
             </div>
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-                <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
                   <line x1="16" y1="2" x2="16" y2="6" />
                   <line x1="8" y1="2" x2="8" y2="6" />
                   <line x1="3" y1="10" x2="21" y2="10" />
-                  <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
                 </svg>
               </div>
               <div className="flex-1 text-center md:text-left">
-                <h2 className="text-xl font-bold mb-2">{tx.connectTitle}</h2>
-                <p className="text-blue-100 text-sm leading-relaxed max-w-xl">{tx.connectDesc}</p>
+                <h2 className="text-base font-bold mb-1">{tx.connectTitle}</h2>
+                <p className="text-slate-400 text-xs leading-relaxed max-w-xl">{tx.connectDesc}</p>
+                <p className="text-amber-400 text-[11px] font-bold mt-2">⚙ Set <code className="bg-white/10 px-1 rounded">CAL_COM_API_KEY</code> in your backend .env to activate</p>
               </div>
-              <button 
-                onClick={handleConnect}
-                className="px-6 py-3 bg-white text-[#1B3A6B] rounded-xl text-sm font-bold hover:bg-blue-50 transition-colors shadow-md flex items-center gap-3 whitespace-nowrap"
+              <a 
+                href="https://app.cal.com/settings/developer/api-keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-2.5 bg-white text-slate-900 rounded-xl text-sm font-bold hover:bg-slate-100 transition-colors shadow-md whitespace-nowrap"
               >
-                {/* Google icon */}
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 001 12c0 1.77.42 3.44 1.18 4.93l3.66-2.84z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                {tx.connectBtn}
-              </button>
+                {tx.connectBtn} →
+              </a>
             </div>
           </div>
         )}
@@ -735,8 +634,8 @@ function CalendarContent() {
               );
             })()}
 
-            {/* Google Calendar Events */}
-            {isConnected && events.length > 0 && (
+            {/* Cal.com Bookings + Local Events */}
+            {events.length > 0 && (
               <div className="absolute top-0 right-0 bottom-0 left-20 z-10 grid grid-cols-7">
                 {Array.from({ length: 7 }, (_, dayIdx) => (
                   <div key={dayIdx} className="relative border-r border-transparent">
@@ -780,7 +679,7 @@ function CalendarContent() {
             )}
 
             {/* No events message */}
-            {isConnected && events.length === 0 && !syncing && (
+            {events.length === 0 && !syncing && (
               <div className="absolute inset-0 flex items-center justify-center z-5 pointer-events-none">
                 <p className="text-sm text-gray-400 font-medium">{tx.noEvents}</p>
               </div>
@@ -804,33 +703,18 @@ function CalendarContent() {
         {/* Footer Legend */}
         <div className="flex flex-col md:flex-row items-center justify-between pt-2">
           <div className="flex items-center gap-6">
-            {isConnected ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-[#4285F4]"></div>
-                  <span className="text-xs font-bold text-gray-600">Google Events</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-                  <span className="text-xs font-bold text-gray-600">Current Time</span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-[#3B82F6]"></div>
-                  <span className="text-xs font-bold text-gray-600">{tx.consultation}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-[#10B981]"></div>
-                  <span className="text-xs font-bold text-gray-600">{tx.videoMeeting}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-[#F97316]"></div>
-                  <span className="text-xs font-bold text-gray-600">{tx.caseReview}</span>
-                </div>
-              </>
-            )}
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-[#3B82F6]"></div>
+              <span className="text-xs font-bold text-gray-600">Cal.com Bookings</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-[#F97316]"></div>
+              <span className="text-xs font-bold text-gray-600">Local Events</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+              <span className="text-xs font-bold text-gray-600">Current Time</span>
+            </div>
           </div>
           <p className="text-[10px] font-bold text-slate-400 tracking-wider uppercase mt-4 md:mt-0">
             {tx.workingHours}

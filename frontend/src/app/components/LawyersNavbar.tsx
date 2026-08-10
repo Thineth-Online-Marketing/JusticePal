@@ -41,13 +41,9 @@ export default function LawyersNavbar() {
           </div>
         </Link>
 
-        {/* Center Links */}
         <div className="hidden md:flex items-center gap-8">
           <Link href="/lawyers" className="text-sm font-bold text-gray-900 border-b-2 border-[#1B3A6B] py-6">
             {currentLabels.lawyers}
-          </Link>
-          <Link href="/find-lawyers" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
-            {currentLabels.find}
           </Link>
           <Link href="/about" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
             {currentLabels.about}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 import Image from "next/image";
 import {
   Users,
@@ -34,7 +35,7 @@ import {
   Cell,
 } from "recharts";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 /* ── mock chart data ─────────────────────────────────────── */
 const userGrowthData = [
@@ -65,6 +66,7 @@ const barColors = revenueData.map((_, i) => {
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { user } = useAuth();
   
   // Dynamic stats
   const [stats, setStats] = useState({
@@ -82,15 +84,21 @@ export default function AdminDashboard() {
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
 
   const fetchDashboardData = async () => {
+    if (!user) return;
     try {
       setLoadingData(true);
+      const idToken = await user.getIdToken();
       const [statsRes, pendingRes] = await Promise.all([
         fetch(`${BACKEND_URL}/api/admin/stats`),
-        fetch(`${BACKEND_URL}/api/lawyers/pending`)
+        fetch(`${BACKEND_URL}/api/admin/pending-lawyers`, {
+          headers: { Authorization: `Bearer ${idToken}` }
+        })
       ]);
 
       if (statsRes.ok) {
@@ -100,7 +108,10 @@ export default function AdminDashboard() {
 
       if (pendingRes.ok) {
         const queueData = await pendingRes.json();
+        console.log('Pending Lawyers fetched:', queueData);
         setLawyerQueue(queueData);
+      } else {
+        console.error('Failed to fetch pending lawyers, status:', pendingRes.status);
       }
     } catch (error) {
       console.error("Error fetching admin data", error);
@@ -110,17 +121,26 @@ export default function AdminDashboard() {
   };
 
   const handleVerify = async (lawyerId: string) => {
+    if (!user) return;
     try {
       setVerifyingId(lawyerId);
-      const res = await fetch(`${BACKEND_URL}/api/lawyers/${lawyerId}/verify`, {
-        method: "PUT",
+      const idToken = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/api/admin/verify-lawyer/${lawyerId}`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}` 
+        },
+        body: JSON.stringify({ isVerified: true })
       });
 
       if (res.ok) {
         alert("Lawyer verified successfully!");
         setSelectedLawyer(null);
-        // Refresh dashboard data
-        await fetchDashboardData();
+        // Optimistically remove from queue
+        setLawyerQueue(prev => prev.filter(l => l.id !== lawyerId));
+        // Refresh stats
+        fetchDashboardData();
       } else {
         const errData = await res.json();
         alert(errData.message || "Failed to verify lawyer.");

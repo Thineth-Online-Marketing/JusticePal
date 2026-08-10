@@ -181,8 +181,10 @@ interface FilterState {
   languages: string[];
 }
 
-const SPECIALTY_OPTIONS = ["Labour Law", "Property Law", "Corporate Law", "Criminal Law", "Family Law"];
+const SPECIALTY_OPTIONS = ["Tenancy & Property Law", "General Law", "Corporate Law", "Criminal Law", "Family Law", "Labour Law"];
 const LOCATION_OPTIONS = ["Colombo", "Kandy", "Galle", "Matara"];
+const BUDGET_TIERS = ["Low", "Medium", "High"];
+const LANGUAGE_OPTIONS = ["English", "Sinhala", "Tamil"];
 const BUDGET_OPTIONS = [
   { label: "Under LKR 5,000", min: 0, max: 5000 },
   { label: "LKR 5,000 - 10,000", min: 5000, max: 10000 },
@@ -203,7 +205,7 @@ const INITIAL_FILTERS: FilterState = {
   languages: [],
 };
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
 
 export default function FindLawyerPage() {
   const { user, loading: authLoading } = useAuth();
@@ -230,6 +232,17 @@ export default function FindLawyerPage() {
   const [chipBudget, setChipBudget] = useState<string | null>(null);
   const [chipLanguage, setChipLanguage] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const manualOverrideRef = useRef<Record<string, boolean>>({});
+
+  const handleChipClick = (category: string, value: string) => {
+    manualOverrideRef.current[category] = true;
+    switch(category) {
+      case 'case_type': setChipCaseType(value === chipCaseType ? null : value); break;
+      case 'location': setChipLocation(value === chipLocation ? null : value); break;
+      case 'budget': setChipBudget(value === chipBudget ? null : value); break;
+      case 'language': setChipLanguage(value === chipLanguage ? null : value); break;
+    }
+  };
 
   // --- Match result state ---
   const [matchedLawyers, setMatchedLawyers] = useState<MatchedLawyer[]>([]);
@@ -250,7 +263,7 @@ export default function FindLawyerPage() {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/users/profile`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/users/profile`,
           {
             headers: { Authorization: `Bearer ${idToken}` },
           }
@@ -303,11 +316,11 @@ export default function FindLawyerPage() {
           const json = await res.json();
           const data: AiSuggestions = json.data;
           setAiSuggestions(data);
-          // Auto-select all non-null chips
-          setChipCaseType(data.case_type);
-          setChipLocation(data.location);
-          setChipBudget(data.budget);
-          setChipLanguage(data.language);
+          // Auto-select all non-null chips if not manually overridden
+          if (data.case_type && !manualOverrideRef.current['case_type']) setChipCaseType(data.case_type);
+          if (data.location && !manualOverrideRef.current['location']) setChipLocation(data.location);
+          if (data.budget && !manualOverrideRef.current['budget']) setChipBudget(data.budget);
+          if (data.language && !manualOverrideRef.current['language']) setChipLanguage(data.language);
         }
       } catch (err) {
         console.error("AI extraction failed", err);
@@ -409,6 +422,7 @@ export default function FindLawyerPage() {
     setChipLocation(null);
     setChipBudget(null);
     setChipLanguage(null);
+    manualOverrideRef.current = {};
     setMatchedLawyers([]);
   };
 
@@ -513,68 +527,72 @@ export default function FindLawyerPage() {
               )}
             </div>
 
-            {/* Case Type chip */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-gray-500 min-w-[80px]">{tx.caseType}</span>
-              {aiSuggestions.case_type ? (
-                <Chip
-                  label={aiSuggestions.case_type}
-                  active={chipCaseType === aiSuggestions.case_type}
-                  activeClass="bg-blue-100 text-blue-800 border-blue-300"
-                  icon={<CheckCircle2 className="w-3.5 h-3.5" />}
-                  onClick={() => setChipCaseType(prev => prev ? null : aiSuggestions.case_type)}
-                />
-              ) : (
-                <span className="text-xs text-gray-400 italic">Type above to detect…</span>
-              )}
+            {/* Case Type chip row */}
+            <div className="flex flex-col gap-2 mt-4">
+              <span className="text-xs font-semibold text-gray-500">{tx.caseType}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                {SPECIALTY_OPTIONS.map(opt => (
+                  <Chip
+                    key={opt}
+                    label={opt}
+                    active={chipCaseType === opt}
+                    activeClass="bg-blue-100 text-blue-800 border-blue-300 shadow-sm"
+                    icon={aiSuggestions.case_type === opt && chipCaseType === opt ? <Sparkles className="w-3.5 h-3.5 text-blue-500" /> : chipCaseType === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
+                    onClick={() => handleChipClick('case_type', opt)}
+                  />
+                ))}
+              </div>
             </div>
 
-            {/* Location chip */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-gray-500 min-w-[80px]">{tx.location}</span>
-              {aiSuggestions.location ? (
-                <Chip
-                  label={aiSuggestions.location}
-                  active={chipLocation === aiSuggestions.location}
-                  activeClass="bg-green-100 text-green-800 border-green-300"
-                  icon={<MapPin className="w-3.5 h-3.5" />}
-                  onClick={() => setChipLocation(prev => prev ? null : aiSuggestions.location)}
-                />
-              ) : (
-                <span className="text-xs text-gray-400 italic">Type above to detect…</span>
-              )}
+            {/* Location chip row */}
+            <div className="flex flex-col gap-2 mt-4">
+              <span className="text-xs font-semibold text-gray-500">{tx.location}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                {LOCATION_OPTIONS.map(opt => (
+                  <Chip
+                    key={opt}
+                    label={opt}
+                    active={chipLocation === opt}
+                    activeClass="bg-green-100 text-green-800 border-green-300 shadow-sm"
+                    icon={aiSuggestions.location === opt && chipLocation === opt ? <Sparkles className="w-3.5 h-3.5 text-green-500" /> : chipLocation === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
+                    onClick={() => handleChipClick('location', opt)}
+                  />
+                ))}
+              </div>
             </div>
 
-            {/* Budget chip */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-gray-500 min-w-[80px]">{tx.budget}</span>
-              {aiSuggestions.budget ? (
-                <Chip
-                  label={aiSuggestions.budget}
-                  active={chipBudget === aiSuggestions.budget}
-                  activeClass="bg-purple-100 text-purple-800 border-purple-300"
-                  icon={<CheckCircle2 className="w-3.5 h-3.5" />}
-                  onClick={() => setChipBudget(prev => prev ? null : aiSuggestions.budget)}
-                />
-              ) : (
-                <span className="text-xs text-gray-400 italic">Type above to detect…</span>
-              )}
+            {/* Budget chip row */}
+            <div className="flex flex-col gap-2 mt-4">
+              <span className="text-xs font-semibold text-gray-500">{tx.budget}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                {BUDGET_TIERS.map(opt => (
+                  <Chip
+                    key={opt}
+                    label={opt}
+                    active={chipBudget === opt}
+                    activeClass="bg-purple-100 text-purple-800 border-purple-300 shadow-sm"
+                    icon={aiSuggestions.budget === opt && chipBudget === opt ? <Sparkles className="w-3.5 h-3.5 text-purple-500" /> : chipBudget === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
+                    onClick={() => handleChipClick('budget', opt)}
+                  />
+                ))}
+              </div>
             </div>
 
-            {/* Language chip */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-gray-500 min-w-[80px]">{tx.language}</span>
-              {aiSuggestions.language ? (
-                <Chip
-                  label={aiSuggestions.language}
-                  active={chipLanguage === aiSuggestions.language}
-                  activeClass="bg-orange-100 text-orange-800 border-orange-300"
-                  icon={<CheckCircle2 className="w-3.5 h-3.5" />}
-                  onClick={() => setChipLanguage(prev => prev ? null : aiSuggestions.language)}
-                />
-              ) : (
-                <span className="text-xs text-gray-400 italic">Type above to detect…</span>
-              )}
+            {/* Language chip row */}
+            <div className="flex flex-col gap-2 mt-4">
+              <span className="text-xs font-semibold text-gray-500">{tx.language}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                {LANGUAGE_OPTIONS.map(opt => (
+                  <Chip
+                    key={opt}
+                    label={opt}
+                    active={chipLanguage === opt}
+                    activeClass="bg-orange-100 text-orange-800 border-orange-300 shadow-sm"
+                    icon={aiSuggestions.language === opt && chipLanguage === opt ? <Sparkles className="w-3.5 h-3.5 text-orange-500" /> : chipLanguage === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
+                    onClick={() => handleChipClick('language', opt)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 

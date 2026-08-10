@@ -62,14 +62,28 @@ export const createLawyerProfile = async (req: Request, res: Response, next: Nex
 export const updateLawyerProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { specialization, location, bio, hourlyRate, workExperience, profilePicture, phone, phoneVerified, idPhotos, profileCompleted } = req.body;
+    const userId = req.user.id;
 
+    // 1. Data Sanitization & Parsing
+    // Ensure specialization is a flattened, clean string array
+    let safeSpecialization: string[] | undefined = undefined;
+    if (specialization !== undefined) {
+      safeSpecialization = Array.isArray(specialization) 
+        ? specialization.flat() 
+        : [specialization];
+    }
+
+    // 2. Safe Fallbacks & Prisma Writes
+    // (Note: phone and profilePicture are in the Lawyer schema, not User)
     const lawyer = await prisma.lawyer.upsert({
-      where: { userId: req.user.id },
+      where: { userId },
       update: {
-        specialization: specialization !== undefined ? specialization : undefined,
+        specialization: safeSpecialization,
         location: location !== undefined ? location : undefined,
         bio: bio !== undefined ? bio : undefined,
-        workExperience: workExperience !== undefined ? workExperience : undefined,
+        // Using String() to match the DB schema's String? type, 
+        // fallback to undefined for safe partial updates
+        workExperience: workExperience !== undefined ? String(workExperience) : undefined,
         profilePicture: profilePicture !== undefined ? profilePicture : undefined,
         phone: phone !== undefined ? phone : undefined,
         phoneVerified: phoneVerified !== undefined ? phoneVerified : undefined,
@@ -78,22 +92,23 @@ export const updateLawyerProfile = async (req: AuthRequest, res: Response, next:
         hourlyRate: hourlyRate !== undefined ? parseFloat(hourlyRate) : undefined
       },
       create: {
-        userId: req.user.id,
-        specialization: specialization || [],
+        userId,
+        specialization: safeSpecialization || [],
         location: location || null,
         bio: bio || null,
-        workExperience: workExperience || null,
+        workExperience: workExperience !== undefined ? String(workExperience) : null,
         profilePicture: profilePicture || null,
         phone: phone || null,
         phoneVerified: phoneVerified || false,
         idPhotos: idPhotos || [],
         profileCompleted: profileCompleted || false,
-        hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null
+        hourlyRate: hourlyRate !== undefined ? parseFloat(hourlyRate) : null
       }
     });
 
     res.status(200).json(lawyer);
   } catch (error) {
+    console.error("Profile update error:", error);
     next(error);
   }
 };
@@ -103,10 +118,22 @@ export const updateLawyerProfile = async (req: AuthRequest, res: Response, next:
 // @access  Private (Admin only)
 export const getPendingLawyers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const lawyers = await prisma.lawyer.findMany({
+    // Auto-create missing lawyer profiles
+    const usersWithoutProfile = await prisma.user.findMany({
       where: {
-        profileCompleted: true
-      },
+        role: { in: ['lawyer', 'LAWYER'] },
+        lawyerProfile: null
+      }
+    });
+
+    for (const u of usersWithoutProfile) {
+      await prisma.lawyer.create({
+        data: { userId: u.id }
+      });
+    }
+
+    // Fetch all lawyers so the UI tabs (Pending, Approved, Rejected) can filter them
+    const lawyers = await prisma.lawyer.findMany({
       include: {
         user: {
           select: { name: true, email: true }
