@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { io, Socket } from "socket.io-client";
 import ClientNavbar from "../../../components/ClientNavbar";
 import { useAuth } from "../../../context/AuthContext";
 import { useLanguage } from "../../../context/LanguageContext";
@@ -158,6 +159,15 @@ export default function ClientInboxPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // --- Socket.io refs ---
+  const socketRef = useRef<Socket | null>(null);
+  const activeChatIdRef = useRef<string | null>(null);
+
+  // Keep ref in sync with state so socket callbacks see latest value
+  useEffect(() => {
+    activeChatIdRef.current = activeChatId;
+  }, [activeChatId]);
+
   // --- Auth & role check ---
   useEffect(() => {
     if (authLoading) return;
@@ -264,6 +274,89 @@ export default function ClientInboxPage() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // --- Socket.io connection & real-time listener ---
+  useEffect(() => {
+    if (!user || roleLoading) return;
+    let socket: Socket;
+
+    const initSocket = async () => {
+      const idToken = await user.getIdToken();
+      socket = io(BACKEND_URL, {
+        auth: { token: idToken },
+        transports: ["websocket", "polling"],
+      });
+
+      socketRef.current = socket;
+
+      socket.on("connect", () => {
+        console.log("[Inbox] Socket connected");
+        // Join the user's private inbox room
+        socket.emit("join_inbox");
+      });
+
+      // Listen for incoming direct messages in real time
+      socket.on("receive_direct_message", (payload: {
+        conversationId: string;
+        message: { id: string; text: string; senderId: string; createdAt: string };
+      }) => {
+        const { conversationId, message: incomingMsg } = payload;
+
+        // If this message belongs to the currently open conversation, append it
+        if (activeChatIdRef.current === conversationId) {
+          setMessages((prev) => {
+            // Skip if we already have this message (e.g. our own optimistic copy)
+            if (prev.some((m) => m.id === incomingMsg.id)) return prev;
+            return [
+              ...prev,
+              {
+                id: incomingMsg.id,
+                conversationId,
+                senderId: incomingMsg.senderId,
+                text: incomingMsg.text,
+                read: true,
+                createdAt: incomingMsg.createdAt,
+                sender: { id: incomingMsg.senderId, name: "" },
+              },
+            ];
+          });
+        }
+
+        // Update the conversation list preview regardless
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === conversationId
+              ? {
+                  ...c,
+                  lastMessage: {
+                    id: incomingMsg.id,
+                    text: incomingMsg.text,
+                    senderId: incomingMsg.senderId,
+                    read: activeChatIdRef.current === conversationId,
+                    createdAt: incomingMsg.createdAt,
+                  },
+                  lastMessageAt: incomingMsg.createdAt,
+                  hasUnread: activeChatIdRef.current !== conversationId,
+                }
+              : c
+          )
+        );
+      });
+
+      socket.on("disconnect", () => {
+        console.log("[Inbox] Socket disconnected");
+      });
+    };
+
+    initSocket();
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [user, roleLoading]);
+
   // --- Loading screen ---
   if (authLoading || roleLoading) {
     return (
@@ -335,6 +428,21 @@ export default function ClientInboxPage() {
               : c
           )
         );
+
+        // Emit via Socket.io so the receiver gets the message in real time
+        const receiverId = activeConvo?.otherUser?.id;
+        if (socketRef.current && receiverId) {
+          socketRef.current.emit("send_direct_message", {
+            conversationId: activeChatId,
+            receiverId,
+            messageData: {
+              id: serverMsg.id,
+              text: serverMsg.text,
+              senderId: serverMsg.senderId,
+              createdAt: serverMsg.createdAt,
+            },
+          });
+        }
       }
     } catch (err) {
       console.error("Failed to send message", err);
