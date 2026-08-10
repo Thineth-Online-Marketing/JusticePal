@@ -214,8 +214,8 @@ export default function ClientCalendarPage() {
               </p>
             </div>
 
-            {/* Stat pills */}
-            <div className="flex gap-3 flex-wrap">
+            {/* Stat pills & CTA */}
+            <div className="flex gap-3 flex-wrap items-center">
               {[
                 { label: "Upcoming", value: totalUpcoming, color: "bg-blue-500/20 text-blue-200 border-blue-400/20" },
                 { label: "Confirmed", value: totalConfirmed, color: "bg-emerald-500/20 text-emerald-200 border-emerald-400/20" },
@@ -229,6 +229,13 @@ export default function ClientCalendarPage() {
                   {s.label}
                 </div>
               ))}
+
+              <button
+                onClick={() => router.push("/find-lawyer")}
+                className="px-5 py-2.5 bg-[#F97316] hover:bg-[#ea580c] text-white rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 hover:scale-[1.02]"
+              >
+                + Book New Session
+              </button>
             </div>
           </div>
         </div>
