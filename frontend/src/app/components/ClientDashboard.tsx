@@ -192,7 +192,7 @@ export default function ClientDashboard() {
           <StatCard title="Active Cases" value={analytics?.activeCases || "0"} icon={<Scale className="w-5 h-5 text-blue-600" />} />
           <StatCard title="Total Consultations" value={analytics?.totalConsultations || "0"} icon={<FileText className="w-5 h-5 text-orange-500" />} />
           <StatCard title="Total Spent" value={`$${analytics?.totalSpent || 0}`} icon={<DollarSign className="w-5 h-5 text-indigo-600" />} />
-          <StatCard title="Pending Docs" value="0" icon={<Clock className="w-5 h-5 text-green-500" />} />
+          <StatCard title="Total Docs" value={analytics?.totalDocs || "0"} icon={<Clock className="w-5 h-5 text-green-500" />} />
         </div>
 
         {/* Quick Actions */}
@@ -322,28 +322,23 @@ export default function ClientDashboard() {
                 <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">See All Cases</a>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <CaseCard 
-                  caseId="CASE #JP-9821"
-                  title="Johnson Estate Dispute"
-                  status="ok"
-                  progress={75}
-                  avatars={[
-                    "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&w=100&h=100",
-                    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=100&h=100"
-                  ]}
-                  extraCount={2}
-                />
-                <CaseCard 
-                  caseId="CASE #JP-1044"
-                  title="IP Infringement - TechCo"
-                  status="pending"
-                  progress={30}
-                  avatars={[
-                    "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=100&h=100",
-                    "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=100&h=100",
-                    "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=100&h=100"
-                  ]}
-                />
+                {!analytics?.activeCasesList || analytics.activeCasesList.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No active cases found.</p>
+                ) : (
+                  analytics.activeCasesList.map((appt: any) => (
+                    <CaseCard 
+                      key={appt.id}
+                      caseId={`CASE #${appt.id.substring(0,6).toUpperCase()}`}
+                      title={appt.caseDescription || `Consultation with ${appt.lawyer?.user?.name || 'Lawyer'}`}
+                      status={appt.status === 'confirmed' ? 'ok' : 'pending'}
+                      progress={appt.status === 'confirmed' ? 100 : 50}
+                      avatars={[
+                        appt.lawyer?.user?.profilePicture || "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&w=100&h=100",
+                        user?.photoURL || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=100&h=100"
+                      ]}
+                    />
+                  ))
+                )}
               </div>
             </section>
             

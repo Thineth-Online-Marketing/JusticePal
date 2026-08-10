@@ -54,11 +54,37 @@ export const getClientAnalytics = async (req: Request, res: Response, next: Next
       },
     });
 
+    // Total Docs
+    const totalDocs = await prisma.caseFile.count({
+      where: { userId },
+    });
+
+    // Active Cases (list of confirmed/scheduled appointments for the CaseCard)
+    const activeCasesList = await prisma.appointment.findMany({
+      where: {
+        userId,
+        status: { in: ['confirmed', 'scheduled'] },
+      },
+      orderBy: { scheduledAt: 'asc' },
+      take: 4,
+      include: {
+        lawyer: {
+          include: {
+            user: {
+              select: { name: true, profilePicture: true },
+            },
+          },
+        },
+      },
+    });
+
     res.status(200).json({
       totalConsultations,
       activeCases,
       totalSpent,
+      totalDocs,
       upcomingAppointments,
+      activeCasesList,
     });
   } catch (error) {
     next(error);
