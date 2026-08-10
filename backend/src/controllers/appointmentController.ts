@@ -1,12 +1,11 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { createNotification } from './notificationController';
 import { sendRealTimeNotification } from '../utils/notificationHelper';
 import { io } from '../index';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { sendBookingConfirmation } from '../services/emailService';
 
-const prisma = new PrismaClient();
 
 // @desc    Get all appointments (Filtered by role)
 // @route   GET /api/appointments

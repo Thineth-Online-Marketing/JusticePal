@@ -1,8 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/authMiddleware';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // @desc    Sync Firebase authenticated user to PostgreSQL database
 // @route   POST /api/auth/sync

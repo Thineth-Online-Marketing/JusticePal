@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { AuthRequest } from '../middleware/authMiddleware';
 import PDFDocument from 'pdfkit';
-
-const prisma = new PrismaClient();
 
 // @desc    Get all lawyers
 // @route   GET /api/lawyers

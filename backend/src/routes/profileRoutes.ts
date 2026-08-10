@@ -1,10 +1,9 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { protect, AuthRequest } from '../middleware/authMiddleware';
 import { Response, NextFunction } from 'express';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // @desc    Get client profile by userId
 // @route   GET /api/profile/:userId

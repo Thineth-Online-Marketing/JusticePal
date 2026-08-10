@@ -1,8 +1,6 @@
 import cron from 'node-cron';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { sendRealTimeNotification } from './notificationHelper';
-
-const prisma = new PrismaClient();
 
 export const checkAndSendReminders = async () => {
   try {

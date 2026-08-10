@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import admin from 'firebase-admin';
 import path from 'path';
+import prisma from '../lib/prisma';
 
 // Initialize Firebase Admin
 // On cloud (Render): reads FIREBASE_SERVICE_ACCOUNT_BASE64 env var (base64-encoded JSON)
@@ -28,8 +28,6 @@ if (!admin.apps.length) {
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "justicepal-a8bb3.firebasestorage.app",
   });
 }
-
-const prisma = new PrismaClient();
 
 export interface AuthRequest extends Request {
   user?: any;

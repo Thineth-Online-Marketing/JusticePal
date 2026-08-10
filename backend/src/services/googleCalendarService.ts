@@ -1,7 +1,5 @@
 import { google } from 'googleapis';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 /**
  * Creates and returns a configured OAuth2 client using environment credentials.

@@ -24,15 +24,13 @@ import inboxRoutes from './routes/inboxRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 import { initNotificationSocket } from './utils/notificationHelper';
 import { initReminderScheduler } from './utils/reminderScheduler';
-import { PrismaClient } from '@prisma/client';
+import prisma from './lib/prisma';
 
 dotenv.config();
 
 const app: Express = express();
 const httpServer = createServer(app);
 const port = process.env.PORT || 5000;
-
-const prisma = new PrismaClient();
 
 // ── Allowed origins ──────────────────────────────────────────────
 const frontendUrl = process.env.FRONTEND_URL;
