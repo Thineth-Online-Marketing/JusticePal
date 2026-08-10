@@ -51,7 +51,7 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
     setLoading(true);
     try {
       const idToken = await auth.currentUser?.getIdToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/lawyers/profile`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/lawyers/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -119,7 +119,7 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
       
       // Save phone to DB
       const idToken = await auth.currentUser?.getIdToken();
-      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/lawyers/profile`, {
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/lawyers/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({ phone, phoneVerified: true }),
@@ -143,7 +143,7 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
     setLoading(true);
     try {
       const idToken = await auth.currentUser?.getIdToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/lawyers/profile`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/lawyers/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({

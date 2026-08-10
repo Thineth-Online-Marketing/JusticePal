@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Footer from "../../components/Footer";
 import { 
   Search, 
   BookOpen, 
@@ -167,7 +168,7 @@ export default function UserGuidePage() {
   ];
 
   return (
-    <div className="min-h-full bg-[#f8fafc] text-slate-600 font-sans pb-20">
+    <div className="min-h-full bg-[#f8fafc] text-slate-600 font-sans flex flex-col">
       
       {/* Hero Section */}
       <div className="relative pt-20 pb-24 px-6 overflow-hidden border-b border-gray-200 bg-white">
@@ -269,6 +270,7 @@ export default function UserGuidePage() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

@@ -18,8 +18,8 @@ export default function ClientNavbar() {
   const pathname = usePathname();
 
   const t = {
-    en: { dashboard: "Dashboard", findLawyer: "Find Lawyer", chatAi: "Chat AI", userGuide: "User Guide", logout: "Logout" },
-    si: { dashboard: "උපකරණ පුවරුව", findLawyer: "නීතිඥයෙකු සොයන්න", chatAi: "Chat AI", userGuide: "පරිශීලක මාර්ගෝපදේශය", logout: "ඉවත්වන්න" },
+    en: { dashboard: "Dashboard", findLawyer: "Find Lawyer", chatAi: "Chat AI", draftDoc: "Draft Document", userGuide: "User Guide", logout: "Logout" },
+    si: { dashboard: "උපකරණ පුවරුව", findLawyer: "නීතිඥයෙකු සොයන්න", chatAi: "Chat AI", draftDoc: "ලේඛන කෙටුම්පත්", userGuide: "පරිශීලක මාර්ගෝපදේශය", logout: "ඉවත්වන්න" },
   };
 
   const tx = t[lang as keyof typeof t] || t.en;
@@ -54,6 +54,9 @@ export default function ClientNavbar() {
           </Link>
           <Link href="/chat-ai" className={`relative inline-flex justify-center text-sm font-semibold transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/chat-ai') ? 'text-[#1B3A6B] after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'text-gray-500 hover:text-[#1B3A6B]'}`}>
             {tx.chatAi}
+          </Link>
+          <Link href="/document-drafting" className={`relative inline-flex justify-center text-sm font-semibold transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/document-drafting') ? 'text-[#1B3A6B] after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'text-gray-500 hover:text-[#1B3A6B]'}`}>
+            {tx.draftDoc}
           </Link>
           <Link href="/guide" className={`relative inline-flex justify-center text-sm font-semibold transition-colors duration-200 whitespace-nowrap ${pathname.startsWith('/guide') ? 'text-[#1B3A6B] after:content-[""] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-[3px] after:bg-[#1B3A6B] after:rounded-full' : 'text-gray-500 hover:text-[#1B3A6B]'}`}>
             {tx.userGuide}
@@ -124,6 +127,9 @@ export default function ClientNavbar() {
           </Link>
           <Link href="/chat-ai" onClick={() => setMenuOpen(false)} className={`px-4 py-3 text-base rounded-lg transition-colors ${pathname.startsWith('/chat-ai') ? 'text-blue-900 bg-blue-50 font-bold' : 'font-medium text-gray-700 hover:bg-gray-50'}`}>
             {tx.chatAi}
+          </Link>
+          <Link href="/document-drafting" onClick={() => setMenuOpen(false)} className={`px-4 py-3 text-base rounded-lg transition-colors ${pathname.startsWith('/document-drafting') ? 'text-blue-900 bg-blue-50 font-bold' : 'font-medium text-gray-700 hover:bg-gray-50'}`}>
+            {tx.draftDoc}
           </Link>
           <Link href="/guide" onClick={() => setMenuOpen(false)} className={`px-4 py-3 text-base rounded-lg transition-colors ${pathname.startsWith('/guide') ? 'text-blue-900 bg-blue-50 font-bold' : 'font-medium text-gray-700 hover:bg-gray-50'}`}>
             {tx.userGuide}

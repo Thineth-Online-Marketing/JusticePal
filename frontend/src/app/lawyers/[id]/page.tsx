@@ -13,7 +13,7 @@ import { getLawyers } from "../../../data/lawyers";
 import { useAuth } from "../../context/AuthContext";
 import BookingModal from "../../components/BookingModal";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
 
 export default function LawyerProfilePage() {
   const params = useParams();

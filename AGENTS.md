@@ -102,7 +102,26 @@ We implemented a unified, real-time Video Consultation / Video Conferencing syst
 * **`doc.url` is a storage path, not a URL**: The `url` field in the `CaseFile` DB record stores a raw Firebase Storage object path (e.g. `cases/apptId/filename.pdf`). Never pass it directly to `window.open()` or `<a href>`. Always call `/api/case-files/download/:fileId` to get the actual content.
 * **Optimistic chat messages**: The `id` of optimistic messages starts with `"optimistic-"`. The `new_message` socket handler uses this prefix to detect and replace them with the persisted server copy.
 
+
 ---
+
+## Calendar Pages & Dashboard Navigation Features (July 2026)
+
+We implemented client calendar views, resolved dashboard calendar redirect navigation routes, and fixed required dev dependencies.
+
+### Key Changes
+1. **Client Calendar Page**:
+   * **New Page**: Created [`frontend/src/app/(client)/client-dashboard/calendar/page.tsx`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/frontend/src/app/(client)/client-dashboard/calendar/page.tsx) to provide a monthly calendar interface for clients.
+   * **Features**: Displays client appointments with interactive status indicators (scheduled, confirmed, completed, cancelled, pending), a sidebar showing upcoming appointments, and a **"Join Video Call"** CTA matching the consultation status context.
+2. **Dashboard Navigation Fixes**:
+   * **Lawyer Dashboard**: Wired the "View Full Calendar" button to route correctly to `/lawyer-dashboard/calendar`.
+   * **Client Dashboard**: Wired the "View Calendar" button to route correctly to `/client-dashboard/calendar`.
+3. **Backend Environment & Dependencies**:
+   * Fixed critical missing dependencies (`pdfkit`, `@types/pdfkit`) required for generating documents in backend controllers.
+   * Google OAuth integration requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` setup in the backend `.env`.
+
+---
+
 
 ## Style Guidelines
 

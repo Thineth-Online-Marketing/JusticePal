@@ -3,8 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
-import admin from 'firebase-admin';
-
+import admin from './config/firebase';
 import userRoutes from './routes/userRoutes';
 import lawyerRoutes from './routes/lawyerRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
@@ -16,9 +15,11 @@ import notificationRoutes from './routes/notificationRoutes';
 import googleCalendarRoutes from './routes/googleCalendarRoutes';
 import consultationRoutes from './routes/consultationRoutes';
 import profileRoutes from './routes/profileRoutes';
+import calComRoutes from './routes/calComRoutes';
 import clientRoutes from './routes/clientRoutes';
 import newsRoutes from './routes/newsRoutes';
 import aiV1Routes from './routes/aiV1Routes';
+import paymentRoutes from './routes/paymentRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 import { initNotificationSocket } from './utils/notificationHelper';
 import { initReminderScheduler } from './utils/reminderScheduler';
@@ -33,16 +34,28 @@ const port = process.env.PORT || 5000;
 const prisma = new PrismaClient();
 
 // ── Allowed origins ──────────────────────────────────────────────
+const frontendUrl = process.env.FRONTEND_URL;
 const allowedOrigins = [
+  frontendUrl,
+  'https://justicepal.akalankanime11.workers.dev',
   'https://justice-pal.vercel.app',
   'http://localhost:3000',
-];
+  'http://localhost:3001',
+].filter(Boolean) as string[];
 
 // ── CORS ─────────────────────────────────────────────────────────
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) return callback(null, true);
+
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.workers.dev') ||
+        origin.endsWith('.pages.dev') ||
+        origin.endsWith('.vercel.app');
+
+      if (isAllowed) {
         callback(null, true);
       } else {
         callback(new Error(`CORS policy: origin ${origin} not allowed`));
@@ -52,13 +65,27 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: any, _res, buf) => {
+    // Store raw body for Stripe webhook signature verification
+    req.rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // ── Socket.io server ─────────────────────────────────────────────
 export const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.workers.dev') ||
+        origin.endsWith('.pages.dev') ||
+        origin.endsWith('.vercel.app');
+      callback(null, isAllowed);
+    },
     credentials: true,
   },
 });
@@ -104,16 +131,13 @@ io.on('connection', (socket) => {
   const userId: string = (socket as any).userId;
   const userName: string = (socket as any).userName;
 
-  // Real-Time Notifications infrastructure: Join private user room
   if (userId) {
     socket.join(`user:${userId}`);
     console.log(`User [${userId}] connected to private notification room`);
   }
 
-  // Join a consultation room (identified by appointmentId)
   socket.on('join_consultation', async ({ appointmentId }: { appointmentId: string }) => {
     try {
-      // Verify access
       const appt = await prisma.appointment.findUnique({
         where: { id: appointmentId },
         include: { lawyer: { select: { userId: true } } },
@@ -129,7 +153,6 @@ io.on('connection', (socket) => {
       const roomKey = `consultation:${appointmentId}`;
       socket.join(roomKey);
 
-      // Notify others in room
       socket.to(roomKey).emit('participant_joined', {
         userId,
         name: userName,
@@ -142,12 +165,10 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Send a chat message
   socket.on('send_message', async ({ appointmentId, text }: { appointmentId: string; text: string }) => {
     try {
       if (!text?.trim() || !appointmentId) return;
 
-      // Verify access and get role
       const appt = await prisma.appointment.findUnique({
         where: { id: appointmentId },
         include: { lawyer: { select: { userId: true } } },
@@ -160,13 +181,11 @@ io.on('connection', (socket) => {
 
       const senderRole = isLawyer ? 'lawyer' : 'client';
 
-      // Get or create room
       let room = await prisma.consultationRoom.findUnique({ where: { appointmentId } });
       if (!room) {
         room = await prisma.consultationRoom.create({ data: { appointmentId } });
       }
 
-      // Persist message
       const message = await prisma.consultationMessage.create({
         data: {
           roomId: room.id,
@@ -177,7 +196,6 @@ io.on('connection', (socket) => {
         include: { sender: { select: { id: true, name: true } } },
       });
 
-      // Broadcast to everyone in the room (including sender)
       const roomKey = `consultation:${appointmentId}`;
       io.to(roomKey).emit('new_message', message);
     } catch (err) {
@@ -186,15 +204,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Typing indicator
   socket.on('typing', ({ appointmentId, isTyping }: { appointmentId: string; isTyping: boolean }) => {
     const roomKey = `consultation:${appointmentId}`;
     socket.to(roomKey).emit('participant_typing', { userId, name: userName, isTyping });
   });
 
-  socket.on('disconnect', () => {
-    // Could broadcast disconnect to room here if needed
-  });
+  socket.on('disconnect', () => {});
 });
 
 // ── REST Routes ──────────────────────────────────────────────────
@@ -210,22 +225,21 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/case-files', caseFileRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/google-calendar', googleCalendarRoutes);
+app.use('/api/cal-com', calComRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api', newsRoutes);
 app.use('/api/v1', aiV1Routes);
+app.use('/api/payments', paymentRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);
 
-// Start server locally — Vercel handles this automatically in production
-if (!process.env.VERCEL) {
-  httpServer.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
-    console.log(`Socket.io is ready for real-time consultation chat`);
-  });
-}
+// ── Native Node.js HTTP Listener ─────────────────────────────────
+httpServer.listen(port, () => {
+  console.log(`Server is running at http://localhost:${port}`);
+  console.log(`Socket.io is ready for real-time consultation chat`);
+});
 
-// Export for Vercel serverless
 export default app;

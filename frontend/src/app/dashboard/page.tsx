@@ -21,7 +21,7 @@ export default function DashboardPage() {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/users/profile`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/users/profile`,
           {
             headers: { Authorization: `Bearer ${idToken}` },
           }
