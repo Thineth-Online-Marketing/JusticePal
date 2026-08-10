@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,8 +9,11 @@ import { useAuth } from "../../../context/AuthContext";
 import { useLanguage } from "../../../context/LanguageContext";
 import {
   Video, Phone, MoreVertical, Send, Paperclip, Smile,
-  FileText, Download, User, Scale, Calendar, Briefcase, Shield, ArrowLeft
+  FileText, Download, User, Scale, Calendar, Briefcase, Shield, ArrowLeft,
+  Loader2, MessageSquare, Inbox as InboxIcon
 } from "lucide-react";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
 
 /* ───────────────────── translations ───────────────────── */
 const translations = {
@@ -27,6 +30,12 @@ const translations = {
     statusOffline: "OFFLINE",
     activeCase: "ACTIVE CASE",
     backBtn: "Back to Dashboard",
+    noConversations: "No conversations yet",
+    noConversationsSub: "Book an appointment with a lawyer to start a conversation.",
+    selectConversation: "Select a conversation",
+    selectConversationSub: "Choose an attorney from the left to view your messages.",
+    loading: "Loading conversations...",
+    noMessages: "No messages yet. Send a message to start the conversation!",
   },
   si: {
     activeChats: "මගේ නීතිඥයින්",
@@ -41,140 +50,94 @@ const translations = {
     statusOffline: "නොබැඳි",
     activeCase: "ක්‍රියාකාරී නඩුව",
     backBtn: "නැවත උපකරණ පුවරුවට",
+    noConversations: "තවම සංවාද නොමැත",
+    noConversationsSub: "සංවාදයක් ආරම්භ කිරීමට නීතිඥයෙකු සමඟ හමුවීමක් වෙන්කරන්න.",
+    selectConversation: "සංවාදයක් තෝරන්න",
+    selectConversationSub: "ඔබේ පණිවුඩ බැලීමට වම් පසින් නීතිඥයෙකු තෝරන්න.",
+    loading: "සංවාද පූරණය වෙමින්...",
+    noMessages: "තවම පණිවුඩ නැත. සංවාදය ආරම්භ කිරීමට පණිවුඩයක් යවන්න!",
   }
 };
 
-/* ───────────────────── mock data ───────────────────── */
-const chatList = [
-  {
-    id: 1,
-    name: "Sarah Jenkins",
-    specialty: "Family Law",
-    avatarColor: "bg-blue-100 text-blue-700",
-    snippet: "I have reviewed the estate distribution files...",
-    time: "10:30 AM",
-    unread: true,
-    caseId: "Case #JP-9821",
-    caseTitle: "Johnson Estate Dispute",
-  },
-  {
-    id: 2,
-    name: "Kasun Perera",
-    specialty: "Property & Civil Litigation",
-    avatarColor: "bg-emerald-100 text-emerald-700",
-    snippet: "The draft reply to TechCo has been updated.",
-    time: "Yesterday",
-    unread: false,
-    caseId: "Case #JP-1044",
-    caseTitle: "IP Infringement - TechCo",
-  },
-  {
-    id: 3,
-    name: "Samantha Rodrigo",
-    specialty: "Tenancy & Property Law",
-    avatarColor: "bg-purple-100 text-purple-700",
-    snippet: "Please sign the lease agreement draft.",
-    time: "Monday",
-    unread: false,
-    caseId: "Case #JP-2041",
-    caseTitle: "Commercial Lease Review",
-  }
+/* ───────────────────── types ───────────────────── */
+interface ConversationUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  lawyerProfile?: {
+    specialization: string[];
+    profilePicture: string | null;
+    isVerified: boolean;
+  } | null;
+}
+
+interface LastMessage {
+  id: string;
+  text: string;
+  senderId: string;
+  read: boolean;
+  createdAt: string;
+}
+
+interface Conversation {
+  id: string;
+  appointmentId: string | null;
+  otherUser: ConversationUser;
+  lastMessage: LastMessage | null;
+  lastMessageAt: string;
+  hasUnread: boolean;
+  createdAt: string;
+}
+
+interface DirectMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  text: string;
+  read: boolean;
+  createdAt: string;
+  sender: {
+    id: string;
+    name: string;
+  };
+}
+
+/* ───────────────────── helpers ───────────────────── */
+const AVATAR_COLORS = [
+  "bg-blue-100 text-blue-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-purple-100 text-purple-700",
+  "bg-amber-100 text-amber-700",
+  "bg-rose-100 text-rose-700",
+  "bg-cyan-100 text-cyan-700",
 ];
 
-const mockMessages = {
-  1: [
-    {
-      id: 1,
-      sender: "lawyer",
-      text: "Hello, I have finalized the Johnson Estate draft distribution list. I think the proposed split is highly aligned with your instructions.",
-      time: "9:15 AM",
-    },
-    {
-      id: 2,
-      sender: "client",
-      text: "Thank you, Sarah. Can we double check if the residential property value is adjusted for the tax offsets?",
-      time: "9:45 AM",
-    },
-    {
-      id: 3,
-      sender: "lawyer",
-      text: "Yes, absolutely. I've updated the adjusters and attached the tax offsets sheet. Please review it and let me know if it's correct.",
-      time: "10:30 AM",
-      attachment: {
-        name: "Estate_Tax_Offsets_v2.pdf",
-        size: "1.4 MB",
-        type: "PDF document",
-      }
-    }
-  ],
-  2: [
-    {
-      id: 1,
-      sender: "client",
-      text: "Hi Kasun, did we get any response from the TechCo legal team regarding the notice?",
-      time: "Yesterday, 2:15 PM",
-    },
-    {
-      id: 2,
-      sender: "lawyer",
-      text: "Yes, they reached out requesting a 14-day extension to construct their response. I recommend we agree to this in good faith.",
-      time: "Yesterday, 3:00 PM",
-    },
-    {
-      id: 3,
-      sender: "client",
-      text: "Makes sense. Let's do that. Send them the approval.",
-      time: "Yesterday, 3:10 PM",
-    }
-  ],
-  3: [
-    {
-      id: 1,
-      sender: "lawyer",
-      text: "Hi Alex, the commercial lease agreement review is complete. I made some minor changes to the security deposit refund timeline.",
-      time: "Monday, 11:00 AM",
-    },
-    {
-      id: 2,
-      sender: "client",
-      text: "Great. Did they agree to the 30-day refund window?",
-      time: "Monday, 11:20 AM",
-    },
-    {
-      id: 3,
-      sender: "lawyer",
-      text: "Yes, they did. Please review the updated draft and apply your signature scanning.",
-      time: "Monday, 11:45 AM",
-      attachment: {
-        name: "Lease_Agreement_Final.pdf",
-        size: "950 KB",
-        type: "PDF document",
-      }
-    }
-  ]
-};
+function getAvatarColor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
-const mockSharedAssets = {
-  1: [
-    { name: "Estate_Distribution_Draft.docx", date: "Aug 15", size: "520 KB", type: "docx" },
-    { name: "Estate_Tax_Offsets_v2.pdf", date: "Aug 24", size: "1.4 MB", type: "pdf" },
-    { name: "Property_Survey_Report.jpg", date: "Aug 20", size: "3.2 MB", type: "img" },
-  ],
-  2: [
-    { name: "Infringement_Notice_Signed.pdf", date: "Sep 01", size: "1.1 MB", type: "pdf" },
-    { name: "TechCo_Evidence_Log.docx", date: "Sep 03", size: "2.3 MB", type: "docx" },
-  ],
-  3: [
-    { name: "Lease_Agreement_Final.pdf", date: "Jun 02", size: "950 KB", type: "pdf" },
-    { name: "Property_Assessment_Report.docx", date: "May 28", size: "1.8 MB", type: "docx" },
-  ]
-};
+function getInitials(name: string): string {
+  return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+}
 
-const mockMilestones = {
-  1: { title: "Estate Split Mediation", date: "Aug 28, 2026" },
-  2: { title: "IP Mediation Settlement", date: "Sep 15, 2026" },
-  3: { title: "Agreement Execution", date: "Jun 30, 2026" }
-};
+function formatTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } else if (diffDays === 1) {
+    return "Yesterday";
+  } else if (diffDays < 7) {
+    return date.toLocaleDateString([], { weekday: "long" });
+  }
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
 
 export default function ClientInboxPage() {
   const { user, loading: authLoading } = useAuth();
@@ -183,11 +146,19 @@ export default function ClientInboxPage() {
   const tx = translations[lang as keyof typeof translations] || translations.en;
   const router = useRouter();
 
-  const [activeChatId, setActiveChatId] = useState(1);
-  const [messages, setMessages] = useState(mockMessages);
+  // --- Conversation list state ---
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [convoLoading, setConvoLoading] = useState(true);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+
+  // --- Messages state ---
+  const [messages, setMessages] = useState<DirectMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [inputVal, setInputVal] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // --- Auth & role check ---
   useEffect(() => {
     if (authLoading) return;
 
@@ -202,7 +173,7 @@ export default function ClientInboxPage() {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/users/profile`,
+          `${BACKEND_URL}/api/users/profile`,
           {
             headers: { Authorization: `Bearer ${idToken}` },
           }
@@ -230,10 +201,70 @@ export default function ClientInboxPage() {
     verifyClientRole();
   }, [user, authLoading, router]);
 
+  // --- Fetch conversations ---
+  const fetchConversations = useCallback(async () => {
+    if (!user) return;
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/api/inbox/conversations`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      if (res.ok) {
+        const data: Conversation[] = await res.json();
+        setConversations(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch conversations", err);
+    } finally {
+      setConvoLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!roleLoading && user) {
+      fetchConversations();
+    }
+  }, [roleLoading, user, fetchConversations]);
+
+  // --- Fetch messages for active conversation ---
+  const fetchMessages = useCallback(async (conversationId: string) => {
+    if (!user) return;
+    setMessagesLoading(true);
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(
+        `${BACKEND_URL}/api/inbox/conversations/${conversationId}/messages`,
+        {
+          headers: { Authorization: `Bearer ${idToken}` },
+        }
+      );
+      if (res.ok) {
+        const data: DirectMessage[] = await res.json();
+        setMessages(data);
+        // Mark conversation as read in local state
+        setConversations((prev) =>
+          prev.map((c) => (c.id === conversationId ? { ...c, hasUnread: false } : c))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to fetch messages", err);
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (activeChatId) {
+      fetchMessages(activeChatId);
+    }
+  }, [activeChatId, fetchMessages]);
+
+  // --- Scroll to bottom on new messages ---
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, activeChatId]);
+  }, [messages]);
 
+  // --- Loading screen ---
   if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
@@ -245,33 +276,71 @@ export default function ClientInboxPage() {
     );
   }
 
-  const activeChat = chatList.find((c) => c.id === activeChatId) || chatList[0];
-  const chatFeed = messages[activeChatId as keyof typeof messages] || [];
-  const sharedAssets = mockSharedAssets[activeChatId as keyof typeof mockSharedAssets] || [];
-  const milestone = mockMilestones[activeChatId as keyof typeof mockMilestones];
+  // --- Derived state ---
+  const activeConvo = conversations.find((c) => c.id === activeChatId) || null;
+  const activeOtherUser = activeConvo?.otherUser || null;
 
-  const handleSendMessage = () => {
-    if (!inputVal.trim()) return;
+  // --- Send message ---
+  const handleSendMessage = async () => {
+    if (!inputVal.trim() || !activeChatId || !user || sendingMessage) return;
+    setSendingMessage(true);
 
-    const newMsg = {
-      id: Date.now(),
-      sender: "client",
-      text: inputVal,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    const optimisticMsg: DirectMessage = {
+      id: `optimistic-${Date.now()}`,
+      conversationId: activeChatId,
+      senderId: "self",
+      text: inputVal.trim(),
+      read: false,
+      createdAt: new Date().toISOString(),
+      sender: { id: "self", name: user.displayName || "You" },
     };
-
-    setMessages((prev) => ({
-      ...prev,
-      [activeChatId]: [...(prev[activeChatId as keyof typeof prev] || []), newMsg],
-    }));
-
+    setMessages((prev) => [...prev, optimisticMsg]);
     setInputVal("");
-  };
 
-  const getFileIconColor = (type: string) => {
-    if (type === "pdf") return "bg-red-50 text-red-500 border border-red-100";
-    if (type === "docx") return "bg-blue-50 text-blue-500 border border-blue-100";
-    return "bg-amber-50 text-amber-500 border border-amber-100";
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/api/inbox/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          conversationId: activeChatId,
+          content: optimisticMsg.text,
+        }),
+      });
+
+      if (res.ok) {
+        const serverMsg: DirectMessage = await res.json();
+        // Replace optimistic message with server response
+        setMessages((prev) =>
+          prev.map((m) => (m.id === optimisticMsg.id ? serverMsg : m))
+        );
+        // Update conversation's lastMessage in the list
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === activeChatId
+              ? {
+                  ...c,
+                  lastMessage: {
+                    id: serverMsg.id,
+                    text: serverMsg.text,
+                    senderId: serverMsg.senderId,
+                    read: false,
+                    createdAt: serverMsg.createdAt,
+                  },
+                  lastMessageAt: serverMsg.createdAt,
+                }
+              : c
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Failed to send message", err);
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   return (
@@ -288,222 +357,256 @@ export default function ClientInboxPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {chatList.map((chat) => {
-              const isActive = chat.id === activeChatId;
-              const initials = chat.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .slice(0, 2);
+            {convoLoading ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <p className="text-xs font-semibold">{tx.loading}</p>
+              </div>
+            ) : conversations.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3 px-8 text-center">
+                <InboxIcon className="w-10 h-10 text-gray-300" />
+                <p className="text-sm font-bold text-gray-500">{tx.noConversations}</p>
+                <p className="text-xs text-gray-400">{tx.noConversationsSub}</p>
+              </div>
+            ) : (
+              conversations.map((conv) => {
+                const isActive = conv.id === activeChatId;
+                const otherUser = conv.otherUser;
+                const initials = getInitials(otherUser.name);
+                const avatarColor = getAvatarColor(otherUser.id);
+                const specialty =
+                  otherUser.lawyerProfile?.specialization?.join(", ") || "";
 
-              return (
-                <div
-                  key={chat.id}
-                  onClick={() => setActiveChatId(chat.id)}
-                  className={`p-4 flex gap-4 cursor-pointer transition-colors border-l-4 ${
-                    isActive
-                      ? "border-l-[#1B3A6B] bg-blue-50/20"
-                      : "border-l-transparent hover:bg-gray-50"
-                  }`}
-                >
-                  <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${chat.avatarColor}`}>
-                    {initials}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline mb-0.5">
-                      <h3 className="text-sm font-bold text-gray-900 truncate">{chat.name}</h3>
-                      <span className={`text-[10px] font-bold ${chat.unread ? "text-blue-600 font-extrabold" : "text-gray-400"}`}>
-                        {chat.time}
-                      </span>
+                return (
+                  <div
+                    key={conv.id}
+                    onClick={() => setActiveChatId(conv.id)}
+                    className={`p-4 flex gap-4 cursor-pointer transition-colors border-l-4 ${
+                      isActive
+                        ? "border-l-[#1B3A6B] bg-blue-50/20"
+                        : "border-l-transparent hover:bg-gray-50"
+                    }`}
+                  >
+                    {otherUser.lawyerProfile?.profilePicture ? (
+                      <Image
+                        src={otherUser.lawyerProfile.profilePicture}
+                        alt={otherUser.name}
+                        width={44}
+                        height={44}
+                        className="w-11 h-11 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${avatarColor}`}>
+                        {initials}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline mb-0.5">
+                        <h3 className="text-sm font-bold text-gray-900 truncate">{otherUser.name}</h3>
+                        <span className={`text-[10px] font-bold ${conv.hasUnread ? "text-blue-600 font-extrabold" : "text-gray-400"}`}>
+                          {conv.lastMessage ? formatTime(conv.lastMessage.createdAt) : ""}
+                        </span>
+                      </div>
+                      {specialty && (
+                        <p className="text-[10px] font-bold text-blue-600 mb-1 truncate">{specialty}</p>
+                      )}
+                      <p className="text-xs text-gray-500 truncate font-medium">
+                        {conv.lastMessage?.text || "No messages yet"}
+                      </p>
                     </div>
-                    <p className="text-[10px] font-bold text-blue-600 mb-1 truncate">{chat.caseTitle}</p>
-                    <p className="text-xs text-gray-500 truncate font-medium">{chat.snippet}</p>
+                    {conv.hasUnread && (
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-600 shrink-0 self-center" />
+                    )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
         {/* MIDDLE COLUMN: Chat Thread */}
         <div className="flex-1 flex flex-col min-w-0 bg-white border-r border-gray-200">
           
-          {/* Chat Header */}
-          <div className="h-20 border-b border-gray-100 flex items-center justify-between px-6 flex-shrink-0 bg-white">
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-base ${activeChat.avatarColor}`}>
-                {activeChat.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .slice(0, 2)}
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-gray-900 leading-tight">{activeChat.name}</h2>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase">
-                    {tx.statusOnline} · {activeChat.specialty}
-                  </span>
-                </div>
-              </div>
+          {!activeConvo ? (
+            /* No conversation selected placeholder */
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-4">
+              <MessageSquare className="w-14 h-14 text-gray-200" />
+              <p className="text-base font-bold text-gray-500">{tx.selectConversation}</p>
+              <p className="text-sm text-gray-400 max-w-xs text-center">{tx.selectConversationSub}</p>
             </div>
-            
-            <div className="flex items-center gap-2 text-gray-400">
-              <button className="p-2 hover:bg-gray-50 rounded-xl transition-colors" aria-label="Video Call">
-                <Video className="w-5 h-5 text-gray-500" />
-              </button>
-              <button className="p-2 hover:bg-gray-50 rounded-xl transition-colors" aria-label="Audio Call">
-                <Phone className="w-5 h-5 text-gray-500" />
-              </button>
-              <button className="p-2 hover:bg-gray-50 rounded-xl transition-colors" aria-label="More Options">
-                <MoreVertical className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
-            {chatFeed.map((msg, index) => {
-              const isClient = msg.sender === "client";
-              return (
-                <div key={msg.id || index} className={`flex gap-3 ${isClient ? "justify-end" : "justify-start"}`}>
-                  
-                  {!isClient && (
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 self-end mb-1 ${activeChat.avatarColor}`}>
-                      {activeChat.name[0]}
+          ) : (
+            <>
+              {/* Chat Header */}
+              <div className="h-20 border-b border-gray-100 flex items-center justify-between px-6 flex-shrink-0 bg-white">
+                <div className="flex items-center gap-4">
+                  {activeOtherUser?.lawyerProfile?.profilePicture ? (
+                    <Image
+                      src={activeOtherUser.lawyerProfile.profilePicture}
+                      alt={activeOtherUser.name}
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-base ${activeOtherUser ? getAvatarColor(activeOtherUser.id) : "bg-gray-100"}`}>
+                      {activeOtherUser ? getInitials(activeOtherUser.name) : "?"}
                     </div>
                   )}
-
-                  <div className="flex flex-col gap-1 max-w-[70%]">
-                    <div
-                      className={`p-4 rounded-2xl shadow-sm text-sm font-medium leading-relaxed border ${
-                        isClient
-                          ? "bg-[#1B3A6B] text-white border-transparent rounded-tr-sm"
-                          : "bg-white text-gray-700 border-gray-100 rounded-tl-sm"
-                      }`}
-                    >
-                      {msg.text}
-
-                      {/* File attachment preview */}
-                      {('attachment' in msg) && msg.attachment && (
-                        <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0 font-bold text-xs uppercase">
-                            {msg.attachment.name.split(".").pop()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-slate-800 truncate">{msg.attachment.name}</p>
-                            <p className="text-[10px] text-slate-400 font-semibold">{msg.attachment.size} · {msg.attachment.type}</p>
-                          </div>
-                          <button className="p-2 text-slate-400 hover:text-[#1B3A6B] rounded-lg transition-colors" aria-label="Download Attachment">
-                            <Download className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
+                  <div>
+                    <h2 className="text-base font-bold text-gray-900 leading-tight">{activeOtherUser?.name}</h2>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase">
+                        {tx.statusOnline} · {activeOtherUser?.lawyerProfile?.specialization?.join(", ") || "Attorney"}
+                      </span>
                     </div>
-                    
-                    <span className={`text-[9px] font-bold text-gray-400 px-1 ${isClient ? "text-right" : "text-left"}`}>
-                      {msg.time}
-                    </span>
                   </div>
-
-                  {isClient && (
-                    <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs shrink-0 self-end mb-1 relative border border-slate-300">
-                      {user?.displayName ? user.displayName[0] : "A"}
-                    </div>
-                  )}
-
                 </div>
-              );
-            })}
-            <div ref={chatEndRef} />
-          </div>
+                
+                <div className="flex items-center gap-2 text-gray-400">
+                  <button className="p-2 hover:bg-gray-50 rounded-xl transition-colors" aria-label="Video Call">
+                    <Video className="w-5 h-5 text-gray-500" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-50 rounded-xl transition-colors" aria-label="Audio Call">
+                    <Phone className="w-5 h-5 text-gray-500" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-50 rounded-xl transition-colors" aria-label="More Options">
+                    <MoreVertical className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+              </div>
 
-          {/* Input Area */}
-          <div className="p-4 border-t border-gray-100 bg-white flex-shrink-0">
-            <div className="flex items-center gap-2 p-2 border border-gray-200 bg-[#F9FAFC] rounded-2xl focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
-              <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Attach File">
-                <Paperclip className="w-5 h-5" />
-              </button>
-              <input
-                type="text"
-                placeholder={tx.typePlaceholder}
-                value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSendMessage();
-                }}
-                className="flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder-gray-400 py-2"
-              />
-              <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Emoji Picker">
-                <Smile className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleSendMessage}
-                className="w-10 h-10 bg-[#1B3A6B] text-white rounded-xl flex items-center justify-center hover:bg-[#112549] transition-colors shadow-sm shrink-0"
-                aria-label="Send Message"
-              >
-                <Send className="w-4 h-4 ml-0.5" />
-              </button>
-            </div>
-          </div>
+              {/* Chat Messages */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
+                {messagesLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
+                    <MessageSquare className="w-10 h-10 text-gray-200" />
+                    <p className="text-sm font-medium">{tx.noMessages}</p>
+                  </div>
+                ) : (
+                  messages.map((msg, index) => {
+                    const isClient = msg.senderId === "self" || msg.sender?.name === (user?.displayName || "You");
+                    return (
+                      <div key={msg.id || index} className={`flex gap-3 ${isClient ? "justify-end" : "justify-start"}`}>
+                        
+                        {!isClient && (
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 self-end mb-1 ${activeOtherUser ? getAvatarColor(activeOtherUser.id) : "bg-gray-100"}`}>
+                            {activeOtherUser ? activeOtherUser.name[0] : "?"}
+                          </div>
+                        )}
+
+                        <div className="flex flex-col gap-1 max-w-[70%]">
+                          <div
+                            className={`p-4 rounded-2xl shadow-sm text-sm font-medium leading-relaxed border ${
+                              isClient
+                                ? "bg-[#1B3A6B] text-white border-transparent rounded-tr-sm"
+                                : "bg-white text-gray-700 border-gray-100 rounded-tl-sm"
+                            }`}
+                          >
+                            {msg.text}
+                          </div>
+                          
+                          <span className={`text-[9px] font-bold text-gray-400 px-1 ${isClient ? "text-right" : "text-left"}`}>
+                            {formatTime(msg.createdAt)}
+                          </span>
+                        </div>
+
+                        {isClient && (
+                          <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs shrink-0 self-end mb-1 relative border border-slate-300">
+                            {user?.displayName ? user.displayName[0] : "A"}
+                          </div>
+                        )}
+
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input Area */}
+              <div className="p-4 border-t border-gray-100 bg-white flex-shrink-0">
+                <div className="flex items-center gap-2 p-2 border border-gray-200 bg-[#F9FAFC] rounded-2xl focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
+                  <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Attach File">
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                  <input
+                    type="text"
+                    placeholder={tx.typePlaceholder}
+                    value={inputVal}
+                    onChange={(e) => setInputVal(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSendMessage();
+                    }}
+                    className="flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder-gray-400 py-2"
+                  />
+                  <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Emoji Picker">
+                    <Smile className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={sendingMessage || !inputVal.trim()}
+                    className="w-10 h-10 bg-[#1B3A6B] text-white rounded-xl flex items-center justify-center hover:bg-[#112549] transition-colors shadow-sm shrink-0 disabled:opacity-50"
+                    aria-label="Send Message"
+                  >
+                    {sendingMessage ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4 ml-0.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* RIGHT COLUMN: Case Context */}
         <div className="w-[300px] flex-shrink-0 flex flex-col h-full bg-[#FDFDFE] overflow-y-auto">
           <div className="p-6 space-y-8">
             
-            {/* Case Details */}
-            <div>
-              <h3 className="text-[10px] font-bold text-gray-400 tracking-wider uppercase mb-4">{tx.caseDetails}</h3>
-              <div className="space-y-4">
+            {activeConvo && activeOtherUser ? (
+              <>
+                {/* Attorney Details */}
                 <div>
-                  <p className="text-[10px] font-bold text-blue-600 mb-0.5">{tx.caseId}</p>
-                  <p className="text-sm font-bold text-slate-800">{activeChat.caseId}</p>
+                  <h3 className="text-[10px] font-bold text-gray-400 tracking-wider uppercase mb-4">{tx.caseDetails}</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-[10px] font-bold text-blue-600 mb-0.5">{lang === "en" ? "ATTORNEY" : "නීතිඥයා"}</p>
+                      <p className="text-sm font-bold text-slate-800">{activeOtherUser.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-blue-600 mb-0.5">{tx.caseType}</p>
+                      <p className="text-sm font-bold text-slate-800">
+                        {activeOtherUser.lawyerProfile?.specialization?.join(", ") || "General Law"}
+                      </p>
+                    </div>
+                    {activeOtherUser.lawyerProfile?.isVerified && (
+                      <div className="flex items-center gap-1.5">
+                        <Shield className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-[10px] font-bold text-emerald-600">{lang === "en" ? "Bar Council Verified" : "නීතිඥ සභාව සත්‍යාපිතයි"}</span>
+                      </div>
+                    )}
+                    {activeConvo.appointmentId && (
+                      <div>
+                        <p className="text-[10px] font-bold text-blue-600 mb-0.5">{tx.caseId}</p>
+                        <p className="text-sm font-bold text-slate-800">
+                          {activeConvo.appointmentId.slice(0, 8).toUpperCase()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold text-blue-600 mb-0.5">{tx.caseType}</p>
-                  <p className="text-sm font-bold text-slate-800">{activeChat.specialty}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-blue-600 mb-0.5">{lang === "en" ? "CASE TITLE" : "නඩු නාමය"}</p>
-                  <p className="text-sm font-bold text-slate-800 leading-snug">{activeChat.caseTitle}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Next Milestone */}
-            {milestone && (
-              <div>
-                <h3 className="text-[10px] font-bold text-gray-400 tracking-wider uppercase mb-4">{tx.nextMilestone}</h3>
-                <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
-                  <p className="text-sm font-bold text-slate-800 leading-tight">{milestone.title}</p>
-                  <p className="text-[10px] font-bold text-gray-400 mt-1">Due: {milestone.date}</p>
-                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-40 text-gray-300">
+                <p className="text-xs font-semibold">{lang === "en" ? "Select a conversation" : "සංවාදයක් තෝරන්න"}</p>
               </div>
             )}
-
-            {/* Shared Assets */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[10px] font-bold text-gray-400 tracking-wider uppercase">{tx.sharedAssets}</h3>
-                <button className="text-[10px] font-bold text-[#1B3A6B] hover:underline">{tx.viewAll}</button>
-              </div>
-              
-              <div className="space-y-3">
-                {sharedAssets.map((asset, index) => (
-                  <div key={index} className="flex items-center gap-3 hover:bg-slate-50 p-1 rounded-lg transition-colors cursor-pointer">
-                    <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 font-bold text-[9px] uppercase ${getFileIconColor(asset.type)}`}>
-                      {asset.type}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-slate-800 truncate leading-snug">{asset.name}</p>
-                      <p className="text-[9px] font-bold text-slate-400 mt-0.5">{asset.date} · {asset.size}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
           </div>
         </div>
