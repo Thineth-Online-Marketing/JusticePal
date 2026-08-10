@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "../hooks/useTranslation";
 import Image from "next/image";
 import {
   Users,
@@ -67,6 +68,7 @@ const barColors = revenueData.map((_, i) => {
 export default function AdminDashboard() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
   
   // Dynamic stats
   const [stats, setStats] = useState({
@@ -155,7 +157,7 @@ export default function AdminDashboard() {
 
   const cards = [
     {
-      label: "Total Users",
+      label: t("admin.stats.totalUsers"),
       value: stats.totalUsers.toLocaleString(),
       change: "+12%",
       up: true,
@@ -163,7 +165,7 @@ export default function AdminDashboard() {
       accent: "#3b82f6",
     },
     {
-      label: "Verified Lawyers",
+      label: t("admin.stats.verifiedLawyers"),
       value: stats.totalLawyers.toLocaleString(),
       change: "+8%",
       up: true,
@@ -171,15 +173,15 @@ export default function AdminDashboard() {
       accent: "#1e3a8a",
     },
     {
-      label: "Pending Reviews",
+      label: t("admin.stats.pendingReviews"),
       value: stats.pendingVerifications.toLocaleString(),
-      change: stats.pendingVerifications > 0 ? "Action required" : "All clear",
+      change: stats.pendingVerifications > 0 ? t("admin.stats.actionRequired") : t("admin.stats.allClear"),
       up: stats.pendingVerifications === 0,
       icon: FileCheck,
       accent: "#f59e0b",
     },
     {
-      label: "Appointments",
+      label: t("admin.stats.appointments"),
       value: stats.totalAppointments.toLocaleString(),
       change: "+15%",
       up: true,
@@ -187,7 +189,7 @@ export default function AdminDashboard() {
       accent: "#10b981",
     },
     {
-      label: "Platform Revenue",
+      label: t("admin.stats.platformRevenue"),
       value: `$${(stats.totalAppointments * 250).toLocaleString()}`,
       change: "+22%",
       up: true,
@@ -202,10 +204,10 @@ export default function AdminDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
-            Admin Panel Overview
+            {t("admin.dashboard.title")}
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-            Real-time platform performance and verification management for the JusticePal ecosystem
+            {t("admin.dashboard.subtitle")}
           </p>
         </div>
       </div>
@@ -268,7 +270,7 @@ export default function AdminDashboard() {
           <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-sm font-semibold text-slate-700">
-                User Growth
+                {t("admin.charts.userGrowth")}
               </p>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <span className="text-xl sm:text-2xl font-bold text-slate-800">
@@ -356,7 +358,7 @@ export default function AdminDashboard() {
           <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-sm font-semibold text-slate-700">
-                Revenue Trends
+                {t("admin.charts.revenueTrends")}
               </p>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <span className="text-xl sm:text-2xl font-bold text-slate-800">
@@ -423,24 +425,24 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-slate-100">
           <div>
             <h2 className="text-sm font-semibold text-slate-800">
-              Lawyer Verification Queue
+              {t("admin.queue.title")}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Review documents and verify registered lawyers
+              {t("admin.queue.subtitle")}
             </p>
           </div>
           <span className="text-xs font-semibold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-100">
-            {lawyerQueue.length} Pending
+            {t("admin.queue.pending", { count: lawyerQueue.length })}
           </span>
         </div>
 
         {loadingData ? (
           <div className="p-8 text-center text-slate-400 text-sm">
-            Loading verification queue...
+            {t("admin.queue.loading")}
           </div>
         ) : lawyerQueue.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-sm">
-            No pending verifications at the moment.
+            {t("admin.queue.empty")}
           </div>
         ) : (
           <>
@@ -449,19 +451,19 @@ export default function AdminDashboard() {
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
                   <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Name
+                    {t("admin.queue.columns.name")}
                   </th>
                   <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Email
+                    {t("admin.queue.columns.email")}
                   </th>
                   <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Phone
+                    {t("admin.queue.columns.phone")}
                   </th>
                   <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Submitted Date
+                    {t("admin.queue.columns.submittedDate")}
                   </th>
                   <th className="px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Actions
+                    {t("admin.queue.columns.actions")}
                   </th>
                 </tr>
               </thead>
@@ -495,7 +497,7 @@ export default function AdminDashboard() {
                         onClick={() => setSelectedLawyer(lawyer)}
                         className="text-[12px] font-semibold px-3.5 py-1.5 rounded-lg transition-all bg-[#1e3a8a] text-white hover:bg-blue-950 hover:shadow-md"
                       >
-                        Review
+                        {t("admin.queue.reviewButton")}
                       </button>
                     </td>
                   </tr>
@@ -549,10 +551,10 @@ export default function AdminDashboard() {
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-slate-800">
-                  Review Lawyer Documents
+                  {t("admin.modal.title")}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Ensure all details match official bar council registries
+                  {t("admin.modal.subtitle")}
                 </p>
               </div>
               <button
@@ -568,38 +570,38 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider">
-                    Basic Info
+                    {t("admin.modal.basicInfo")}
                   </h4>
                   <div className="space-y-2">
                     <p className="text-slate-500">
-                      Name: <span className="font-bold text-slate-800">{selectedLawyer.user?.name}</span>
+                      {t("admin.queue.columns.name")}: <span className="font-bold text-slate-800">{selectedLawyer.user?.name}</span>
                     </p>
                     <p className="text-slate-500">
-                      Email: <span className="font-semibold text-slate-800">{selectedLawyer.user?.email}</span>
+                      {t("admin.queue.columns.email")}: <span className="font-semibold text-slate-800">{selectedLawyer.user?.email}</span>
                     </p>
                     <p className="text-slate-500 flex items-center gap-1.5">
                       <Phone size={14} className="text-slate-400" />
-                      Phone: <span className="font-semibold text-slate-800">{selectedLawyer.phone || "-"}</span>
+                      {t("admin.queue.columns.phone")}: <span className="font-semibold text-slate-800">{selectedLawyer.phone || "-"}</span>
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider">
-                    Initial Profile Settings
+                    {t("admin.modal.initialProfileSettings")}
                   </h4>
                   <div className="space-y-2">
                     <p className="text-slate-500 flex items-center gap-1.5">
                       <MapPin size={14} className="text-slate-400" />
-                      Location: <span className="font-semibold text-slate-800">{selectedLawyer.location || "Not Provided yet"}</span>
+                      {t("admin.modal.location")}: <span className="font-semibold text-slate-800">{selectedLawyer.location || t("admin.modal.notProvided")}</span>
                     </p>
                     <p className="text-slate-500 flex items-center gap-1.5">
                       <Briefcase size={14} className="text-slate-400" />
-                      Experience: <span className="font-semibold text-slate-800">{selectedLawyer.workExperience || "Not Provided yet"}</span>
+                      {t("admin.modal.experience")}: <span className="font-semibold text-slate-800">{selectedLawyer.workExperience || t("admin.modal.notProvided")}</span>
                     </p>
                     <p className="text-slate-500 flex items-center gap-1.5">
                       <Layers size={14} className="text-slate-400" />
-                      Specialization: <span className="font-semibold text-slate-800">{selectedLawyer.specialization?.join(", ") || "None"}</span>
+                      {t("admin.modal.specialization")}: <span className="font-semibold text-slate-800">{selectedLawyer.specialization?.join(", ") || t("admin.modal.none")}</span>
                     </p>
                   </div>
                 </div>
@@ -608,7 +610,7 @@ export default function AdminDashboard() {
               {/* Uploaded Documents */}
               <div className="space-y-3 pt-4 border-t border-slate-100">
                 <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider">
-                  Uploaded Identification (Lawyer ID)
+                  {t("admin.modal.uploadedIdentification")}
                 </h4>
                 
                 {selectedLawyer.idPhotos && selectedLawyer.idPhotos.length > 0 ? (
@@ -620,7 +622,7 @@ export default function AdminDashboard() {
                           {isMockUrl ? (
                             <div className="text-center p-3">
                               <ShieldAlert size={40} className="text-blue-900 mx-auto mb-2" />
-                              <p className="font-bold text-xs text-slate-800">Official Lawyer Certificate ID</p>
+                              <p className="font-bold text-xs text-slate-800">{t("admin.modal.officialId")}</p>
                               <p className="text-[10px] text-slate-400 mt-1">ID File Path: {photo}</p>
                             </div>
                           ) : (
@@ -632,7 +634,7 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   <div className="p-4 bg-slate-50 rounded-xl text-center text-slate-400 text-xs">
-                    No documents uploaded.
+                    {t("admin.modal.noDocuments")}
                   </div>
                 )}
               </div>
@@ -644,7 +646,7 @@ export default function AdminDashboard() {
                 onClick={() => setSelectedLawyer(null)}
                 className="px-4 py-2 text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
               >
-                Cancel
+                {t("admin.modal.cancel")}
               </button>
               
               <button
@@ -658,12 +660,12 @@ export default function AdminDashboard() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                     </svg>
-                    Verifying...
+                    {t("admin.modal.verifying")}
                   </>
                 ) : (
                   <>
                     <CheckCircle size={14} />
-                    Approve & Verify Lawyer
+                    {t("admin.modal.approve")}
                   </>
                 )}
               </button>

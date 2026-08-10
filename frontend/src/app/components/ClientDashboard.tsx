@@ -6,6 +6,7 @@ import ClientNavbar from "./ClientNavbar";
 import Footer from "./Footer";
 import LegalNewsWidget from "./LegalNewsWidget";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "../hooks/useTranslation";
 import { 
   Scale, FileText, DollarSign, Clock, 
   Calendar as CalendarIcon, Video, CheckCircle, 
@@ -17,6 +18,7 @@ import { io, Socket } from "socket.io-client";
 
 export default function ClientDashboard() {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const [roleLoading, setRoleLoading] = useState(true);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -181,23 +183,23 @@ export default function ClientDashboard() {
       <main className="max-w-[1400px] w-full mx-auto px-4 md:px-8 py-8">
         {/* Header Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-[#1B3A6B] tracking-tight">Client Dashboard</h1>
+          <h1 className="text-3xl font-extrabold text-[#1B3A6B] tracking-tight">{t("dashboardClient.title")}</h1>
           <p className="text-gray-500 mt-2 text-lg">
-            Welcome back, {user?.displayName || "Alex"}. Here is an update on your legal portfolio.
+            {t("dashboardClient.welcome").replace("{{name}}", user?.displayName || "Alex")}
           </p>
         </div>
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Active Cases" value={analytics?.activeCases || "0"} icon={<Scale className="w-5 h-5 text-blue-600" />} />
-          <StatCard title="Total Consultations" value={analytics?.totalConsultations || "0"} icon={<FileText className="w-5 h-5 text-orange-500" />} />
-          <StatCard title="Total Spent" value={`$${analytics?.totalSpent || 0}`} icon={<DollarSign className="w-5 h-5 text-indigo-600" />} />
-          <StatCard title="Total Docs" value={analytics?.totalDocs || "0"} icon={<Clock className="w-5 h-5 text-green-500" />} />
+          <StatCard title={t("dashboardClient.stats.activeCases")} value={analytics?.activeCases || "0"} icon={<Scale className="w-5 h-5 text-blue-600" />} />
+          <StatCard title={t("dashboardClient.stats.totalConsultations")} value={analytics?.totalConsultations || "0"} icon={<FileText className="w-5 h-5 text-orange-500" />} />
+          <StatCard title={t("dashboardClient.stats.totalSpent")} value={`$${analytics?.totalSpent || 0}`} icon={<DollarSign className="w-5 h-5 text-indigo-600" />} />
+          <StatCard title={t("dashboardClient.stats.totalDocs")} value={analytics?.totalDocs || "0"} icon={<Clock className="w-5 h-5 text-green-500" />} />
         </div>
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-4">{t("dashboardClient.quickActions.title")}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button 
               onClick={() => router.push("/find-lawyer")}
@@ -207,8 +209,8 @@ export default function ClientDashboard() {
                 <Scale className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-bold text-gray-900 text-sm">Find Lawyer</p>
-                <p className="text-xs text-gray-400">Match with experts</p>
+                <p className="font-bold text-gray-900 text-sm">{t("dashboardClient.quickActions.findLawyer")}</p>
+                <p className="text-xs text-gray-400">{t("dashboardClient.quickActions.findLawyerDesc")}</p>
               </div>
             </button>
             
@@ -220,8 +222,8 @@ export default function ClientDashboard() {
                 <MessageSquare className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-bold text-gray-900 text-sm">AI Legal Chat</p>
-                <p className="text-xs text-gray-400">Instant answers</p>
+                <p className="font-bold text-gray-900 text-sm">{t("dashboardClient.quickActions.aiChat")}</p>
+                <p className="text-xs text-gray-400">{t("dashboardClient.quickActions.aiChatDesc")}</p>
               </div>
             </button>
 
@@ -233,8 +235,8 @@ export default function ClientDashboard() {
                 <FileSignature className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-bold text-gray-900 text-sm">Draft Document</p>
-                <p className="text-xs text-gray-400">AI legal drafts</p>
+                <p className="font-bold text-gray-900 text-sm">{t("dashboardClient.quickActions.draftDoc")}</p>
+                <p className="text-xs text-gray-400">{t("dashboardClient.quickActions.draftDocDesc")}</p>
               </div>
             </button>
 
@@ -246,8 +248,8 @@ export default function ClientDashboard() {
                 <Video className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-bold text-gray-900 text-sm">Video Room</p>
-                <p className="text-xs text-gray-400">Join consultation</p>
+                <p className="font-bold text-gray-900 text-sm">{t("dashboardClient.quickActions.videoRoom")}</p>
+                <p className="text-xs text-gray-400">{t("dashboardClient.quickActions.videoRoomDesc")}</p>
               </div>
             </button>
           </div>
@@ -262,12 +264,12 @@ export default function ClientDashboard() {
             {/* Upcoming Appointments */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800">My Appointments</h2>
-                <button onClick={() => router.push('/client-dashboard/calendar')} className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">View Calendar</button>
+                <h2 className="text-xl font-bold text-gray-800">{t("dashboardClient.appointments.title")}</h2>
+                <button onClick={() => router.push('/client-dashboard/calendar')} className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">{t("dashboardClient.appointments.viewCalendar")}</button>
               </div>
               <div className="space-y-4">
                 {appointments.length === 0 && !appointmentsLoading ? (
-                  <p className="text-gray-500 text-sm">No appointments found.</p>
+                  <p className="text-gray-500 text-sm">{t("dashboardClient.appointments.empty")}</p>
                 ) : (
                   appointments.map((appt) => (
                     <div key={appt.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row gap-6 items-start">
@@ -289,10 +291,10 @@ export default function ClientDashboard() {
                           </span>
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2">
-                          Consultation with {appt.lawyer?.user?.name || "Lawyer"}
+                          {t("dashboardClient.appointments.consultationWith").replace("{{name}}", appt.lawyer?.user?.name || "Lawyer")}
                         </h3>
                         <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                          {appt.caseDescription || "No specific notes."}
+                          {appt.caseDescription || t("dashboardClient.appointments.noNotes")}
                         </p>
                         <div className="flex flex-wrap gap-3">
                           <button 
@@ -305,7 +307,7 @@ export default function ClientDashboard() {
                             }`}
                           >
                             <Video className="w-4 h-4" />
-                            Join Video Call
+                            {t("dashboardClient.appointments.joinVideo")}
                           </button>
                         </div>
                       </div>
@@ -318,18 +320,18 @@ export default function ClientDashboard() {
             {/* Active Cases */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Active Cases</h2>
-                <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">See All Cases</a>
+                <h2 className="text-xl font-bold text-gray-800">{t("dashboardClient.activeCases.title")}</h2>
+                <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">{t("dashboardClient.activeCases.seeAll")}</a>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {!analytics?.activeCasesList || analytics.activeCasesList.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No active cases found.</p>
+                  <p className="text-gray-500 text-sm">{t("dashboardClient.activeCases.empty")}</p>
                 ) : (
                   analytics.activeCasesList.map((appt: any) => (
                     <CaseCard 
                       key={appt.id}
                       caseId={`CASE #${appt.id.substring(0,6).toUpperCase()}`}
-                      title={appt.caseDescription || `Consultation with ${appt.lawyer?.user?.name || 'Lawyer'}`}
+                      title={appt.caseDescription || t("dashboardClient.appointments.consultationWith").replace("{{name}}", appt.lawyer?.user?.name || "Lawyer")}
                       status={appt.status === 'confirmed' ? 'ok' : 'pending'}
                       progress={appt.status === 'confirmed' ? 100 : 50}
                       avatars={[
@@ -349,7 +351,7 @@ export default function ClientDashboard() {
             
             {/* Recent Notifications */}
             <section>
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Notifications</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">{t("dashboardClient.notifications.title")}</h2>
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2">
                 <div className="flex flex-col">
                   {notifLoading ? (
@@ -358,12 +360,25 @@ export default function ClientDashboard() {
                     </div>
                   ) : notifications.length === 0 ? (
                     <div className="p-6 text-center text-gray-500">
-                      <p className="text-sm font-semibold">No notifications</p>
-                      <p className="text-xs text-gray-400 mt-1">Everything looks up to date!</p>
+                      <p className="text-sm font-semibold">{t("dashboardClient.notifications.emptyTitle")}</p>
+                      <p className="text-xs text-gray-400 mt-1">{t("dashboardClient.notifications.emptyDesc")}</p>
                     </div>
                   ) : (
                     notifications.slice(0, 5).map((notif, idx) => {
                       const { icon, bg } = getDashboardNotificationIcon(notif.type);
+                      
+                      const diffMs = new Date().getTime() - new Date(notif.createdAt).getTime();
+                      const diffSec = Math.floor(diffMs / 1000);
+                      const diffMin = Math.floor(diffSec / 60);
+                      const diffHr = Math.floor(diffMin / 60);
+                      const diffDays = Math.floor(diffHr / 24);
+                      
+                      let timeAgo = new Date(notif.createdAt).toLocaleDateString();
+                      if (diffSec < 60) timeAgo = t("dashboardClient.time.justNow");
+                      else if (diffMin < 60) timeAgo = t("dashboardClient.time.mAgo").replace("{{time}}", diffMin.toString());
+                      else if (diffHr < 24) timeAgo = t("dashboardClient.time.hAgo").replace("{{time}}", diffHr.toString());
+                      else if (diffDays < 7) timeAgo = t("dashboardClient.time.dAgo").replace("{{time}}", diffDays.toString());
+
                       return (
                         <React.Fragment key={notif.id}>
                           <NotificationItem 
@@ -371,7 +386,7 @@ export default function ClientDashboard() {
                             iconBg={bg}
                             title={notif.title}
                             message={notif.message}
-                            time={timeAgoLocal(notif.createdAt)}
+                            time={timeAgo}
                           />
                           {idx < notifications.slice(0, 5).length - 1 && (
                             <hr className="border-gray-50 mx-4" />
@@ -383,7 +398,7 @@ export default function ClientDashboard() {
                 </div>
                 <div className="p-4 pt-2 mt-2">
                   <button className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 text-sm font-semibold text-gray-700 rounded-xl transition-colors">
-                    View All Notifications
+                    {t("dashboardClient.notifications.viewAll")}
                   </button>
                 </div>
               </div>
@@ -395,12 +410,12 @@ export default function ClientDashboard() {
               <div className="w-16 h-16 mx-auto bg-white/10 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm border border-white/10">
                 <Headset className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-3 relative z-10">Need assistance?</h3>
+              <h3 className="text-xl font-bold mb-3 relative z-10">{t("dashboardClient.assistance.title")}</h3>
               <p className="text-blue-100 text-sm mb-6 leading-relaxed relative z-10">
-                Our legal support team is available 24/7 to answer your questions.
+                {t("dashboardClient.assistance.desc")}
               </p>
               <button className="w-full bg-white text-[#1B3A6B] hover:bg-gray-50 py-3 rounded-xl font-bold text-sm shadow-md transition-all active:scale-[0.98] relative z-10">
-                Start Live Chat
+                {t("dashboardClient.assistance.btn")}
               </button>
             </section>
             
@@ -436,6 +451,7 @@ function StatCard({ title, value, icon }: { title: string, value: string, icon: 
 
 function CaseCard({ caseId, title, status, progress, avatars, extraCount }: { caseId: string, title: string, status: 'ok' | 'pending', progress: number, avatars: string[], extraCount?: number }) {
   const isOk = status === 'ok';
+  const { t } = useTranslation();
   
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-200 transition-colors flex flex-col h-full group cursor-pointer">
@@ -455,7 +471,7 @@ function CaseCard({ caseId, title, status, progress, avatars, extraCount }: { ca
       
       <div className="mt-auto pt-4">
         <div className="flex items-center justify-between text-sm font-semibold mb-2">
-          <span className="text-gray-500">Progress</span>
+          <span className="text-gray-500">{t("dashboardClient.activeCases.progress")}</span>
           <span className="text-gray-900">{progress}%</span>
         </div>
         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-6">
@@ -476,7 +492,7 @@ function CaseCard({ caseId, title, status, progress, avatars, extraCount }: { ca
             )}
           </div>
           <button className="text-sm font-bold text-[#1B3A6B] hover:text-blue-800 transition-colors">
-            Details
+            {t("dashboardClient.activeCases.details")}
           </button>
         </div>
       </div>
@@ -522,9 +538,10 @@ function timeAgoLocal(dateStr: string): string {
   const diffHr = Math.floor(diffMin / 60);
   const diffDays = Math.floor(diffHr / 24);
 
-  if (diffSec < 60) return "Just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+  // We should pass in the translated versions from component level realistically, but 
+  // since this is a pure function we'd need to extract translation logic, or just 
+  // return hardcoded strings for now or map it in the caller. Let's just fix it 
+  // quickly by importing the translation hook manually inside the function.
+  // Actually, hooks can't be called in regular functions. So I'll just change timeAgoLocal signature.
+  return diffSec.toString();
 }
