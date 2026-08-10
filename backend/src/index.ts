@@ -17,6 +17,8 @@ import consultationRoutes from './routes/consultationRoutes';
 import profileRoutes from './routes/profileRoutes';
 import calComRoutes from './routes/calComRoutes';
 import clientRoutes from './routes/clientRoutes';
+import newsRoutes from './routes/newsRoutes';
+import aiV1Routes from './routes/aiV1Routes';
 import paymentRoutes from './routes/paymentRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 import { initNotificationSocket } from './utils/notificationHelper';
@@ -227,6 +229,8 @@ app.use('/api/cal-com', calComRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/clients', clientRoutes);
+app.use('/api', newsRoutes);
+app.use('/api/v1', aiV1Routes);
 app.use('/api/payments', paymentRoutes);
 
 // Error Handling Middleware

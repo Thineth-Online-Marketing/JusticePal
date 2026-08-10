@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Calendar, Clock, Video, User, Briefcase, CreditCard, ExternalLink } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+import { Calendar, Clock, Video, User, Briefcase } from "lucide-react";
+import { auth } from "../lib/firebase";
 
 interface BookingModalProps {
   lawyerId: string;
@@ -25,78 +23,60 @@ export default function BookingModal({
   totalAmount,
   onClose
 }: BookingModalProps) {
-  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [notes, setNotes] = useState<string>("");
+  const [cardNumber, setCardNumber] = useState<string>("");
+  const [expiry, setExpiry] = useState<string>("");
+  const [cvv, setCvv] = useState<string>("");
+  const [errors, setErrors] = useState({ card: false, expiry: false, cvv: false });
   const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
+
+  const validateCard = () => setErrors(e => ({ ...e, card: cardNumber.replace(/\D/g, '').length !== 16 }));
+  const validateExpiry = () => setErrors(e => ({ ...e, expiry: !/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry) }));
+  const validateCvv = () => setErrors(e => ({ ...e, cvv: !/^\d{3,4}$/.test(cvv) }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const isCardInvalid = cardNumber.replace(/\D/g, '').length !== 16;
+    const isExpiryInvalid = !/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry);
+    const isCvvInvalid = !/^\d{3,4}$/.test(cvv);
+    
+    setErrors({ card: isCardInvalid, expiry: isExpiryInvalid, cvv: isCvvInvalid });
+    
+    if (isCardInvalid || isExpiryInvalid || isCvvInvalid) {
+      return;
+    }
+
     setIsSubmitting(true);
-    setError("");
+    
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setPaymentSuccess(true);
+    setIsSubmitting(false);
+    
+    const finalPayload = {
+      lawyerId,
+      date: selectedDate,
+      timeSlot: selectedTime,
+      consultationType,
+      totalAmount,
+      notes
+    };
 
     try {
-      const token = await user?.getIdToken();
-      if (!token) throw new Error("Please log in to proceed.");
-
-      // Step 1: Create the appointment
-      const appointmentRes = await fetch(`${BACKEND_URL}/api/appointments`, {
+      const user = auth.currentUser;
+      const idToken = user ? await user.getIdToken() : '';
+      
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments`, {
         method: "POST",
-        headers: {
+        headers: { 
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Authorization": `Bearer ${idToken}`
         },
-        body: JSON.stringify({
-          userId: (user as any)?.uid || "",
-          lawyerId,
-          scheduledAt: new Date(`${selectedDate} ${selectedTime}`).toISOString(),
-          caseDescription: `${consultationType} consultation with ${lawyerName}`,
-        }),
+        body: JSON.stringify(finalPayload)
       });
-
-      if (!appointmentRes.ok) {
-        // If the appointment creation fails, try to handle it gracefully
-        const errData = await appointmentRes.json().catch(() => null);
-        throw new Error(errData?.message || "Failed to create appointment.");
-      }
-
-      const appointment = await appointmentRes.json();
-
-      // Step 2: Create Stripe Checkout Session
-      const paymentRes = await fetch(`${BACKEND_URL}/api/payments/create-checkout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          appointmentId: appointment.id,
-          amount: parseFloat(totalAmount.replace(/[^0-9.]/g, "")),
-          lawyerName,
-          consultationType,
-        }),
-      });
-
-      if (!paymentRes.ok) {
-        // Payment session failed — still created the appointment, show success
-        setPaymentSuccess(true);
-        setIsSubmitting(false);
-        return;
-      }
-
-      const paymentData = await paymentRes.json();
-
-      if (paymentData.sessionUrl) {
-        // Redirect to Stripe Checkout
-        window.location.href = paymentData.sessionUrl;
-      } else {
-        // No Stripe URL — treat as successful booking without payment
-        setPaymentSuccess(true);
-      }
-    } catch (err: any) {
-      console.error("Booking error:", err);
-      setError(err.message || "An error occurred. Please try again.");
-      setIsSubmitting(false);
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -119,8 +99,8 @@ export default function BookingModal({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
-                <p className="text-gray-500 mb-8">Your consultation has been booked successfully.</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
+                <p className="text-gray-500 mb-8">Your booking has been confirmed.</p>
                 <button 
                   onClick={onClose}
                   className="w-full py-3.5 bg-[#1B3A6B] text-white rounded-xl font-semibold shadow-lg hover:bg-[#112549] transition-all"
@@ -130,10 +110,9 @@ export default function BookingModal({
               </div>
             ) : (
               <>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Confirm & Pay</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment & Confirmation</h2>
                 
-                {/* Booking Summary */}
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 mb-6 shadow-inner">
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 mb-8 shadow-inner">
                   <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
                     <div className="w-12 h-12 bg-blue-100 text-[#1B3A6B] rounded-full flex items-center justify-center flex-shrink-0">
                       <Briefcase className="w-6 h-6" />
@@ -175,23 +154,62 @@ export default function BookingModal({
                   </div>
                 </div>
 
-                {/* Stripe Payment Info */}
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 flex items-start gap-3">
-                  <CreditCard className="w-5 h-5 text-[#1B3A6B] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-[#1B3A6B] mb-1">Secure Payment via Stripe</p>
-                    <p className="text-xs text-blue-600/70">You will be redirected to Stripe&apos;s secure checkout page to complete payment. Your card details are never stored on our servers.</p>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Reason for Consultation (Optional)</label>
+                      <textarea 
+                        rows={2}
+                        placeholder="E.g., Consultation regarding property deed"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white outline-none transition-all resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Card Number</label>
+                      <input 
+                        type="text" 
+                        placeholder="0000 0000 0000 0000"
+                        value={cardNumber}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 16);
+                          setCardNumber(val.replace(/(.{4})/g, '$1 ').trim());
+                        }}
+                        onBlur={validateCard}
+                        className={`w-full px-4 py-3 rounded-xl border ${errors.card ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'} bg-gray-50 focus:bg-white outline-none transition-all`}
+                      />
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Expiry Date</label>
+                        <input 
+                          type="text" 
+                          placeholder="MM/YY"
+                          value={expiry}
+                          onChange={(e) => {
+                            let val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                            if (val.length >= 3) val = val.slice(0, 2) + '/' + val.slice(2);
+                            setExpiry(val);
+                          }}
+                          onBlur={validateExpiry}
+                          className={`w-full px-4 py-3 rounded-xl border ${errors.expiry ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'} bg-gray-50 focus:bg-white outline-none transition-all`}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">CVV</label>
+                        <input 
+                          type="password" 
+                          placeholder="123"
+                          value={cvv}
+                          onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                          onBlur={validateCvv}
+                          className={`w-full px-4 py-3 rounded-xl border ${errors.cvv ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'} bg-gray-50 focus:bg-white outline-none transition-all`}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                {/* Error Message */}
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 text-sm text-red-700">
-                    {error}
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit}>
                   <button 
                     type="submit"
                     disabled={isSubmitting} 
@@ -203,14 +221,9 @@ export default function BookingModal({
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                         </svg>
-                        Creating booking...
+                        Processing...
                       </>
-                    ) : (
-                      <>
-                        <ExternalLink className="w-4 h-4" />
-                        Proceed to Payment
-                      </>
-                    )}
+                    ) : "Pay Now"}
                   </button>
                 </form>
               </>

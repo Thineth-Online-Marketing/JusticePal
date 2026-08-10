@@ -5,10 +5,12 @@ import { useLanguage } from "../context/LanguageContext";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { io, Socket } from "socket.io-client";
-import { FileDown } from "lucide-react";
+import { FileDown, CheckCircle, XCircle } from "lucide-react";
 import { useUI } from "../context/UIContext";
+import { useAuth } from "../context/AuthContext";
 import LawyerOnboarding from "./LawyerOnboarding";
 import PendingApproval from "./PendingApproval";
+import LegalNewsWidget from "./LegalNewsWidget";
 
 const content = {
   en: {
@@ -78,7 +80,10 @@ export default function LawyerDashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [dbUser, setDbUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [setupStep, setSetupStep] = useState<1 | 2 | 3 | null>(null);
+  const [setupStep, setSetupStep] = useState<number | null>(null);
+  
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [upcomingAppointment, setUpcomingAppointment] = useState<any | null>(null);
   const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
   
@@ -266,88 +271,90 @@ export default function LawyerDashboard() {
 
   // Determine profile strength and task completion
   const lawyerProfile = dbUser?.lawyerProfile;
-  const isVerified = lawyerProfile?.isVerified;
-  const hasBioData = lawyerProfile && lawyerProfile.specialization?.length > 0 && !!lawyerProfile.location && !!lawyerProfile.bio;
-  const hasVerifiedPhone = !!lawyerProfile?.phoneVerified;
-  const hasIdUploaded = lawyerProfile?.idPhotos?.length > 0;
+  const isLawyer = dbUser?.role === "lawyer";
   
-  const showPendingApproval = dbUser?.role === "lawyer" && !isVerified && lawyerProfile?.profileCompleted;
-  const showBioTask = dbUser?.role === "lawyer" && !hasBioData && !showPendingApproval;
-  const showPhoneTask = dbUser?.role === "lawyer" && !isVerified && !hasVerifiedPhone && !showPendingApproval;
-  const showIdTask = dbUser?.role === "lawyer" && !isVerified && !hasIdUploaded && !showPendingApproval;
+  const showBioTask = isLawyer && (!lawyerProfile?.bio || !lawyerProfile?.specialization || lawyerProfile.specialization.length === 0);
+  const showPhoneTask = isLawyer && (!lawyerProfile?.phoneVerified);
+  const showIdTask = isLawyer && (!lawyerProfile?.isVerified);
+  
+  const showPendingApproval = isLawyer && !lawyerProfile?.isVerified && lawyerProfile?.profileCompleted;
+
+  const hasOnboardingTasks = showBioTask || showPhoneTask || showIdTask || showPendingApproval;
 
   return (
     <>
       <main className="flex-1 overflow-y-auto p-8 relative h-full">
         {/* Action Task Cards Container */}
-        <div className="w-full space-y-4 mb-8">
-          
-          {showBioTask && (
-            <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
-              <div>
-                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+        {hasOnboardingTasks && (
+          <div className="w-full space-y-4 mb-8">
+            
+            {showBioTask && (
+              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    Add Bio Data
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">Complete your profile details including your picture, specialization, and work experience.</p>
+                </div>
+                <button onClick={() => setSetupStep(1)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
                   Add Bio Data
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">Complete your profile details including your picture, specialization, and work experience.</p>
+                </button>
               </div>
-              <button onClick={() => setSetupStep(1)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
-                Add Bio Data
-              </button>
-            </div>
-          )}
+            )}
 
-          {showPhoneTask && (
-            <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
-              <div>
-                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                  Verify Mobile Number
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">Verify your phone number with OTP to secure your account and communicate with clients.</p>
+            {showPhoneTask && (
+              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    Verify Mobile Number
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">Verify your phone number with OTP to secure your account and communicate with clients.</p>
+                </div>
+                <button onClick={() => setSetupStep(2)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
+                  Verify Number
+                </button>
               </div>
-              <button onClick={() => setSetupStep(2)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
-                Verify Number
-              </button>
-            </div>
-          )}
+            )}
 
-          {showIdTask && (
-            <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500 opacity-90">
-              <div>
-                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
-                  Verify Lawyer Account
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  Upload your official Lawyer ID to get verified by our administration team.
-                </p>
+            {showIdTask && (
+              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500 opacity-90">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
+                    Verify Lawyer Account
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Upload your official Lawyer ID to get verified by our administration team.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setSetupStep(3)} 
+                  className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap"
+                >
+                  Verify Account
+                </button>
               </div>
-              <button 
-                onClick={() => setSetupStep(3)} 
-                className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap"
-              >
-                Verify Account
-              </button>
-            </div>
-          )}
+            )}
 
-          {showPendingApproval && (
-            <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-orange-500">
-              <div>
-                <h3 className="text-base font-bold text-orange-800 flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  Pending Admin Approval
-                </h3>
-                <p className="text-xs text-orange-700 mt-1">Your Lawyer ID is currently being reviewed. You will have full access once approved.</p>
+            {showPendingApproval && (
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-orange-500">
+                <div>
+                  <h3 className="text-base font-bold text-orange-800 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Pending Admin Approval
+                  </h3>
+                  <p className="text-xs text-orange-700 mt-1">Your Lawyer ID is currently being reviewed. You will have full access once approved.</p>
+                </div>
+                <button disabled className="mt-3 md:mt-0 px-5 py-2 bg-orange-200 text-orange-800 rounded-lg text-xs font-medium cursor-not-allowed whitespace-nowrap">
+                  Under Review
+                </button>
               </div>
-              <button disabled className="mt-3 md:mt-0 px-5 py-2 bg-orange-200 text-orange-800 rounded-lg text-xs font-medium cursor-not-allowed whitespace-nowrap">
-                Under Review
-              </button>
-            </div>
-          )}
+            )}
 
-        </div>
+          </div>
+        )}
 
         <div className="w-full space-y-6">
           <div className="flex justify-between items-center">
@@ -445,39 +452,93 @@ export default function LawyerDashboard() {
             {/* Left Column (Main) */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Today's Schedule */}
+              {/* Appointments */}
               <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-gray-900">{tx.todaysSchedule}</h2>
+                  <h2 className="text-lg font-bold text-gray-900">Consultations</h2>
                   <button onClick={() => router.push('/lawyer-dashboard/calendar')} className="text-sm font-semibold text-[#1B3A6B] hover:underline">{tx.viewFullCalendar}</button>
                 </div>
                 
                 <div className="space-y-4">
-                  {todayAppointments && todayAppointments.length > 0 ? (
-                    todayAppointments.map((appt, idx) => (
+                  {appointments.length > 0 ? (
+                    appointments.map((appt, idx) => (
                       <div 
                         key={appt.id || idx}
-                        onClick={() => {
-                          const url = `/consultation?role=lawyer&appointmentId=${appt.id}`;
-                          router.push(url);
-                        }}
-                        className="flex gap-4 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 items-center cursor-pointer hover:bg-gray-100/80 transition-colors group"
+                        className="flex flex-col gap-3 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 transition-colors group"
                       >
-                        <div className="w-20 text-right flex-shrink-0">
-                          <p className="font-bold text-gray-900 text-sm">
-                            {new Date(appt.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                          <p className="text-xs text-gray-500 font-medium mt-0.5">60 min</p>
-                        </div>
-                        <div className={`w-1 rounded-full h-12 ${idx % 2 === 0 ? 'bg-blue-500' : 'bg-orange-400'}`}></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-gray-900 text-sm truncate group-hover:text-[#1B3A6B] transition-colors">{appt.caseDescription || "Client Consultation"}</p>
-                          <p className="text-xs text-gray-500 font-medium mt-1 truncate">Virtual Meeting • Case #{appt.id.substring(0, 4)}</p>
-                        </div>
-                        <div className="w-8 h-8 rounded-lg text-gray-400 group-hover:text-[#1B3A6B] group-hover:bg-blue-50 flex items-center justify-center flex-shrink-0 transition-all">
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
+                        <div className="flex gap-4 items-center">
+                          <div className="w-20 text-right flex-shrink-0">
+                            <p className="font-bold text-gray-900 text-sm">
+                              {new Date(appt.scheduledAt).toLocaleDateString()}<br/>
+                              {new Date(appt.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <div className={`w-1 rounded-full h-12 ${appt.status === 'CONFIRMED' ? 'bg-green-500' : appt.status === 'REJECTED' ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
+                          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => {
+                            if (appt.status === 'CONFIRMED') {
+                              router.push(`/consultation?role=lawyer&appointmentId=${appt.id}`);
+                            }
+                          }}>
+                            <p className="font-bold text-gray-900 text-sm truncate group-hover:text-[#1B3A6B] transition-colors">{appt.caseDescription || "Client Consultation"}</p>
+                            <p className="text-xs text-gray-500 font-medium mt-1 truncate">Client: {appt.user?.name || 'Unknown'}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                              appt.status === 'CONFIRMED' ? 'bg-green-50 text-green-700' :
+                              appt.status === 'REJECTED' ? 'bg-red-50 text-red-700' :
+                              'bg-yellow-50 text-yellow-700'
+                            }`}>
+                              {appt.status || 'PENDING'}
+                            </span>
+                            {appt.status !== 'CONFIRMED' && appt.status !== 'REJECTED' && (
+                              <div className="flex gap-2 ml-2">
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const idToken = await auth.currentUser?.getIdToken();
+                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments/${appt.id}/status`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+                                        body: JSON.stringify({ status: 'CONFIRMED' })
+                                      });
+                                      if (res.ok) {
+                                        setAppointments(prev => prev.map(a => a.id === appt.id ? { ...a, status: 'CONFIRMED' } : a));
+                                      }
+                                    } catch (err) {
+                                      console.error(err);
+                                    }
+                                  }}
+                                  className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors"
+                                  title="Confirm"
+                                >
+                                  <CheckCircle size={16} />
+                                </button>
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const idToken = await auth.currentUser?.getIdToken();
+                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments/${appt.id}/status`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+                                        body: JSON.stringify({ status: 'REJECTED' })
+                                      });
+                                      if (res.ok) {
+                                        setAppointments(prev => prev.map(a => a.id === appt.id ? { ...a, status: 'REJECTED' } : a));
+                                      }
+                                    } catch (err) {
+                                      console.error(err);
+                                    }
+                                  }}
+                                  className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
+                                  title="Reject"
+                                >
+                                  <XCircle size={16} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))
@@ -488,8 +549,7 @@ export default function LawyerDashboard() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <p className="text-gray-900 font-medium text-sm">No consultations scheduled for today</p>
-                      <p className="text-gray-400 text-xs mt-1">Take a break or review pending cases.</p>
+                      <p className="text-gray-900 font-medium text-sm">No consultations scheduled</p>
                     </div>
                   )}
                 </div>
@@ -576,6 +636,11 @@ export default function LawyerDashboard() {
                 </button>
               </div>
               
+              {/* Legal News Widget */}
+              <div className="h-[450px]">
+                <LegalNewsWidget />
+              </div>
+              
             </div>
           </div>
         </div>
@@ -595,10 +660,15 @@ export default function LawyerDashboard() {
             </button>
             <LawyerOnboarding 
               dbUser={dbUser} 
-              initialStep={setupStep}
-              onComplete={() => {
+              initialStep={setupStep as 1 | 2 | 3}
+              onComplete={async () => {
                 setSetupStep(null);
-                if (user) fetchDbProfile(user);
+                if (user) {
+                  const updatedProfile = await fetchDbProfile(user);
+                  if (updatedProfile?.lawyerProfile?.id) {
+                    fetchAnalytics(user, updatedProfile.lawyerProfile.id);
+                  }
+                }
               }} 
             />
           </div>

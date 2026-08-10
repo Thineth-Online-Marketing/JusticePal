@@ -11,7 +11,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { getLawyers } from "../../data/lawyers";
 import { useAuth } from "../context/AuthContext";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 export default function LawyersPage() {
   const { lang } = useLanguage();

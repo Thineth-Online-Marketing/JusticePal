@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
 import { auth } from "../lib/firebase";
+import { useAuth } from "../context/AuthContext";
+import { updateProfile } from "firebase/auth";
 
 declare global {
   interface Window {
@@ -12,6 +14,7 @@ declare global {
 export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { dbUser: any, initialStep: 1 | 2 | 3, onComplete: () => void }) {
   const [step] = useState(initialStep);
   const [loading, setLoading] = useState(false);
+  const { refreshUser } = useAuth();
 
   // Profile data
   const [specialization, setSpecialization] = useState(dbUser?.lawyerProfile?.specialization?.[0] || "");
@@ -65,6 +68,16 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
       });
 
       if (!res.ok) throw new Error("Failed to update profile");
+
+      // Update Firebase Auth profile for instant header sync
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, {
+          photoURL: profilePicture || auth.currentUser.photoURL,
+          displayName: dbUser?.name || auth.currentUser.displayName,
+        });
+        await refreshUser();
+      }
+
       onComplete();
     } catch (error) {
       alert("Failed to save bio data.");
