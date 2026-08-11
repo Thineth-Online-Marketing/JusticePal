@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useAuth } from "../../context/AuthContext";
 import {
   Brain,
   Plus,
@@ -73,6 +74,7 @@ const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> 
 
 // ─── Main Page Component ────────────────────────────────
 export default function KnowledgeBasePage() {
+  const { user } = useAuth();
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -110,10 +112,14 @@ export default function KnowledgeBasePage() {
 
   // ─── Fetch Knowledge ────────────────────────────
   const fetchKnowledge = async () => {
+    if (!user) return;
     try {
       setLoading(true);
       setError("");
-      const res = await fetch(`${BACKEND_URL}/api/admin/knowledge`);
+      const token = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/api/admin/knowledge`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (!res.ok) throw new Error("Failed to fetch knowledge entries");
       const data = await res.json();
       setEntries(data.entries || []);
@@ -127,8 +133,10 @@ export default function KnowledgeBasePage() {
   };
 
   useEffect(() => {
-    fetchKnowledge();
-  }, []);
+    if (user) {
+      fetchKnowledge();
+    }
+  }, [user]);
 
   // ─── Add Knowledge ─────────────────────────────
   const handleAdd = async (e: React.FormEvent) => {
@@ -142,12 +150,17 @@ export default function KnowledgeBasePage() {
       return;
     }
 
+    if (!user) return;
     try {
       setIsAdding(true);
       setAddError("");
+      const token = await user.getIdToken();
       const res = await fetch(`${BACKEND_URL}/api/admin/knowledge`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(addForm),
       });
 
@@ -176,11 +189,16 @@ export default function KnowledgeBasePage() {
 
   // ─── Delete Knowledge ──────────────────────────
   const handleDelete = async (id: string) => {
+    if (!user) return;
     try {
       setDeletingId(id);
+      const token = await user.getIdToken();
       const res = await fetch(
         `${BACKEND_URL}/api/admin/knowledge/${encodeURIComponent(id)}`,
-        { method: "DELETE" }
+        { 
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` }
+        }
       );
 
       if (!res.ok) throw new Error("Failed to delete entry");
@@ -404,11 +422,10 @@ export default function KnowledgeBasePage() {
           {/* Filter Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-semibold border transition-all ${
-              showFilters || filterCategory || filterType
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-semibold border transition-all ${showFilters || filterCategory || filterType
                 ? "bg-blue-50 text-blue-700 border-blue-200"
                 : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-            }`}
+              }`}
           >
             <Filter size={13} />
             Filters
