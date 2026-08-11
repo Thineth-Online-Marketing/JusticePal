@@ -171,3 +171,118 @@ export const deleteAllSessions = async (req: AuthRequest, res: Response, next: N
     next(error);
   }
 };
+
+// @desc    Get account settings (profile and preferences)
+// @route   GET /api/account/settings
+// @access  Private
+export const getAccountSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+        preferredLanguage: true,
+        emailNotif: true,
+        smsNotif: true,
+        appointmentReminders: true,
+      },
+    });
+
+    if (!user) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update profile details
+// @route   PUT /api/account/profile
+// @access  Private
+export const updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { name, phone } = req.body;
+
+    if (!name || name.trim() === '') {
+      res.status(400);
+      throw new Error('Name cannot be empty');
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        name: name.trim(),
+        ...(phone !== undefined && { phone: phone.trim() || null }),
+      },
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+      },
+    });
+
+    res.json({
+      message: 'Profile updated successfully',
+      profile: updatedUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update preferences
+// @route   PATCH /api/account/preferences
+// @access  Private
+export const updatePreferences = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { preferredLanguage, emailNotif, smsNotif, appointmentReminders } = req.body;
+
+    const updateData: any = {};
+    if (preferredLanguage !== undefined) updateData.preferredLanguage = preferredLanguage;
+    if (emailNotif !== undefined) updateData.emailNotif = emailNotif;
+    if (smsNotif !== undefined) updateData.smsNotif = smsNotif;
+    if (appointmentReminders !== undefined) updateData.appointmentReminders = appointmentReminders;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: updateData,
+      select: {
+        preferredLanguage: true,
+        emailNotif: true,
+        smsNotif: true,
+        appointmentReminders: true,
+      },
+    });
+
+    res.json({
+      message: 'Preferences updated successfully',
+      preferences: updatedUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Deactivate account
+// @route   POST /api/account/deactivate
+// @access  Private
+export const deactivateAccount = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Delete user from Firebase
+    await admin.auth().deleteUser(req.firebaseUid!);
+
+    // Delete user from Prisma (Cascade will handle related data if set up, otherwise we might just delete User)
+    await prisma.user.delete({
+      where: { id: req.user.id },
+    });
+
+    res.json({ message: 'Account deactivated successfully' });
+  } catch (error) {
+    next(error);
+  }
+};

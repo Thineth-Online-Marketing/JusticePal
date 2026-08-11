@@ -30,6 +30,9 @@ model User {
   directMessages          DirectMessage[]
   lawyerEvents            LawyerEvent[]
   twoFactorEnabled        Boolean               @default(false)
+  emailNotif              Boolean               @default(true)
+  smsNotif                Boolean               @default(false)
+  appointmentReminders    Boolean               @default(true)
   sessions                Session[]
 }
 

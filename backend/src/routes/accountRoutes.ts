@@ -8,6 +8,10 @@ import {
   getSessions,
   deleteSession,
   deleteAllSessions,
+  getAccountSettings,
+  updateProfile,
+  updatePreferences,
+  deactivateAccount,
 } from '../controllers/accountController';
 
 const router = express.Router();
@@ -24,5 +28,11 @@ router.patch('/2fa', protect, toggle2FA);
 router.get('/sessions', protect, trackSession, getSessions);
 router.delete('/sessions/:sessionId', protect, deleteSession);
 router.delete('/sessions', protect, deleteAllSessions);
+
+// Settings & Profile
+router.get('/settings', protect, getAccountSettings);
+router.put('/profile', protect, updateProfile);
+router.patch('/preferences', protect, updatePreferences);
+router.post('/deactivate', protect, deactivateAccount);
 
 export default router;
