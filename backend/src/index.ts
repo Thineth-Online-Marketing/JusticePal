@@ -22,6 +22,7 @@ import aiV1Routes from './routes/aiV1Routes';
 import paymentRoutes from './routes/paymentRoutes';
 import inboxRoutes from './routes/inboxRoutes';
 import lawyerEventRoutes from './routes/lawyerEventRoutes';
+import accountRoutes from './routes/accountRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 import { initNotificationSocket } from './utils/notificationHelper';
 import { initReminderScheduler } from './utils/reminderScheduler';
@@ -270,6 +271,7 @@ app.use('/api/v1', aiV1Routes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/inbox', inboxRoutes);
 app.use('/api/lawyer-events', lawyerEventRoutes);
+app.use('/api/account', accountRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);

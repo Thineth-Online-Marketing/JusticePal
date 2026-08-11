@@ -29,6 +29,8 @@ model User {
   lawyerConversations     Conversation[]       @relation("LawyerConversation")
   directMessages          DirectMessage[]
   lawyerEvents            LawyerEvent[]
+  twoFactorEnabled        Boolean               @default(false)
+  sessions                Session[]
 }
 
 model Lawyer {
@@ -195,4 +197,15 @@ model LawyerEvent {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Active Login Sessions ──────────────────────────────────────
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  deviceName   String   @default("Unknown Device")
+  location     String   @default("Unknown")
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

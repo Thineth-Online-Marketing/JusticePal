@@ -77,7 +77,7 @@ export default function DashboardProfileDropdown() {
             </Link>
 
             <Link
-              href="/dashboard/security"
+              href="/security"
               onClick={() => setIsOpen(false)}
               className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-[#1B3A6B] rounded-xl transition-colors"
             >
