@@ -265,7 +265,10 @@ export default function ClientDashboard() {
             <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-800">{t("dashboardClient.appointments.title")}</h2>
-                <button onClick={() => router.push('/client-dashboard/calendar')} className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">{t("dashboardClient.appointments.viewCalendar")}</button>
+                <div className="flex items-center gap-4">
+                  <button onClick={() => router.push('/client-dashboard/appointments')} className="text-sm font-bold text-[#1B3A6B] hover:text-blue-800 transition-colors">View All Active</button>
+                  <button onClick={() => router.push('/client-dashboard/calendar')} className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">{t("dashboardClient.appointments.viewCalendar")}</button>
+                </div>
               </div>
               <div className="space-y-4">
                 {appointments.length === 0 && !appointmentsLoading ? (
