@@ -324,7 +324,10 @@ export default function ClientDashboard() {
             <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-800">{t("dashboardClient.activeCases.title")}</h2>
-                <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">{t("dashboardClient.activeCases.seeAll")}</a>
+                <div className="flex items-center gap-4">
+                  <button onClick={() => router.push('/client-dashboard/documents')} className="text-sm font-bold text-[#1B3A6B] hover:text-blue-800 transition-colors">Case Documents</button>
+                  <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">{t("dashboardClient.activeCases.seeAll")}</a>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {!analytics?.activeCasesList || analytics.activeCasesList.length === 0 ? (
