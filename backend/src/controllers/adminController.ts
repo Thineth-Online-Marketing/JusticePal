@@ -108,3 +108,43 @@ export const verifyLawyer = async (req: Request, res: Response, next: NextFuncti
     next(error);
   }
 };
+
+// @desc    Get all users for User Management
+// @route   GET /api/admin/users
+// @access  Private (Admin only)
+export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search } = req.query;
+
+    const whereClause: any = {};
+    if (search && typeof search === 'string') {
+      whereClause.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const users = await prisma.user.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        lawyerProfile: {
+          select: {
+            isVerified: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    res.status(200).json(users);
+  } catch (error) {
+    next(error);
+  }
+};

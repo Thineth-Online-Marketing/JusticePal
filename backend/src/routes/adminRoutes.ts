@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAdminStats, getPendingLawyers, verifyLawyer } from '../controllers/adminController';
+import { getAdminStats, getPendingLawyers, verifyLawyer, getUsers } from '../controllers/adminController';
 import { getAllKnowledge, addKnowledge, removeKnowledge } from '../controllers/knowledgeController';
 import { adminProtect } from '../middleware/authMiddleware';
 
@@ -10,6 +10,7 @@ router.get('/stats', getAdminStats); // Consider adding adminProtect here too if
 // Lawyer Verification
 router.get('/pending-lawyers', adminProtect, getPendingLawyers);
 router.patch('/verify-lawyer/:id', adminProtect, verifyLawyer);
+router.get('/users', adminProtect, getUsers);
 
 // Knowledge Base Management
 router.get('/knowledge', adminProtect, getAllKnowledge);

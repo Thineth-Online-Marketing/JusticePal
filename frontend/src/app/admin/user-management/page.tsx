@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
 import {
   Users,
   Scale,
@@ -18,79 +21,6 @@ import UserCardMobile from "./components/UserCardMobile";
 import AddUserModal from "./components/AddUserModal";
 import { UserData } from "./components/UserTableRow";
 
-/* ── mock data ───────────────────────────────────────────── */
-
-const initialUsers: UserData[] = [
-  {
-    id: 1,
-    name: "Harvey Specter",
-    email: "harvey.s@pearsonhardman.com",
-    accountType: "Lawyer",
-    registrationDate: "Oct 12, 2023",
-    status: "Active",
-    avatar: "HS",
-  },
-  {
-    id: 2,
-    name: "Jane Doe",
-    email: "jane.doe@example.com",
-    accountType: "Client",
-    registrationDate: "Nov 04, 2023",
-    status: "Active",
-    avatar: "JD",
-  },
-  {
-    id: 3,
-    name: "Marcus Sterling",
-    email: "m.sterling@lawcorp.io",
-    accountType: "Lawyer",
-    registrationDate: "Dec 01, 2023",
-    status: "Suspended",
-    avatar: "MS",
-  },
-  {
-    id: 4,
-    name: "Sarah Jenkins",
-    email: "s.jenkins@enterprise.com",
-    accountType: "Client (Enterprise)",
-    registrationDate: "Dec 15, 2023",
-    status: "Active",
-    avatar: "SJ",
-  },
-];
-
-const statsCards = [
-  {
-    label: "Total Users",
-    value: "1,284",
-    subtitle: "+12% from last month",
-    icon: Users,
-    accent: "#3b82f6",
-  },
-  {
-    label: "Active Lawyers",
-    value: "452",
-    subtitle: "Verified bar members",
-    icon: Scale,
-    accent: "#1e3a8a",
-  },
-  {
-    label: "Active Clients",
-    value: "832",
-    subtitle: "Personal & Enterprise",
-    icon: UserCheck,
-    accent: "#10b981",
-  },
-  {
-    label: "Pending Verifications",
-    value: "18",
-    subtitle: "Requires attention",
-    icon: AlertTriangle,
-    accent: "#f59e0b",
-    highlight: true,
-  },
-];
-
 /* ── helpers ──────────────────────────────────────────────── */
 
 const ITEMS_PER_PAGE = 4;
@@ -107,14 +37,116 @@ function getInitials(name: string) {
 /* ── component ───────────────────────────────────────────── */
 
 export default function UserManagementPage() {
-  const [users, setUsers] = useState<UserData[]>(initialUsers);
+  const { user } = useAuth();
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
 
-  /* ── filtering ─────────────────────────────────────────── */
+  useEffect(() => {
+    let isMounted = true;
+    const fetchUsers = async () => {
+      if (!user) return;
+      try {
+        setIsLoading(true);
+        const token = await user.getIdToken();
+        const res = await fetch(`${BACKEND_URL}/api/admin/users`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error(`Failed to fetch users: ${res.status}`);
+        const data = await res.json();
+        
+        if (isMounted) {
+          const mappedUsers: UserData[] = data.map((u: any) => {
+            let accountType = "Client";
+            if (u.role?.toLowerCase() === "lawyer") accountType = "Lawyer";
+            else if (u.role?.toLowerCase() === "admin") accountType = "Admin";
+            
+            let status: "Active" | "Suspended" | "Pending" = "Active";
+            if (accountType === "Lawyer" && u.lawyerProfile) {
+              status = u.lawyerProfile.isVerified ? "Active" : "Pending";
+            }
+            
+            return {
+              id: u.id,
+              name: u.name || "Unknown",
+              email: u.email || "No Email",
+              accountType,
+              registrationDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "2-digit",
+                year: "numeric"
+              }) : "Unknown",
+              status,
+              avatar: getInitials(u.name || "U"),
+            };
+          });
+          
+          setUsers(mappedUsers);
+        }
+      } catch (err) {
+        console.error("Error fetching users:", err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    
+    // Add a safety timeout to stop loading if Firebase auth takes too long or fails
+    const fallbackTimeout = setTimeout(() => {
+      if (isMounted && isLoading) {
+        setIsLoading(false);
+      }
+    }, 3000);
+
+    fetchUsers();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(fallbackTimeout);
+    };
+  }, [user?.uid]);
+
+  /* ── filtering & stats ─────────────────────────────────── */
+
+  const totalUsersCount = users.length;
+  const activeLawyers = users.filter((u) => u.accountType === "Lawyer" && u.status === "Active").length;
+  const activeClients = users.filter((u) => u.accountType.startsWith("Client") && u.status === "Active").length;
+  const pendingVerifications = users.filter((u) => u.accountType === "Lawyer" && u.status === "Pending").length;
+
+  const statsCards = [
+    {
+      label: "Total Users",
+      value: totalUsersCount.toString(),
+      subtitle: "Total registered users",
+      icon: Users,
+      accent: "#3b82f6",
+    },
+    {
+      label: "Active Lawyers",
+      value: activeLawyers.toString(),
+      subtitle: "Verified bar members",
+      icon: Scale,
+      accent: "#1e3a8a",
+    },
+    {
+      label: "Active Clients",
+      value: activeClients.toString(),
+      subtitle: "Personal & Enterprise",
+      icon: UserCheck,
+      accent: "#10b981",
+    },
+    {
+      label: "Pending Verifications",
+      value: pendingVerifications.toString(),
+      subtitle: "Requires attention",
+      icon: AlertTriangle,
+      accent: "#f59e0b",
+      highlight: true,
+    },
+  ];
 
   const filteredUsers = useMemo(() => {
     let result = users;
@@ -148,7 +180,7 @@ export default function UserManagementPage() {
 
   /* ── pagination ────────────────────────────────────────── */
 
-  const totalItems = 1284; // Mock total for display
+  const totalItems = filteredUsers.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -329,25 +361,35 @@ export default function UserManagementPage() {
         onSearchChange={handleSearchChange}
       />
 
-      {/* ── USER TABLE (Desktop) ──────────────────────────── */}
-      <UserTable
-        users={paginatedUsers}
-        onView={handleView}
-        onSuspend={handleSuspend}
-        onDelete={handleDelete}
-      />
-
-      {/* ── USER CARDS (Mobile) ───────────────────────────── */}
-      <UserCardMobile
-        users={paginatedUsers}
-        onView={handleView}
-        onSuspend={handleSuspend}
-        onDelete={handleDelete}
-      />
-
-      {/* ── PAGINATION ────────────────────────────────────── */}
-      <div
-        className="rounded-xl px-4 sm:px-5 py-3.5"
+      {/* ── USER TABLE (Desktop) / CARDS (Mobile) / PAGINATION ── */}
+      {isLoading ? (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-12 flex flex-col items-center justify-center animate-pulse">
+          <div className="w-12 h-12 bg-slate-200 rounded-full mb-4"></div>
+          <div className="h-4 bg-slate-200 rounded w-1/4 mb-2"></div>
+          <div className="h-3 bg-slate-200 rounded w-1/3"></div>
+        </div>
+      ) : paginatedUsers.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-12 flex flex-col items-center justify-center text-center">
+          <Users size={48} className="text-slate-300 mb-4" />
+          <h3 className="text-slate-800 font-semibold text-lg mb-1">No users found</h3>
+          <p className="text-slate-500 text-sm">We couldn't find any users matching your criteria.</p>
+        </div>
+      ) : (
+        <>
+          <UserTable
+            users={paginatedUsers}
+            onView={handleView}
+            onSuspend={handleSuspend}
+            onDelete={handleDelete}
+          />
+          <UserCardMobile
+            users={paginatedUsers}
+            onView={handleView}
+            onSuspend={handleSuspend}
+            onDelete={handleDelete}
+          />
+          <div
+            className="rounded-xl px-4 sm:px-5 py-3.5"
         style={{
           background: "#fff",
           border: "1px solid #e2e8f0",
@@ -440,6 +482,8 @@ export default function UserManagementPage() {
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {/* ── ADD USER MODAL ────────────────────────────────── */}
       <AddUserModal
