@@ -13,7 +13,9 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
       totalAppointments,
       activeCases,
       revenueResult,
-      recentBookings
+      recentBookings,
+      usersList,
+      paymentsList
     ] = await Promise.all([
       prisma.user.count({
         where: { role: 'client' }
@@ -57,7 +59,7 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
     // Compute chart data dynamically
     const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
     const currentMonth = new Date().getMonth();
-    const last6Months = [];
+    const last6Months: { month: string; monthIndex: number; year: number }[] = [];
     for (let i = 5; i >= 0; i--) {
       let m = currentMonth - i;
       let y = new Date().getFullYear();
@@ -68,9 +70,7 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
       last6Months.push({ month: months[m], monthIndex: m, year: y });
     }
 
-    const allUsers = arguments[1] || []; // wait, Promise.all returns array
-    const usersList = await prisma.user.findMany({ select: { createdAt: true } });
-    const paymentsList = await prisma.payment.findMany({ where: { status: 'succeeded' }, select: { amount: true, createdAt: true } });
+
 
     const userGrowth = last6Months.map(m => {
       const count = usersList.filter(u => {
