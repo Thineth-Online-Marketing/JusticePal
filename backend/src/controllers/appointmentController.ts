@@ -210,3 +210,61 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response, n
     next(error);
   }
 };
+
+// @desc    Reschedule an appointment (client changes scheduledAt)
+// @route   PATCH /api/appointments/:id/reschedule
+// @access  Private (client only)
+export const rescheduleAppointment = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { scheduledAt } = req.body;
+
+    if (!req.user) { res.status(401); throw new Error('Not authorized'); }
+    if (!scheduledAt) { res.status(400); throw new Error('scheduledAt is required'); }
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, name: true } },
+        lawyer: { select: { userId: true, user: { select: { name: true } } } },
+      },
+    });
+
+    if (!appointment) { res.status(404); throw new Error('Appointment not found'); }
+    if (appointment.userId !== req.user.id) { res.status(403); throw new Error('Forbidden — not your appointment'); }
+
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: {
+        scheduledAt: new Date(scheduledAt),
+        status: 'scheduled',
+      },
+      include: {
+        user: { select: { id: true, name: true } },
+        lawyer: { select: { userId: true, user: { select: { name: true } } } },
+      },
+    });
+
+    // Notify the lawyer about the reschedule
+    try {
+      const lawyerUserId = updated.lawyer?.userId;
+      if (lawyerUserId) {
+        const savedNotification = await createNotification({
+          userId: lawyerUserId,
+          title: 'Appointment Rescheduled',
+          message: `${updated.user.name || 'A client'} rescheduled their consultation to ${new Date(scheduledAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}.`,
+          type: 'booking',
+        });
+        sendRealTimeNotification(lawyerUserId, savedNotification);
+        io.to(`user:${lawyerUserId}`).emit('dashboard_update', { type: 'booking_rescheduled', appointment: updated });
+      }
+    } catch (notifErr) {
+      console.error('Failed to send reschedule notification:', notifErr);
+    }
+
+    res.status(200).json(updated);
+  } catch (error) {
+    next(error);
+  }
+};
+

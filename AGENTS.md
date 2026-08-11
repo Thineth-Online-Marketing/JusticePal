@@ -122,6 +122,24 @@ We implemented client calendar views, resolved dashboard calendar redirect navig
 
 ---
 
+## Cal.com Integration & Backend Stability (August 2026)
+
+We replaced the paid Google Calendar OAuth2 integration with Cal.com REST API v2 and resolved backend startup & database synchronization issues.
+
+### Key Changes
+1. **Cal.com Integration**:
+   * **Backend Service & Controller**: Created [`backend/src/services/calComService.ts`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/backend/src/services/calComService.ts), [`backend/src/controllers/calComController.ts`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/backend/src/controllers/calComController.ts), and [`backend/src/routes/calComRoutes.ts`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/backend/src/routes/calComRoutes.ts) (`/api/cal-com/status`, `/api/cal-com/bookings`, `/api/cal-com/bookings/:uid/cancel`).
+   * **Frontend Lawyer Calendar**: Updated [`frontend/src/app/lawyer-dashboard/calendar/page.tsx`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/frontend/src/app/lawyer-dashboard/calendar/page.tsx) to display Cal.com bookings and manage local schedule events.
+   * **Configuration**: Set `CAL_COM_API_KEY` in `backend/.env`.
+2. **Backend Startup & Database Fixes**:
+   * **Lazy Stripe Client**: Converted Stripe initialization in [`backend/src/controllers/paymentController.ts`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/backend/src/controllers/paymentController.ts) to a lazy getter to prevent server crashes when `STRIPE_SECRET_KEY` is omitted.
+   * **Prisma & DB Sync**: Added `DIRECT_URL` in `backend/.env` and synced database schema (`reminderSent` column on `Appointment` model) via `npx prisma db push`.
+   * **Dependencies**: Installed `nodemailer` & `@types/nodemailer`.
+3. **UI Enhancements**:
+   * **User Guide Footer**: Added shared `Footer` component to [`frontend/src/app/(client)/guide/page.tsx`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/frontend/src/app/(client)/guide/page.tsx) and removed bottom whitespace gaps.
+
+
+---
 
 ## Style Guidelines
 
