@@ -11,32 +11,99 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
       totalLawyers,
       pendingVerifications,
       totalAppointments,
-      activeCases
+      activeCases,
+      revenueResult,
+      recentBookings
     ] = await Promise.all([
       prisma.user.count({
-        where: { role: 'user' }
+        where: { role: 'client' }
       }),
       prisma.lawyer.count({
         where: { isVerified: true }
       }),
       prisma.lawyer.count({
         where: {
-          isVerified: false,
-          profileCompleted: true
+          isVerified: false
         }
       }),
       prisma.appointment.count(),
       prisma.appointment.count({
         where: { status: 'confirmed' }
+      }),
+      prisma.payment.aggregate({
+        _sum: { amount: true },
+        where: { status: 'succeeded' }
+      }),
+      prisma.appointment.findMany({
+        take: 7,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          scheduledAt: true,
+          status: true,
+          user: { select: { name: true } },
+          lawyer: { select: { user: { select: { name: true } } } }
+        }
+      }),
+      prisma.user.findMany({
+        select: { createdAt: true }
+      }),
+      prisma.payment.findMany({
+        where: { status: 'succeeded' },
+        select: { amount: true, createdAt: true }
       })
     ]);
+
+    // Compute chart data dynamically
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const currentMonth = new Date().getMonth();
+    const last6Months = [];
+    for (let i = 5; i >= 0; i--) {
+      let m = currentMonth - i;
+      let y = new Date().getFullYear();
+      if (m < 0) {
+        m += 12;
+        y -= 1;
+      }
+      last6Months.push({ month: months[m], monthIndex: m, year: y });
+    }
+
+    const allUsers = arguments[1] || []; // wait, Promise.all returns array
+    const usersList = await prisma.user.findMany({ select: { createdAt: true } });
+    const paymentsList = await prisma.payment.findMany({ where: { status: 'succeeded' }, select: { amount: true, createdAt: true } });
+
+    const userGrowth = last6Months.map(m => {
+      const count = usersList.filter(u => {
+        const d = new Date(u.createdAt);
+        return d.getMonth() === m.monthIndex && d.getFullYear() === m.year;
+      }).length;
+      return { month: m.month, users: count };
+    });
+    // For cumulative users (Growth):
+    let runningTotal = usersList.filter(u => new Date(u.createdAt) < new Date(last6Months[0].year, last6Months[0].monthIndex, 1)).length;
+    const userGrowthCumulative = userGrowth.map(m => {
+      runningTotal += m.users;
+      return { month: m.month, users: runningTotal };
+    });
+
+    const revenueTrends = last6Months.map(m => {
+      const sum = paymentsList.filter(p => {
+        const d = new Date(p.createdAt);
+        return d.getMonth() === m.monthIndex && d.getFullYear() === m.year;
+      }).reduce((acc, p) => acc + (p.amount || 0), 0);
+      return { month: m.month, revenue: sum };
+    });
 
     res.status(200).json({
       totalUsers,
       totalLawyers,
       pendingVerifications,
       totalAppointments,
-      activeCases
+      activeCases,
+      totalRevenue: revenueResult._sum.amount || 0,
+      recentBookings,
+      userGrowth: userGrowthCumulative,
+      revenueTrends
     });
   } catch (error) {
     next(error);

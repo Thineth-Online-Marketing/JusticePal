@@ -77,6 +77,9 @@ export default function AdminDashboard() {
     pendingVerifications: 0,
     totalAppointments: 0,
     activeCases: 0,
+    totalRevenue: 0,
+    userGrowth: [] as any[],
+    revenueTrends: [] as any[],
   });
 
   // Dynamic lawyer queue
@@ -97,7 +100,9 @@ export default function AdminDashboard() {
       setLoadingData(true);
       const idToken = await user.getIdToken();
       const [statsRes, pendingRes] = await Promise.all([
-        fetch(`${BACKEND_URL}/api/admin/stats`),
+        fetch(`${BACKEND_URL}/api/admin/stats`, {
+          headers: { Authorization: `Bearer ${idToken}` }
+        }),
         fetch(`${BACKEND_URL}/api/admin/pending-lawyers`, {
           headers: { Authorization: `Bearer ${idToken}` }
         })
@@ -190,7 +195,7 @@ export default function AdminDashboard() {
     },
     {
       label: t("admin.stats.platformRevenue"),
-      value: `$${(stats.totalAppointments * 250).toLocaleString()}`,
+      value: `$${(stats.totalRevenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
       change: "+22%",
       up: true,
       icon: CreditCard,
@@ -288,7 +293,7 @@ export default function AdminDashboard() {
           </div>
           <div style={{ height: 200 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={userGrowthData}>
+              <AreaChart data={stats.userGrowth?.length ? stats.userGrowth : userGrowthData}>
                 <defs>
                   <linearGradient
                     id="userGrad"
@@ -362,7 +367,7 @@ export default function AdminDashboard() {
               </p>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <span className="text-xl sm:text-2xl font-bold text-slate-800">
-                  LKR {((stats.totalAppointments * 250) + 158000).toLocaleString()}
+                  LKR {(stats.totalRevenue || 0).toLocaleString()}
                 </span>
                 <span
                   className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
@@ -376,7 +381,7 @@ export default function AdminDashboard() {
           </div>
           <div style={{ height: 200 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueData}>
+              <BarChart data={stats.revenueTrends?.length ? stats.revenueTrends : revenueData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="#f1f5f9"
@@ -403,8 +408,8 @@ export default function AdminDashboard() {
                   }}
                 />
                 <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
-                  {revenueData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={barColors[index]} />
+                  {(stats.revenueTrends?.length ? stats.revenueTrends : revenueData).map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={barColors[index] || "#cbd5e1"} />
                   ))}
                 </Bar>
               </BarChart>

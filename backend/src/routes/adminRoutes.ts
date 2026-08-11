@@ -5,7 +5,7 @@ import { adminProtect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-router.get('/stats', getAdminStats); // Consider adding adminProtect here too if it isn't applied globally
+router.get('/stats', adminProtect, getAdminStats);
 
 // Lawyer Verification
 router.get('/pending-lawyers', adminProtect, getPendingLawyers);
