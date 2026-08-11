@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
+import Link from "next/link";
 import {
   Send,
   Bot,
@@ -20,9 +22,13 @@ import {
   Users,
   Loader2,
   Info,
+  Lock,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+const GUEST_MESSAGE_LIMIT = 2;
 
 // --- Types ---
 interface Source {
@@ -63,8 +69,12 @@ const suggestedQuestions = [
   { icon: AlertTriangle, text: "How to resolve a land dispute?", category: "Property Law" },
 ];
 
-export default function ChatAIPage() {
+// --- Inner component that uses useSearchParams ---
+function ChatAIContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const isGuest = !user;
+
   const [activeTab, setActiveTab] = useState<"chat" | "match">("chat");
 
   // Chat State
@@ -72,6 +82,11 @@ export default function ChatAIPage() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Guest State
+  const [guestMessageCount, setGuestMessageCount] = useState(0);
+  const guestLimitReached = isGuest && guestMessageCount >= GUEST_MESSAGE_LIMIT;
+  const hasAutoSentRef = useRef(false);
 
   // Lawyer Matching State
   const [issueDescription, setIssueDescription] = useState("");
@@ -84,10 +99,28 @@ export default function ChatAIPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Auto-send guestQuery for guests
+  useEffect(() => {
+    if (hasAutoSentRef.current) return;
+    const guestQuery = searchParams.get("guestQuery");
+    if (guestQuery && guestQuery.trim() && isGuest) {
+      hasAutoSentRef.current = true;
+      // Small delay so the UI renders first
+      setTimeout(() => sendMessage(guestQuery.trim()), 300);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, isGuest]);
+
   // --- Chat Handler ---
   const sendMessage = async (text?: string) => {
     const messageText = text || input.trim();
-    if (!messageText || isSending || !user) return;
+    if (!messageText || isSending) return;
+
+    // Block if guest limit reached
+    if (guestLimitReached) return;
+
+    // Authenticated users need user object
+    if (!isGuest && !user) return;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -100,16 +133,33 @@ export default function ChatAIPage() {
     setInput("");
     setIsSending(true);
 
+    // Increment guest counter immediately
+    if (isGuest) {
+      setGuestMessageCount((prev) => prev + 1);
+    }
+
     try {
-      const token = await user.getIdToken();
-      const res = await fetch(`${BACKEND_URL}/api/ai/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ message: messageText }),
-      });
+      let res: Response;
+
+      if (isGuest) {
+        // Guest: use unauthenticated endpoint
+        res = await fetch(`${BACKEND_URL}/api/ai/guest-chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: messageText }),
+        });
+      } else {
+        // Authenticated: use protected endpoint
+        const token = await user!.getIdToken();
+        res = await fetch(`${BACKEND_URL}/api/ai/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ message: messageText }),
+        });
+      }
 
       const data = await res.json();
 
@@ -187,6 +237,51 @@ export default function ChatAIPage() {
     );
   };
 
+  // --- Guest CTA Wall ---
+  const GuestLimitCTA = () => (
+    <div className="mx-4 mb-4">
+      <div className="relative overflow-hidden rounded-2xl border border-blue-200/60 bg-gradient-to-br from-white via-blue-50/50 to-indigo-50/50 p-6 shadow-lg shadow-blue-900/5 backdrop-blur-sm">
+        {/* Decorative gradient border glow */}
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#1B3A6B]/10 via-orange-400/10 to-[#1B3A6B]/10 pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col items-center text-center gap-4">
+          {/* Icon */}
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1B3A6B] to-[#2b5eaa] shadow-lg shadow-blue-900/25">
+            <Lock className="w-7 h-7 text-white" />
+          </div>
+
+          {/* Text */}
+          <div>
+            <h3 className="text-lg font-bold text-[#112549] mb-1.5">
+              You&apos;ve reached the free preview limit
+            </h3>
+            <p className="text-sm text-gray-600 leading-relaxed max-w-md">
+              Sign in to save this chat, continue asking questions, and get matched with a verified lawyer.
+            </p>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex items-center gap-3 w-full max-w-xs">
+            <Link
+              href="/login"
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-[#1B3A6B] text-white font-semibold text-sm shadow-lg shadow-blue-900/20 hover:bg-[#112549] hover:shadow-xl transition-all duration-200"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </Link>
+            <Link
+              href="/register"
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-white border-2 border-[#F97316] text-[#F97316] font-semibold text-sm hover:bg-orange-50 transition-all duration-200"
+            >
+              <UserPlus className="w-4 h-4" />
+              Sign Up
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
 
@@ -199,12 +294,21 @@ export default function ChatAIPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-[#112549]">AI Legal Assistant</h1>
-              <p className="text-sm text-gray-500">Powered by Sri Lankan legal knowledge</p>
+              <p className="text-sm text-gray-500">
+                {isGuest ? "Free preview \u2014 try it out!" : "Powered by Sri Lankan legal knowledge"}
+              </p>
             </div>
           </div>
+          {/* Guest badge */}
+          {isGuest && (
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-200 text-xs font-semibold text-orange-700">
+              <Sparkles className="w-3.5 h-3.5" />
+              Guest Mode \u2014 {Math.max(0, GUEST_MESSAGE_LIMIT - guestMessageCount)} message{GUEST_MESSAGE_LIMIT - guestMessageCount !== 1 ? "s" : ""} remaining
+            </div>
+          )}
         </div>
 
-        {/* Tab Switcher */}
+        {/* Tab Switcher \u2014 hide "Find a Lawyer" for guests */}
         <div className="flex gap-1 p-1 bg-white rounded-2xl border border-gray-200 shadow-sm mb-6 max-w-md">
           <button
             onClick={() => setActiveTab("chat")}
@@ -217,20 +321,22 @@ export default function ChatAIPage() {
             <MessageSquare className="w-4 h-4" />
             Ask Legal Question
           </button>
-          <button
-            onClick={() => setActiveTab("match")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeTab === "match"
-                ? "bg-[#1B3A6B] text-white shadow-md shadow-blue-900/20"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            Find a Lawyer
-          </button>
+          {!isGuest && (
+            <button
+              onClick={() => setActiveTab("match")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                activeTab === "match"
+                  ? "bg-[#1B3A6B] text-white shadow-md shadow-blue-900/20"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Find a Lawyer
+            </button>
+          )}
         </div>
 
-        {/* ΓöÇΓöÇΓöÇΓöÇ CHAT TAB ΓöÇΓöÇΓöÇΓöÇ */}
+        {/* \u2014\u2014\u2014\u2014 CHAT TAB \u2014\u2014\u2014\u2014 */}
         {activeTab === "chat" && (
           <div className="flex flex-col bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden" style={{ height: "calc(100vh - 280px)" }}>
             {/* Chat Messages */}
@@ -251,7 +357,8 @@ export default function ChatAIPage() {
                       <button
                         key={i}
                         onClick={() => sendMessage(q.text)}
-                        className="flex items-start gap-3 p-4 rounded-2xl border border-gray-100 bg-gray-50/50 hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 text-left group"
+                        disabled={guestLimitReached}
+                        className="flex items-start gap-3 p-4 rounded-2xl border border-gray-100 bg-gray-50/50 hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 text-left group disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <q.icon className="w-5 h-5 text-[#1B3A6B] mt-0.5 shrink-0 group-hover:text-blue-600" />
                         <div>
@@ -297,7 +404,7 @@ export default function ChatAIPage() {
                                 <BookOpen className="w-3.5 h-3.5 text-[#1B3A6B] mt-0.5 shrink-0" />
                                 <div className="min-w-0">
                                   <p className="text-xs font-semibold text-gray-700 truncate">{src.title}</p>
-                                  <p className="text-[10px] text-gray-400">{src.source} ΓÇó {src.category}</p>
+                                  <p className="text-[10px] text-gray-400">{src.source} \u00b7 {src.category}</p>
                                 </div>
                                 <span className="text-[10px] font-medium text-gray-400 shrink-0">{src.relevance}%</span>
                               </div>
@@ -346,6 +453,9 @@ export default function ChatAIPage() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Guest Limit CTA */}
+            {guestLimitReached && <GuestLimitCTA />}
+
             {/* Input Bar */}
             <div className="border-t border-gray-100 bg-white p-4">
               <div className="flex items-center gap-3">
@@ -354,13 +464,13 @@ export default function ChatAIPage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                  placeholder="Ask a legal question..."
-                  className="flex-1 px-5 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/20 focus:border-[#1B3A6B]/40 transition-all"
-                  disabled={isSending}
+                  placeholder={guestLimitReached ? "Sign in to continue chatting..." : "Ask a legal question..."}
+                  className="flex-1 px-5 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/20 focus:border-[#1B3A6B]/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSending || guestLimitReached}
                 />
                 <button
                   onClick={() => sendMessage()}
-                  disabled={!input.trim() || isSending}
+                  disabled={!input.trim() || isSending || guestLimitReached}
                   className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1B3A6B] to-[#2b5eaa] text-white shadow-lg shadow-blue-900/20 hover:shadow-xl hover:shadow-blue-900/30 disabled:opacity-40 disabled:shadow-none transition-all duration-200"
                 >
                   <Send className="w-5 h-5" />
@@ -370,8 +480,8 @@ export default function ChatAIPage() {
           </div>
         )}
 
-        {/* ΓöÇΓöÇΓöÇΓöÇ LAWYER MATCHING TAB ΓöÇΓöÇΓöÇΓöÇ */}
-        {activeTab === "match" && (
+        {/* \u2014\u2014\u2014\u2014 LAWYER MATCHING TAB \u2014\u2014\u2014\u2014 */}
+        {activeTab === "match" && !isGuest && (
           <div className="space-y-6">
             {/* Search Card */}
             <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
@@ -444,7 +554,7 @@ export default function ChatAIPage() {
                               <h4 className="text-base font-bold text-[#112549] truncate">{lawyer.name}</h4>
                               {lawyer.isVerified && (
                                 <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                                  Γ£ô Verified
+                                  \u2713 Verified
                                 </span>
                               )}
                             </div>
@@ -514,5 +624,23 @@ export default function ChatAIPage() {
         )}
       </main>
     </div>
+  );
+}
+
+// --- Page wrapper with Suspense for useSearchParams ---
+export default function ChatAIPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-10 w-10 animate-spin text-[#1B3A6B]" />
+            <p className="text-slate-600 font-medium">Loading AI Assistant...</p>
+          </div>
+        </div>
+      }
+    >
+      <ChatAIContent />
+    </Suspense>
   );
 }
