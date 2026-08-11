@@ -29,6 +29,13 @@ model User {
   lawyerConversations     Conversation[]       @relation("LawyerConversation")
   directMessages          DirectMessage[]
   lawyerEvents            LawyerEvent[]
+  twoFactorEnabled        Boolean               @default(false)
+  emailNotif              Boolean               @default(true)
+  smsNotif                Boolean               @default(false)
+  appointmentReminders    Boolean               @default(true)
+  sessions                Session[]
+  cases                   Case[]
+  uploadedDocuments       Document[]
 }
 
 model Lawyer {
@@ -49,6 +56,7 @@ model Lawyer {
   workExperience   String?
   rejectedReason   String?
   appointments     Appointment[]
+  cases            Case[]
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -195,4 +203,53 @@ model LawyerEvent {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Active Login Sessions ──────────────────────────────────────
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  deviceName   String   @default("Unknown Device")
+  location     String   @default("Unknown")
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Cases and Documents ────────────────────────────────────────
+model Case {
+  id          String     @id @default(uuid())
+  caseNumber  String     @unique // e.g. "JP-9821"
+  title       String     // e.g. "Johnson Estate Dispute"
+  status      String     @default("OPEN")
+  userId      String
+  lawyerId    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  user        User       @relation(fields: [userId], references: [id])
+  lawyer      Lawyer?    @relation(fields: [lawyerId], references: [id])
+  documents   Document[]
+}
+
+enum DocumentType {
+  CONTRACT
+  COURT_FILING
+  EVIDENCE
+  CORRESPONDENCE
+  OTHER
+}
+
+model Document {
+  id            String       @id @default(uuid())
+  caseId        String
+  uploadedById  String
+  fileName      String
+  fileType      String
+  fileUrl       String
+  fileSize      Int
+  documentType  DocumentType @default(OTHER)
+  description   String?
+  createdAt     DateTime     @default(now())
+  case          Case         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploadedBy    User         @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
 }

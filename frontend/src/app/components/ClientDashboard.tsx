@@ -43,7 +43,7 @@ export default function ClientDashboard() {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/users/profile`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/users/profile`,
           {
             headers: { Authorization: `Bearer ${idToken}` },
           }
@@ -83,7 +83,7 @@ export default function ClientDashboard() {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/notifications`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/notifications`,
           {
             headers: { Authorization: `Bearer ${idToken}` },
           }
@@ -130,7 +130,7 @@ export default function ClientDashboard() {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments`,
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
         if (res.ok) {
@@ -265,7 +265,10 @@ export default function ClientDashboard() {
             <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-800">{t("dashboardClient.appointments.title")}</h2>
-                <button onClick={() => router.push('/client-dashboard/calendar')} className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">{t("dashboardClient.appointments.viewCalendar")}</button>
+                <div className="flex items-center gap-4">
+                  <button onClick={() => router.push('/client-dashboard/appointments')} className="text-sm font-bold text-[#1B3A6B] hover:text-blue-800 transition-colors">View All Active</button>
+                  <button onClick={() => router.push('/client-dashboard/calendar')} className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">{t("dashboardClient.appointments.viewCalendar")}</button>
+                </div>
               </div>
               <div className="space-y-4">
                 {appointments.length === 0 && !appointmentsLoading ? (
@@ -321,7 +324,10 @@ export default function ClientDashboard() {
             <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-800">{t("dashboardClient.activeCases.title")}</h2>
-                <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">{t("dashboardClient.activeCases.seeAll")}</a>
+                <div className="flex items-center gap-4">
+                  <button onClick={() => router.push('/client-dashboard/documents')} className="text-sm font-bold text-[#1B3A6B] hover:text-blue-800 transition-colors">Case Documents</button>
+                  <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">{t("dashboardClient.activeCases.seeAll")}</a>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {!analytics?.activeCasesList || analytics.activeCasesList.length === 0 ? (

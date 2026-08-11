@@ -41,6 +41,33 @@ export const getAppointments = async (req: AuthRequest, res: Response, next: Nex
   }
 };
 
+// @desc    Get active/upcoming appointments for a client
+// @route   GET /api/appointments/active
+// @access  Private
+export const getActiveAppointments = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user || req.user.role !== 'client') {
+      res.status(401);
+      throw new Error('Not authorized or not a client');
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where: { 
+        userId: req.user.id,
+        scheduledAt: { gte: new Date() },
+        status: { in: ['scheduled', 'CONFIRMED'] }
+      },
+      include: {
+        lawyer: { select: { id: true, specialization: true, hourlyRate: true, user: { select: { name: true, profilePicture: true } } } }
+      },
+      orderBy: { scheduledAt: 'asc' }
+    });
+    res.status(200).json(appointments);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Create an appointment
 // @route   POST /api/appointments
 // @access  Private

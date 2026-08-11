@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { useRouter } from "next/navigation";
 import {
   User,
   Mail,
@@ -17,11 +18,26 @@ import {
   Check,
   Shield,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+async function authHeaders(user: any): Promise<HeadersInit> {
+  const token = await user.getIdToken();
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+}
+
 export default function AccountSettings() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { lang, toggle } = useLanguage();
+  const router = useRouter();
+
+  // Loading state for initial fetch
+  const [initialLoading, setInitialLoading] = useState(true);
 
   // Profile fields
   const [fullName, setFullName] = useState("");
@@ -37,29 +53,128 @@ export default function AccountSettings() {
 
   // Deactivation modal
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setFullName(user.displayName || "");
-      setEmail(user.email || "");
-      setPhone(user.phoneNumber || "");
-    }
+    if (!user) return;
+
+    const fetchSettings = async () => {
+      try {
+        const headers = await authHeaders(user);
+        const res = await fetch(`${API_BASE}/api/account/settings`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setFullName(data.name || user.displayName || "");
+          setEmail(data.email || user.email || "");
+          setPhone(data.phone || user.phoneNumber || "");
+          
+          if (data.emailNotif !== undefined) setEmailNotif(data.emailNotif);
+          if (data.smsNotif !== undefined) setSmsNotif(data.smsNotif);
+          if (data.appointmentReminders !== undefined) setAppointmentReminders(data.appointmentReminders);
+        }
+      } catch (err) {
+        console.error("Failed to fetch settings", err);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    fetchSettings();
   }, [user]);
 
+  const updatePreference = async (key: string, value: any) => {
+    if (!user) return;
+    try {
+      const headers = await authHeaders(user);
+      await fetch(`${API_BASE}/api/account/preferences`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ [key]: value }),
+      });
+    } catch (err) {
+      console.error("Failed to update preference", err);
+    }
+  };
+
+  const handleLanguageToggle = (targetLang: "en" | "si") => {
+    if (lang !== targetLang) {
+      toggle();
+      updatePreference("preferredLanguage", targetLang === "en" ? "English" : "Sinhala");
+    }
+  };
+
+  const handleEmailNotifChange = (val: boolean) => {
+    setEmailNotif(val);
+    updatePreference("emailNotif", val);
+  };
+
+  const handleSmsNotifChange = (val: boolean) => {
+    setSmsNotif(val);
+    updatePreference("smsNotif", val);
+  };
+
+  const handleAppointmentRemindersChange = (val: boolean) => {
+    setAppointmentReminders(val);
+    updatePreference("appointmentReminders", val);
+  };
+
   const handleProfileSave = async () => {
+    if (!user) return;
     setProfileSaving(true);
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1000));
-    setProfileSaving(false);
-    setProfileSaved(true);
-    setTimeout(() => setProfileSaved(false), 3000);
+    setProfileSaved(false);
+    
+    try {
+      const headers = await authHeaders(user);
+      const res = await fetch(`${API_BASE}/api/account/profile`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ name: fullName, phone }),
+      });
+      
+      if (res.ok) {
+        setProfileSaved(true);
+        setTimeout(() => setProfileSaved(false), 3000);
+      }
+    } catch (err) {
+      console.error("Failed to save profile", err);
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   const handleDeactivate = async () => {
-    // In a real app, call the backend deactivation endpoint
-    setShowDeactivateModal(false);
-    alert("Account deactivation request submitted.");
+    if (!user) return;
+    setDeactivating(true);
+    try {
+      const headers = await authHeaders(user);
+      const res = await fetch(`${API_BASE}/api/account/deactivate`, {
+        method: "POST",
+        headers,
+      });
+
+      if (res.ok) {
+        setShowDeactivateModal(false);
+        await logout();
+        router.push("/");
+      } else {
+        const errData = await res.json();
+        alert(errData.message || "Failed to deactivate account.");
+      }
+    } catch (err) {
+      console.error("Failed to deactivate", err);
+      alert("Failed to deactivate account. Please try again.");
+    } finally {
+      setDeactivating(false);
+    }
   };
+
+  if (initialLoading) {
+    return (
+      <main className="max-w-[1400px] w-full mx-auto px-4 md:px-8 py-8 flex justify-center items-center h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#1B3A6B]" />
+      </main>
+    );
+  }
 
   return (
     <>
@@ -131,9 +246,11 @@ export default function AccountSettings() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/20 focus:border-[#1B3A6B] transition-all"
+                      disabled
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-sm text-gray-500 font-medium placeholder-gray-400 focus:outline-none cursor-not-allowed"
                     />
                   </div>
+                  <p className="text-xs text-gray-400 mt-1.5">Email cannot be changed directly.</p>
                 </div>
 
                 {/* Phone */}
@@ -165,7 +282,7 @@ export default function AccountSettings() {
                     className="inline-flex items-center gap-2 px-6 py-3 bg-[#1B3A6B] hover:bg-[#112549] text-white text-sm font-bold rounded-xl shadow-sm transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {profileSaving ? (
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Save className="w-4 h-4" />
                     )}
@@ -206,7 +323,7 @@ export default function AccountSettings() {
                   </h3>
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={() => lang !== "en" && toggle()}
+                      onClick={() => handleLanguageToggle("en")}
                       className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${
                         lang === "en"
                           ? "bg-[#1B3A6B] text-white border-[#1B3A6B] shadow-sm"
@@ -217,7 +334,7 @@ export default function AccountSettings() {
                       English
                     </button>
                     <button
-                      onClick={() => lang !== "si" && toggle()}
+                      onClick={() => handleLanguageToggle("si")}
                       className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${
                         lang === "si"
                           ? "bg-[#1B3A6B] text-white border-[#1B3A6B] shadow-sm"
@@ -244,7 +361,7 @@ export default function AccountSettings() {
                       label="Email notifications"
                       description="Receive updates and alerts via email"
                       checked={emailNotif}
-                      onChange={setEmailNotif}
+                      onChange={handleEmailNotifChange}
                     />
                     <NotificationCheckbox
                       id="smsNotif"
@@ -254,7 +371,7 @@ export default function AccountSettings() {
                       label="SMS notifications"
                       description="Get text messages for important updates"
                       checked={smsNotif}
-                      onChange={setSmsNotif}
+                      onChange={handleSmsNotifChange}
                     />
                     <NotificationCheckbox
                       id="appointmentReminders"
@@ -264,7 +381,7 @@ export default function AccountSettings() {
                       label="Appointment reminders"
                       description="Reminders before scheduled consultations"
                       checked={appointmentReminders}
-                      onChange={setAppointmentReminders}
+                      onChange={handleAppointmentRemindersChange}
                     />
                   </div>
                 </div>
@@ -357,7 +474,9 @@ export default function AccountSettings() {
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setShowDeactivateModal(false)}
+            onClick={() => {
+              if (!deactivating) setShowDeactivateModal(false);
+            }}
           />
 
           {/* Modal */}
@@ -373,8 +492,11 @@ export default function AccountSettings() {
                 </h3>
               </div>
               <button
-                onClick={() => setShowDeactivateModal(false)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
+                onClick={() => {
+                  if (!deactivating) setShowDeactivateModal(false);
+                }}
+                disabled={deactivating}
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50"
               >
                 <X className="w-5 h-5 text-gray-400" />
               </button>
@@ -412,15 +534,20 @@ export default function AccountSettings() {
             <div className="flex items-center gap-3 px-6 py-4 bg-gray-50 border-t border-gray-100">
               <button
                 onClick={() => setShowDeactivateModal(false)}
-                className="flex-1 px-5 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors"
+                disabled={deactivating}
+                className="flex-1 px-5 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeactivate}
-                className="flex-1 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm transition-colors shadow-sm active:scale-[0.98]"
+                disabled={deactivating}
+                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm transition-colors shadow-sm active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Yes, Deactivate
+                {deactivating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : null}
+                {deactivating ? "Deactivating..." : "Yes, Deactivate"}
               </button>
             </div>
           </div>
