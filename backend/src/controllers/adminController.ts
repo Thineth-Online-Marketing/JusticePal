@@ -148,3 +148,49 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
     next(error);
   }
 };
+
+// @desc    Get all appointments for Admin Appointments page
+// @route   GET /api/admin/appointments
+// @access  Private (Admin only)
+export const getAppointments = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const appointments = await prisma.appointment.findMany({
+      include: {
+        user: { select: { name: true, email: true } },
+        lawyer: { select: { user: { select: { name: true, email: true } } } },
+        payments: { select: { amount: true, status: true } },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    res.status(200).json(appointments);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all payments for Admin Payments page
+// @route   GET /api/admin/payments
+// @access  Private (Admin only)
+export const getPayments = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      include: {
+        appointment: {
+          select: {
+            scheduledAt: true,
+            user: { select: { name: true, email: true } },
+            lawyer: { select: { user: { select: { name: true } } } }
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    res.status(200).json(payments);
+  } catch (error) {
+    next(error);
+  }
+};
