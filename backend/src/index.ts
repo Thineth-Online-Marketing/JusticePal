@@ -23,10 +23,13 @@ import paymentRoutes from './routes/paymentRoutes';
 import inboxRoutes from './routes/inboxRoutes';
 import lawyerEventRoutes from './routes/lawyerEventRoutes';
 import accountRoutes from './routes/accountRoutes';
+import documentRoutes from './routes/documentRoutes';
+import caseRoutes from './routes/caseRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 import { initNotificationSocket } from './utils/notificationHelper';
 import { initReminderScheduler } from './utils/reminderScheduler';
 import prisma from './lib/prisma';
+import path from 'path';
 
 dotenv.config();
 
@@ -74,6 +77,9 @@ app.use(express.json({
   },
 }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Static file serving for uploads
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // ── Socket.io server ─────────────────────────────────────────────
 export const io = new SocketIOServer(httpServer, {
@@ -272,6 +278,8 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/inbox', inboxRoutes);
 app.use('/api/lawyer-events', lawyerEventRoutes);
 app.use('/api/account', accountRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/cases', caseRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);
