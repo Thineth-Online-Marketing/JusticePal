@@ -11,70 +11,11 @@ import { useAuth } from "../context/AuthContext";
 import LawyerOnboarding from "./LawyerOnboarding";
 import PendingApproval from "./PendingApproval";
 import LegalNewsWidget from "./LegalNewsWidget";
-
-const content = {
-  en: {
-    dashboard: "Dashboard",
-    calendar: "Calendar",
-    cases: "Active Cases",
-    messages: "Messages",
-    settings: "Settings",
-    searchPlaceholder: "Search case files, appointments...",
-    upcomingAppointments: "Upcoming Appointments",
-    activeCases: "Active Cases",
-    newRequests: "New Requests",
-    unreadMessages: "Unread Messages",
-    fromLastWeek: "+2 from last week",
-    stableWorkload: "Stable workload",
-    awaitingReview: "! Awaiting review",
-    urgentPriority: "2 urgent priority",
-    todaysSchedule: "Today's Schedule",
-    viewFullCalendar: "View Full Calendar",
-    quickActions: "Quick Actions",
-    addTask: "Add Task",
-    shareDoc: "Share Doc",
-    invoice: "Invoice",
-    more: "More",
-    priorityCases: "Priority Cases",
-    urgent: "URGENT",
-    onTrack: "ON TRACK",
-    viewAllCases: "View All Cases",
-    recentActivityFeed: "Recent Activity Feed",
-  },
-  si: {
-    dashboard: "උපකරණ පුවරුව",
-    calendar: "දින දර්ශනය",
-    cases: "ක්‍රියාකාරී නඩු",
-    messages: "පණිවිඩ",
-    settings: "සැකසුම්",
-    searchPlaceholder: "නඩු ගොනු, හමුවීම් සොයන්න...",
-    upcomingAppointments: "ඉදිරි හමුවීම්",
-    activeCases: "ක්‍රියාකාරී නඩු",
-    newRequests: "නව ඉල්ලීම්",
-    unreadMessages: "නොකියවූ පණිවිඩ",
-    fromLastWeek: "පසුගිය සතියට වඩා +2",
-    stableWorkload: "ස්ථාවර වැඩ ප්‍රමාණය",
-    awaitingReview: "! සමාලෝචනය අපේක්ෂාවෙන්",
-    urgentPriority: "හදිසි ප්‍රමුඛතා 2ක්",
-    todaysSchedule: "අද කාලසටහන",
-    viewFullCalendar: "සම්පූර්ණ දින දර්ශනය බලන්න",
-    quickActions: "ඉක්මන් ක්‍රියා",
-    addTask: "කාර්යය එක් කරන්න",
-    shareDoc: "ලේඛන බෙදාගන්න",
-    invoice: "ඉන්වොයිසිය",
-    more: "තවත්",
-    priorityCases: "ප්‍රමුඛතා නඩු",
-    urgent: "හදිසි",
-    onTrack: "නිසි මගෙහි",
-    viewAllCases: "සියලුම නඩු බලන්න",
-    recentActivityFeed: "මෑත ක්‍රියාකාරකම්",
-  }
-};
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function LawyerDashboard() {
-  const { lang } = useLanguage();
+  const { t } = useTranslation();
   const { showToast } = useUI();
-  const tx = content[lang as keyof typeof content] || content.en;
   const router = useRouter();
 
   const [user, setUser] = useState<User | null>(null);
@@ -293,12 +234,12 @@ export default function LawyerDashboard() {
                 <div>
                   <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
                     <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                    Add Bio Data
+                    {t("dashboardLawyer.onboarding.addBio.title")}
                   </h3>
-                  <p className="text-xs text-gray-500 mt-1">Complete your profile details including your picture, specialization, and work experience.</p>
+                  <p className="text-xs text-gray-500 mt-1">{t("dashboardLawyer.onboarding.addBio.desc")}</p>
                 </div>
                 <button onClick={() => setSetupStep(1)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
-                  Add Bio Data
+                  {t("dashboardLawyer.onboarding.addBio.btn")}
                 </button>
               </div>
             )}
@@ -308,12 +249,12 @@ export default function LawyerDashboard() {
                 <div>
                   <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
                     <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                    Verify Mobile Number
+                    {t("dashboardLawyer.onboarding.verifyPhone.title")}
                   </h3>
-                  <p className="text-xs text-gray-500 mt-1">Verify your phone number with OTP to secure your account and communicate with clients.</p>
+                  <p className="text-xs text-gray-500 mt-1">{t("dashboardLawyer.onboarding.verifyPhone.desc")}</p>
                 </div>
                 <button onClick={() => setSetupStep(2)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
-                  Verify Number
+                  {t("dashboardLawyer.onboarding.verifyPhone.btn")}
                 </button>
               </div>
             )}
@@ -323,17 +264,17 @@ export default function LawyerDashboard() {
                 <div>
                   <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
                     <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
-                    Verify Lawyer Account
+                    {t("dashboardLawyer.onboarding.verifyId.title")}
                   </h3>
                   <p className="text-xs text-gray-500 mt-1">
-                    Upload your official Lawyer ID to get verified by our administration team.
+                    {t("dashboardLawyer.onboarding.verifyId.desc")}
                   </p>
                 </div>
                 <button 
                   onClick={() => setSetupStep(3)} 
                   className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap"
                 >
-                  Verify Account
+                  {t("dashboardLawyer.onboarding.verifyId.btn")}
                 </button>
               </div>
             )}
@@ -343,12 +284,12 @@ export default function LawyerDashboard() {
                 <div>
                   <h3 className="text-base font-bold text-orange-800 flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    Pending Admin Approval
+                    {t("dashboardLawyer.onboarding.pendingApproval.title")}
                   </h3>
-                  <p className="text-xs text-orange-700 mt-1">Your Lawyer ID is currently being reviewed. You will have full access once approved.</p>
+                  <p className="text-xs text-orange-700 mt-1">{t("dashboardLawyer.onboarding.pendingApproval.desc")}</p>
                 </div>
                 <button disabled className="mt-3 md:mt-0 px-5 py-2 bg-orange-200 text-orange-800 rounded-lg text-xs font-medium cursor-not-allowed whitespace-nowrap">
-                  Under Review
+                  {t("dashboardLawyer.onboarding.pendingApproval.btn")}
                 </button>
               </div>
             )}
@@ -358,13 +299,13 @@ export default function LawyerDashboard() {
 
         <div className="w-full space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-[#1B3A6B]">{tx.dashboard} Analytics</h2>
+            <h2 className="text-xl font-bold text-[#1B3A6B]">{t("dashboardLawyer.dashboard")} {t("dashboardLawyer.analytics")}</h2>
             <button
               onClick={handlePreviewReport}
               className="flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#112549] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
             >
               <FileDown className="w-4 h-4" />
-              Download Financial Report
+              {t("dashboardLawyer.downloadReport")}
             </button>
           </div>
           
@@ -375,7 +316,7 @@ export default function LawyerDashboard() {
             <div className="bg-white rounded-xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{tx.upcomingAppointments}</h3>
+                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{t("dashboardLawyer.stats.upcomingAppointments")}</h3>
                   <p className="text-3xl font-bold text-gray-900">{analyticsData?.upcomingAppointments || 0}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -388,7 +329,7 @@ export default function LawyerDashboard() {
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
-                Updated Live
+                {t("dashboardLawyer.stats.updatedLive")}
               </p>
             </div>
 
@@ -396,7 +337,7 @@ export default function LawyerDashboard() {
             <div className="bg-white rounded-xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Total Earnings (Month)</h3>
+                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{t("dashboardLawyer.stats.totalEarnings")}</h3>
                   <p className="text-2xl font-bold text-gray-900">Rs. {(analyticsData?.totalEarnings || 0).toLocaleString()}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
@@ -406,7 +347,7 @@ export default function LawyerDashboard() {
                 </div>
               </div>
               <p className="text-emerald-600 text-xs font-semibold mt-4">
-                Payments Processed
+                {t("dashboardLawyer.stats.paymentsProcessed")}
               </p>
             </div>
 
@@ -414,7 +355,7 @@ export default function LawyerDashboard() {
             <div className="bg-white rounded-xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Unique Clients</h3>
+                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{t("dashboardLawyer.stats.uniqueClients")}</h3>
                   <p className="text-3xl font-bold text-amber-600">{analyticsData?.uniqueClients || 0}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center">
@@ -424,7 +365,7 @@ export default function LawyerDashboard() {
                 </div>
               </div>
               <p className="text-amber-600 text-xs font-bold mt-4">
-                Growing Network
+                {t("dashboardLawyer.stats.growingNetwork")}
               </p>
             </div>
 
@@ -432,7 +373,7 @@ export default function LawyerDashboard() {
             <div className="bg-white rounded-xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Completed (Month)</h3>
+                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{t("dashboardLawyer.stats.completedMonth")}</h3>
                   <p className="text-3xl font-bold text-gray-900">{analyticsData?.completedAppointments || 0}</p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
@@ -442,7 +383,7 @@ export default function LawyerDashboard() {
                 </div>
               </div>
               <p className="text-purple-600 text-xs font-semibold mt-4">
-                Successful Consultations
+                {t("dashboardLawyer.stats.successfulConsultations")}
               </p>
             </div>
           </div>
@@ -455,8 +396,8 @@ export default function LawyerDashboard() {
               {/* Appointments */}
               <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-gray-900">Consultations</h2>
-                  <button onClick={() => router.push('/lawyer-dashboard/calendar')} className="text-sm font-semibold text-[#1B3A6B] hover:underline">{tx.viewFullCalendar}</button>
+                  <h2 className="text-lg font-bold text-gray-900">{t("dashboardLawyer.consultations.title")}</h2>
+                  <button onClick={() => router.push('/lawyer-dashboard/calendar')} className="text-sm font-semibold text-[#1B3A6B] hover:underline">{t("dashboardLawyer.consultations.viewFullCalendar")}</button>
                 </div>
                 
                 <div className="space-y-4">
@@ -479,8 +420,8 @@ export default function LawyerDashboard() {
                               router.push(`/consultation?role=lawyer&appointmentId=${appt.id}`);
                             }
                           }}>
-                            <p className="font-bold text-gray-900 text-sm truncate group-hover:text-[#1B3A6B] transition-colors">{appt.caseDescription || "Client Consultation"}</p>
-                            <p className="text-xs text-gray-500 font-medium mt-1 truncate">Client: {appt.user?.name || 'Unknown'}</p>
+                            <p className="font-bold text-gray-900 text-sm truncate group-hover:text-[#1B3A6B] transition-colors">{appt.caseDescription || t("dashboardLawyer.consultations.defaultCaseDesc")}</p>
+                            <p className="text-xs text-gray-500 font-medium mt-1 truncate">{t("dashboardLawyer.consultations.client").replace("{{name}}", appt.user?.name || t("dashboardLawyer.consultations.unknown"))}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className={`text-xs font-bold px-3 py-1 rounded-full ${
@@ -488,7 +429,10 @@ export default function LawyerDashboard() {
                               appt.status === 'REJECTED' ? 'bg-red-50 text-red-700' :
                               'bg-yellow-50 text-yellow-700'
                             }`}>
-                              {appt.status || 'PENDING'}
+                              {appt.status === 'CONFIRMED' ? t("dashboardLawyer.consultations.confirmed") : 
+                               appt.status === 'REJECTED' ? t("dashboardLawyer.consultations.rejected") : 
+                               appt.status === 'PENDING' ? t("dashboardLawyer.consultations.pending") :
+                               appt.status}
                             </span>
                             {appt.status !== 'CONFIRMED' && appt.status !== 'REJECTED' && (
                               <div className="flex gap-2 ml-2">
@@ -549,7 +493,7 @@ export default function LawyerDashboard() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <p className="text-gray-900 font-medium text-sm">No consultations scheduled</p>
+                      <p className="text-gray-900 font-medium text-sm">{t("dashboardLawyer.consultations.empty")}</p>
                     </div>
                   )}
                 </div>
@@ -558,7 +502,7 @@ export default function LawyerDashboard() {
               {/* Recent Activity Feed */}
               <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-gray-900">{tx.recentActivityFeed}</h2>
+                  <h2 className="text-lg font-bold text-gray-900">{t("dashboardLawyer.recentActivity.title")}</h2>
                   <button className="text-gray-400 hover:text-gray-600">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -574,8 +518,8 @@ export default function LawyerDashboard() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <p className="text-gray-500 font-medium text-sm">No recent activities</p>
-                    <p className="text-gray-400 text-xs mt-1">Your feed will update when cases change.</p>
+                    <p className="text-gray-500 font-medium text-sm">{t("dashboardLawyer.recentActivity.emptyTitle")}</p>
+                    <p className="text-gray-400 text-xs mt-1">{t("dashboardLawyer.recentActivity.emptyDesc")}</p>
                   </div>
                 </div>
               </div>
@@ -587,38 +531,38 @@ export default function LawyerDashboard() {
               
               {/* Quick Actions (Dark Blue Card) */}
               <div className="bg-[#1B3A6B] rounded-xl p-6 text-white shadow-md">
-                <h2 className="text-lg font-bold mb-4">{tx.quickActions}</h2>
+                <h2 className="text-lg font-bold mb-4">{t("dashboardLawyer.quickActions.title")}</h2>
                 <div className="grid grid-cols-2 gap-3">
                   <button className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-3 flex flex-col items-center justify-center gap-2 aspect-square">
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                     </svg>
-                    <span className="text-xs font-medium">{tx.addTask}</span>
+                    <span className="text-xs font-medium">{t("dashboardLawyer.quickActions.addTask")}</span>
                   </button>
                   <button className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-3 flex flex-col items-center justify-center gap-2 aspect-square">
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                     </svg>
-                    <span className="text-xs font-medium">{tx.shareDoc}</span>
+                    <span className="text-xs font-medium">{t("dashboardLawyer.quickActions.shareDoc")}</span>
                   </button>
                   <button className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-3 flex flex-col items-center justify-center gap-2 aspect-square">
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <span className="text-xs font-medium">{tx.invoice}</span>
+                    <span className="text-xs font-medium">{t("dashboardLawyer.quickActions.invoice")}</span>
                   </button>
                   <button className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-3 flex flex-col items-center justify-center gap-2 aspect-square">
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                     </svg>
-                    <span className="text-xs font-medium">{tx.more}</span>
+                    <span className="text-xs font-medium">{t("dashboardLawyer.quickActions.more")}</span>
                   </button>
                 </div>
               </div>
 
               {/* Priority Cases */}
               <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-6 flex flex-col">
-                <h2 className="text-lg font-bold text-gray-900 mb-6">{tx.priorityCases}</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-6">{t("dashboardLawyer.priorityCases.title")}</h2>
                 
                 <div className="space-y-6">
                   <div className="flex flex-col items-center justify-center py-8">
@@ -627,12 +571,12 @@ export default function LawyerDashboard() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
-                    <p className="text-gray-500 font-medium text-sm">No priority cases currently</p>
+                    <p className="text-gray-500 font-medium text-sm">{t("dashboardLawyer.priorityCases.empty")}</p>
                   </div>
                 </div>
 
                 <button className="w-full mt-6 py-2.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
-                  {tx.viewAllCases}
+                  {t("dashboardLawyer.priorityCases.viewAll")}
                 </button>
               </div>
               

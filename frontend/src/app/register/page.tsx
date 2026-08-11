@@ -3,47 +3,12 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useLanguage } from "../context/LanguageContext";
-import { createUserWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
+import { useTranslation } from "../hooks/useTranslation";
 import { auth } from "../lib/firebase";
 import { signInWithGoogle } from "../lib/googleAuth";
+import { createUserWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
-
-const content = {
-  en: {
-    welcome: "Create an account",
-    subtitle: "Join JusticePal today to get started",
-    name: "Full Name",
-    email: "Email address",
-    password: "Password",
-    confirm: "Confirm Password",
-    signUp: "Sign Up",
-    signingUp: "Creating account...",
-    already: "Already have an account?",
-    signIn: "Sign in here",
-    brandTitle: "JusticePal",
-    brandSub: "Your Personal AI Legal Assistant",
-    brandDesc: "Empowering Sri Lankans with instant, accessible legal insights and seamless attorney connections.",
-    backToHome: "Back to home"
-  },
-  si: {
-    welcome: "ගිණුමක් සාදන්න",
-    subtitle: "ආරම්භ කිරීමට අදම JusticePal හා එක්වන්න",
-    name: "සම්පූර්ණ නම",
-    email: "විද්‍යුත් තැපෑල",
-    password: "මුරපදය",
-    confirm: "මුරපදය තහවුරු කරන්න",
-    signUp: "ලියාපදිංචි වන්න",
-    signingUp: "ගිණුම සාදමින්...",
-    already: "දැනටමත් ගිණුමක් තිබේද?",
-    signIn: "මෙහි පිවිසෙන්න",
-    brandTitle: "JusticePal",
-    brandSub: "ඔබගේ පෞද්ගලික AI නීති සහායකයා",
-    brandDesc: "ක්ෂණික හා ප්‍රවේශ විය හැකි නීතිමය අවබෝධය සහ නීතිඥ සම්බන්ධතා මගින් ශ්‍රී ලාංකිකයින් සවිබල ගැන්වීම.",
-    backToHome: "මුල් පිටුවට"
-  }
-};
 
 export default function RegisterPage() {
   const [role, setRole] = useState<"client" | "lawyer">("client");
@@ -54,8 +19,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
-  const { lang } = useLanguage();
-  const tx = content[lang as keyof typeof content] || content.en;
+  const { t } = useTranslation();
   const router = useRouter();
 
   const handleGoogleSignUp = async () => {
@@ -183,13 +147,13 @@ export default function RegisterPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          {tx.backToHome}
+          {t("auth.register.backToHome")}
         </Link>
         
         <div className="w-full max-w-md animate-fade-in-up">
           <div className="mb-8 text-center lg:text-left">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-2">{tx.welcome}</h1>
-            <p className="text-gray-500 text-sm sm:text-base">{tx.subtitle}</p>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-2">{t("auth.register.welcome")}</h1>
+            <p className="text-gray-500 text-sm sm:text-base">{t("auth.register.subtitle")}</p>
           </div>
 
           {error && (
@@ -254,7 +218,7 @@ export default function RegisterPage() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{tx.name}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("auth.register.name")}</label>
               <input 
                 type="text" 
                 required
@@ -266,7 +230,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{tx.email}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("auth.register.email")}</label>
               <input 
                 type="email" 
                 required
@@ -278,7 +242,7 @@ export default function RegisterPage() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{tx.password}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("auth.register.password")}</label>
               <input 
                 type="password" 
                 required
@@ -290,7 +254,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{tx.confirm}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("auth.register.confirm")}</label>
               <input 
                 type="password" 
                 required
@@ -312,12 +276,12 @@ export default function RegisterPage() {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
               )}
-              {loading ? tx.signingUp : tx.signUp}
+              {loading ? t("auth.register.signingUp") : t("auth.register.signUp")}
             </button>
           </form>
 
           <p className="mt-8 text-center text-sm text-gray-600">
-            {tx.already} <Link href="/login" className="font-semibold text-orange-500 hover:text-orange-600 transition-colors">{tx.signIn}</Link>
+            {t("auth.register.already")} <Link href="/login" className="font-semibold text-orange-500 hover:text-orange-600 transition-colors">{t("auth.register.signIn")}</Link>
           </p>
         </div>
       </div>
@@ -336,10 +300,10 @@ export default function RegisterPage() {
               className="object-contain drop-shadow-xl rounded-2xl"
             />
           </div>
-          <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">{tx.brandTitle}</h2>
-          <h3 className="text-xl text-blue-200 font-medium mb-6 uppercase tracking-widest text-sm">{tx.brandSub}</h3>
+          <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">{t("auth.register.brandTitle")}</h2>
+          <h3 className="text-xl text-blue-200 font-medium mb-6 uppercase tracking-widest text-sm">{t("auth.register.brandSub")}</h3>
           <p className="text-blue-100/80 leading-relaxed text-lg">
-            {tx.brandDesc}
+            {t("auth.register.brandDesc")}
           </p>
         </div>
       </div>

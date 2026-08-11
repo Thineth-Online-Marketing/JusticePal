@@ -4,11 +4,17 @@ import { useAuth } from "../context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useSessionTimeout } from "../hooks/useSessionTimeout";
+import { initFetchInterceptor } from "../lib/apiInterceptor";
 
 // Define routes that can be accessed without logging in
 const publicRoutes = ["/", "/login", "/register", "/about", "/privacy"];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
+  // Initialize security monitors
+  initFetchInterceptor();
+  useSessionTimeout();
+  
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();

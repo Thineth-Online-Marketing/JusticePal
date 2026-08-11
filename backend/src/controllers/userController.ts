@@ -1,8 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/authMiddleware';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // @desc    Get user profile
 // @route   GET /api/users/profile

@@ -16,6 +16,7 @@ import ClientNavbar from "../components/ClientNavbar";
 import JusticePalLogo from "../components/JusticePalLogo";
 import { useAuth } from "../context/AuthContext";
 import { useUI } from "../context/UIContext";
+import { useTranslation } from "../hooks/useTranslation";
 
 // Typed interfaces for real data
 interface ChatMessage {
@@ -56,6 +57,7 @@ function ConsultationContent() {
   const router = useRouter();
   const { user } = useAuth();
   const { showToast } = useUI();
+  const { t } = useTranslation();
 
   // Detect role from URL query param "?role=lawyer" or "?role=client"
   const urlRole = searchParams.get("role");
@@ -605,20 +607,20 @@ function ConsultationContent() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Family Law</span>
+                <span className="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">{t("consultation.header.familyLaw")}</span>
                 <span className="text-xs font-bold text-gray-400">#JP-9821</span>
                 <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  E2E Encrypted
+                  {t("consultation.header.e2eeSecure")}
                 </div>
               </div>
               <h2 className="text-lg font-bold text-gray-900 mt-1.5 flex items-center gap-2">
                 {appointment?.caseDescription
                   ? appointment.caseDescription.slice(0, 60) + (appointment.caseDescription.length > 60 ? "..." : "")
-                  : "Legal Consultation"}
+                  : t("consultation.header.legalConsultation")}
                 <span className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 text-[#1B3A6B] text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
                   <CircleDot className="w-2.5 h-2.5 text-blue-600 animate-pulse" />
-                  {roomInfo?.status === "active" ? "Live Meeting" : roomInfo?.status === "ended" ? "Session Ended" : "Waiting"}
+                  {roomInfo?.status === "active" ? t("consultation.header.liveMeeting") : roomInfo?.status === "ended" ? t("consultation.header.sessionEnded") : t("consultation.header.waiting")}
                 </span>
               </h2>
             </div>
@@ -631,7 +633,7 @@ function ConsultationContent() {
               
               <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-xl text-xs font-bold shadow-sm">
                 <Shield className="w-4 h-4 text-emerald-600" />
-                Secure Connection
+                {t("consultation.header.secureConnection")}
               </div>
             </div>
           </div>
@@ -652,15 +654,15 @@ function ConsultationContent() {
                     connectionQuality === "good" ? "bg-yellow-500" : "bg-red-500 animate-pulse"
                   }`}></span>
                   <span className="text-[10px] font-bold uppercase text-white tracking-wider">
-                    {connectionQuality === "excellent" ? "Connection: Excellent" :
-                     connectionQuality === "good" ? "Connection: Good" : "Connection: Poor"}
+                    {connectionQuality === "excellent" ? t("consultation.video.connectionExcellent") :
+                     connectionQuality === "good" ? t("consultation.video.connectionGood") : t("consultation.video.connectionPoor")}
                   </span>
                 </div>
 
                 {/* Secure Badge (top right) */}
                 <div className="absolute top-4 right-4 z-20 bg-emerald-600/90 backdrop-blur-sm px-3 py-1 rounded-full text-white text-[10px] font-bold flex items-center gap-1.5 shadow-sm border border-emerald-500/30">
                   <Shield className="w-3.5 h-3.5" />
-                  E2EE Secure
+                  {t("consultation.header.e2eeSecure")}
                 </div>
 
                 {/* Primary Remote Video Stream or Avatar Placeholder */}
@@ -671,7 +673,7 @@ function ConsultationContent() {
                     </div>
                     <div className="space-y-1">
                       <p className="font-bold text-gray-200 text-sm">{remoteName}</p>
-                      <p className="text-xs text-gray-500">Camera is turned off</p>
+                      <p className="text-xs text-gray-500">{t("consultation.video.cameraOff")}</p>
                     </div>
                   </div>
                 ) : (
@@ -710,13 +712,13 @@ function ConsultationContent() {
                       ? "bg-green-500/20 text-green-300 border border-green-500/30" 
                       : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
                   }`}>
-                    {currentRole === "lawyer" ? "Client" : "Lawyer"}
+                    {currentRole === "lawyer" ? t("consultation.video.client") : t("consultation.video.lawyer")}
                   </span>
 
                   {speakingParty === (currentRole === "lawyer" ? "client" : "lawyer") && (
                     <span className="flex items-center gap-0.5 ml-1 bg-emerald-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase animate-pulse">
                       <Volume2 className="w-3 h-3" />
-                      Speaking
+                      {t("consultation.video.speaking")}
                     </span>
                   )}
                 </div>
@@ -728,7 +730,7 @@ function ConsultationContent() {
                       <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 text-white font-bold text-base">
                         {currentRole === "lawyer" ? "SJ" : "SC"}
                       </div>
-                      <p className="font-semibold text-[10px] text-gray-300">You (Muted)</p>
+                      <p className="font-semibold text-[10px] text-gray-300">{t("consultation.video.youMuted")}</p>
                     </div>
                   ) : (
                     <div className="absolute inset-0 w-full h-full relative">
@@ -758,7 +760,7 @@ function ConsultationContent() {
                   )}
 
                   <div className="absolute bottom-2 right-2 z-10 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/10 text-[9px] font-bold text-white">
-                    You
+                    {t("consultation.video.you")}
                   </div>
                 </div>
 
@@ -773,7 +775,7 @@ function ConsultationContent() {
                     <span className="h-2.5 w-2.5 rounded-full bg-red-500"></span>
                     REC 00:15:32
                   </div>
-                  <span className="text-xs text-gray-400 font-medium">Session Encrypted</span>
+                  <span className="text-xs text-gray-400 font-medium">{t("consultation.video.sessionEncrypted")}</span>
                 </div>
 
                 {/* Center panel: Control buttons */}
@@ -842,14 +844,10 @@ function ConsultationContent() {
                   <button 
                     onClick={handleEndCall}
                     disabled={isCallEnding}
-                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-md active:scale-95 disabled:bg-red-400"
+                    className="flex items-center gap-2 px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold transition-all shadow-md shadow-red-600/20 disabled:opacity-50"
                   >
-                    {isCallEnding ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <PhoneOff className="w-4 h-4" />
-                    )}
-                    <span className="hidden md:inline">End Call</span>
+                    {isCallEnding ? <Loader2 className="w-5 h-5 animate-spin" /> : <PhoneOff className="w-5 h-5" />}
+                    <span className="hidden md:inline">{t("consultation.video.endCall")}</span>
                   </button>
                 </div>
 
@@ -898,48 +896,41 @@ function ConsultationContent() {
 
               {/* Lawyer-Specific Live Notes Panel */}
               {currentRole === "lawyer" && (
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex flex-col space-y-4">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-[#1B3A6B]" />
-                      <h3 className="font-bold text-gray-900 text-base">Real-time Legal Consultation Notes</h3>
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-base">{t("consultation.sidebar.notesTitle")}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] bg-blue-50 text-[#1B3A6B] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">{t("consultation.sidebar.lawyerWorkspace")}</span>
+                      </div>
                     </div>
-                    <span className="text-[10px] bg-blue-50 text-[#1B3A6B] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Lawyer Workspace</span>
                   </div>
                   
-                  <div className="space-y-3">
-                    <textarea 
-                      value={lawyerNotes}
-                      onChange={(e) => setLawyerNotes(e.target.value)}
-                      placeholder="Type consultation notes here..."
-                      className="w-full min-h-[120px] bg-[#F9FAFC] border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-200 focus:bg-white text-gray-700 leading-relaxed font-mono"
-                    />
-                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                      <p className="text-xs text-gray-400">Notes automatically save to case folder.</p>
-                      
-                      <button 
-                        onClick={handleGenerateSummary}
-                        disabled={isGeneratingSummary}
-                        className="flex items-center gap-2 bg-[#F97316] hover:bg-[#ea6b0a] text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-sm disabled:bg-orange-300"
-                      >
-                        {isGeneratingSummary ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Analyzing Consultation...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4" />
-                            Generate Consultation Summary
-                          </>
-                        )}
-                      </button>
+                  <textarea 
+                    value={lawyerNotes}
+                    onChange={(e) => setLawyerNotes(e.target.value)}
+                    placeholder="Type consultation notes here..."
+                    className="w-full min-h-[120px] bg-[#F9FAFC] border-none p-6 text-sm focus:outline-none text-gray-700 leading-relaxed font-mono"
+                  />
+                  
+                  <div className="p-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2">
+                      <FileSignature className="w-4 h-4 text-gray-400" />
+                      <p className="text-xs text-gray-400">{t("consultation.sidebar.notesHelper")}</p>
                     </div>
+                    <button 
+                      onClick={handleGenerateSummary}
+                      disabled={isGeneratingSummary || !appointmentId}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {isGeneratingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      {t("consultation.sidebar.generateSummary")}
+                    </button>
                   </div>
 
                   {/* Summary Render Result */}
                   {generatedSummary && (
-                    <div className="border border-orange-100 bg-orange-50/30 rounded-2xl p-5 mt-4 space-y-4 animate-fade-in">
+                    <div className="border-t border-orange-100 bg-orange-50/30 p-6 space-y-4 animate-fade-in">
                       <div className="flex items-center justify-between border-b border-orange-100 pb-3">
                         <div className="flex items-center gap-2 text-[#F97316]">
                           <Sparkles className="w-5 h-5" />
@@ -953,43 +944,42 @@ function ConsultationContent() {
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                        <div>
-                          <p className="text-gray-400 font-bold uppercase">Date & Session</p>
-                          <p className="font-bold text-gray-700 mt-0.5">{generatedSummary.date}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400 font-bold uppercase">Participants</p>
-                          <p className="font-bold text-gray-700 mt-0.5">{generatedSummary.participants}</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-xs text-gray-400 font-bold uppercase mb-1">Executive Summary</p>
-                          <p className="text-sm text-gray-600 leading-relaxed bg-white rounded-xl border border-gray-100 p-3 shadow-inner">
-                            {generatedSummary.summary}
-                          </p>
+                      <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                          <div>
+                            <p className="text-gray-400 font-bold uppercase">{t("consultation.sidebar.dateSession")}</p>
+                            <p className="font-bold text-gray-700 mt-0.5">{generatedSummary.date}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 font-bold uppercase">{t("consultation.sidebar.participants")}</p>
+                            <p className="font-bold text-gray-700 mt-0.5">{generatedSummary.participants}</p>
+                          </div>
                         </div>
 
-                        <div>
-                          <p className="text-xs text-gray-400 font-bold uppercase mb-1">Key Outcomes & Agreements</p>
-                          <ul className="list-disc pl-5 space-y-1 text-xs text-gray-600">
+                        {/* Executive Summary */}
+                        <div className="mb-6">
+                          <p className="text-xs text-gray-400 font-bold uppercase mb-1">{t("consultation.sidebar.executiveSummary")}</p>
+                          <p className="text-sm text-gray-800 leading-relaxed font-medium">{generatedSummary.executiveSummary}</p>
+                        </div>
+
+                        {/* Key Outcomes */}
+                        <div className="mb-6">
+                          <p className="text-xs text-gray-400 font-bold uppercase mb-1">{t("consultation.sidebar.keyOutcomes")}</p>
+                          <ul className="list-disc pl-5 space-y-1 text-sm">
                             {generatedSummary.keyOutcomes.map((o: string, idx: number) => (
                               <li key={idx}><span className="font-semibold text-gray-700">{o}</span></li>
                             ))}
                           </ul>
                         </div>
 
+                        {/* Next Steps */}
                         <div>
-                          <p className="text-xs text-gray-400 font-bold uppercase mb-1">Next Steps & Responsibilities</p>
-                          <ul className="list-decimal pl-5 space-y-1 text-xs text-gray-600 font-semibold">
+                          <p className="text-xs text-gray-400 font-bold uppercase mb-1">{t("consultation.sidebar.nextSteps")}</p>
+                          <ul className="list-decimal pl-5 space-y-1.5 text-sm font-bold bg-blue-50 p-3 rounded-lg border border-blue-100">
                             {generatedSummary.nextSteps.map((s: string, idx: number) => (
                               <li key={idx} className="text-blue-900">{s}</li>
                             ))}
                           </ul>
                         </div>
-                      </div>
 
                       <div className="flex justify-end gap-3 pt-2">
                         <button 
@@ -1002,17 +992,16 @@ function ConsultationContent() {
                         </button>
                         <button 
                           onClick={() => {
-                            showToast("Consultation summary saved to Case #JP-9821 files", "success");
+                            showToast("Consultation summary saved to Case files", "success");
                           }}
                           className="flex items-center gap-1.5 bg-[#1B3A6B] hover:bg-[#112549] text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm"
                         >
                           <Download className="w-3.5 h-3.5" />
-                          Save and Attach to Case
+                          Save and Attach
                         </button>
                       </div>
                     </div>
                   )}
-
                 </div>
               )}
 
@@ -1062,12 +1051,12 @@ function ConsultationContent() {
                 </div>
 
                 {/* Tab content wrapper */}
-                <div className="flex-1 overflow-y-auto p-4 min-h-[300px] flex flex-col justify-between">
+                <div className="flex-1 overflow-y-auto min-h-[300px] flex flex-col justify-between">
                   
                   {activeTab === "chat" && (
                     <div className="flex flex-col h-full justify-between flex-1">
                       {/* Messages list */}
-                      <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1 flex-1 mb-4">
+                      <div className="space-y-3 p-4 overflow-y-auto pr-1 flex-1 mb-4">
                         {messages.length === 0 && (
                           <div className="text-center py-8 text-gray-400">
                             <p className="text-xs font-medium">No messages yet. Start the conversation!</p>
@@ -1108,7 +1097,15 @@ function ConsultationContent() {
                       </div>
 
                       {/* Chat input field */}
-                      <form onSubmit={handleSendMessage} className="flex gap-2 bg-gray-50 border border-gray-200 rounded-xl p-1.5">
+                      <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-gray-100 shrink-0">
+                      <div className="relative flex items-center bg-gray-50 border border-gray-200 rounded-xl px-2 py-1 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                        <input 
+                          type="text" 
+                          value={newMessageText}
+                          onChange={(e) => handleTyping(e.target.value)}
+                          placeholder={t("consultation.sidebar.typeMessage")}
+                          className="flex-1 bg-transparent py-2 px-2 text-sm text-gray-800 focus:outline-none placeholder:text-gray-400"
+                        />
                         <button 
                           type="button"
                           onClick={handleAttachFile}
@@ -1117,27 +1114,19 @@ function ConsultationContent() {
                         >
                           <Paperclip className="w-4 h-4" />
                         </button>
-                        
-                        <input 
-                          type="text"
-                          value={newMessageText}
-                          onChange={(e) => handleTyping(e.target.value)}
-                          placeholder={`Message ${remoteName}...`}
-                          className="flex-1 bg-transparent text-xs border-none outline-none text-gray-700 px-1 py-1"
-                        />
-
                         <button 
                           type="submit"
                           className="bg-[#1B3A6B] hover:bg-[#112549] text-white p-2 rounded-lg transition-colors flex items-center justify-center shrink-0"
                         >
                           <Send className="w-3.5 h-3.5" />
                         </button>
-                      </form>
+                      </div>
+                    </form>
                     </div>
                   )}
 
                   {activeTab === "participants" && (
-                    <div className="space-y-4 flex-1">
+                    <div className="p-4 space-y-4 flex-1">
                       <div className="flex items-center justify-between text-xs text-gray-400 font-bold uppercase tracking-wider pb-2 border-b border-gray-150">
                         <span>Participants (2)</span>
                         <span>Speaking Status</span>
@@ -1157,19 +1146,16 @@ function ConsultationContent() {
                           </div>
                           <div>
                             <h4 className="text-xs font-bold text-gray-900 leading-tight">{lawyerName}</h4>
-                            <p className="text-[10px] text-gray-400 font-semibold mt-0.5">Advocate • Organizer</p>
+                            <p className="text-[10px] text-gray-400 font-semibold mt-0.5">{t("consultation.sidebar.advocateOrganizer")}</p>
                           </div>
                         </div>
 
-                        {speakingParty === "lawyer" ? (
-                          <div className="flex gap-0.5">
-                            <span className="h-3 w-0.5 bg-emerald-500 rounded animate-[pulse_0.6s_infinite]"></span>
-                            <span className="h-4 w-0.5 bg-emerald-500 rounded animate-[pulse_0.8s_infinite]"></span>
-                            <span className="h-2 w-0.5 bg-emerald-500 rounded animate-[pulse_0.5s_infinite]"></span>
-                          </div>
-                        ) : (
-                          <span className="text-[9px] text-gray-400 font-bold uppercase">Mute</span>
-                        )}
+                        <div className="flex flex-col items-center">
+                          <button className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500">
+                            <MicOff className="w-4 h-4" />
+                          </button>
+                          <span className="text-[9px] text-gray-400 font-bold uppercase">{t("consultation.sidebar.mute")}</span>
+                        </div>
                       </div>
 
                       {/* Participant: Client */}
@@ -1186,19 +1172,16 @@ function ConsultationContent() {
                           </div>
                           <div>
                             <h4 className="text-xs font-bold text-gray-900 leading-tight">{clientName}</h4>
-                            <p className="text-[10px] text-gray-400 font-semibold mt-0.5">Client</p>
+                            <p className="text-[10px] text-gray-400 font-semibold mt-0.5">{t("consultation.video.client")}</p>
                           </div>
                         </div>
 
-                        {speakingParty === "client" ? (
-                          <div className="flex gap-0.5">
-                            <span className="h-3 w-0.5 bg-emerald-500 rounded animate-[pulse_0.6s_infinite]"></span>
-                            <span className="h-4 w-0.5 bg-emerald-500 rounded animate-[pulse_0.8s_infinite]"></span>
-                            <span className="h-2 w-0.5 bg-emerald-500 rounded animate-[pulse_0.5s_infinite]"></span>
-                          </div>
-                        ) : (
-                          <span className="text-[9px] text-gray-400 font-bold uppercase">Mute</span>
-                        )}
+                        <div className="flex flex-col items-center">
+                          <button className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500">
+                            <MicOff className="w-4 h-4" />
+                          </button>
+                          <span className="text-[9px] text-gray-400 font-bold uppercase">{t("consultation.sidebar.mute")}</span>
+                        </div>
                       </div>
 
                       {/* Encryption notification */}
@@ -1222,16 +1205,8 @@ function ConsultationContent() {
                         onChange={handleFileUpload} 
                         accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" 
                       />
-                      <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Shared Files ({documents.length})</span>
-                        <button 
-                          onClick={handleAttachFile}
-                          disabled={isUploading}
-                          className="flex items-center gap-1 text-[10px] font-extrabold text-[#1B3A6B] bg-blue-50 border border-blue-100 px-2 py-1 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          Add File
-                        </button>
+                      <div className="flex items-center justify-between px-2 mb-3">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("consultation.sidebar.sharedFiles", { count: documents.length })}</span>
                       </div>
 
                       {isUploading && (

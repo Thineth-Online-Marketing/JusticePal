@@ -1,10 +1,8 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { createNotification } from './notificationController';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // Lazy Stripe client — only initialised when a payment route is actually called.
 // This prevents startup crashes when STRIPE_SECRET_KEY is not set in .env.

@@ -2,100 +2,51 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslation } from "../hooks/useTranslation";
 import { useLanguage } from "../context/LanguageContext";
 
-const content = {
-  en: {
-    description: "Empowering Sri Lanka with accessible legal assistance through artificial intelligence and expert human insight.",
-    rights: "All rights reserved.",
-    status: "All systems operational",
-    categories: {
-      Platform: {
-        title: "Platform",
-        links: [
-          { label: "How It Works", href: "/how-it-works" },
-          { label: "Pricing", href: "/pricing" },
-          { label: "Find a Lawyer", href: "/lawyers" },
-          { label: "Legal AI", href: "/ai" },
-        ],
-      },
-      Company: {
-        title: "Company",
-        links: [
-          { label: "About Us", href: "/about" },
-          { label: "Careers", href: "/careers" },
-          { label: "Blog", href: "/blog" },
-          { label: "Press", href: "/press" },
-        ],
-      },
-      Legal: {
-        title: "Legal",
-        links: [
-          { label: "Privacy Policy", href: "/privacy" },
-          { label: "Terms of Service", href: "/terms" },
-          { label: "Cookie Policy", href: "/cookies" },
-          { label: "Disclaimer", href: "/disclaimer" },
-        ],
-      },
-      Support: {
-        title: "Support",
-        links: [
-          { label: "Help Center", href: "/help" },
-          { label: "Contact Us", href: "/contact" },
-          { label: "Community", href: "/community" },
-          { label: "Status", href: "/status" },
-        ],
-      },
-    }
+const footerLinksConfig = [
+  {
+    key: "platform",
+    links: [
+      { id: "howItWorks", href: "/how-it-works" },
+      { id: "pricing", href: "/pricing" },
+      { id: "findLawyer", href: "/lawyers" },
+      { id: "legalAi", href: "/ai" },
+    ],
   },
-  si: {
-    description: "කෘතිම බුද්ධිය සහ ප්‍රවීණ මානව අවබෝධය හරහා ප්‍රවේශ විය හැකි නීතිමය සහාය ලබා දෙමින් ශ්‍රී ලංකාව සවිබල ගැන්වීම.",
-    rights: "සියලුම හිමිකම් ඇවිරිණි.",
-    status: "සියලුම පද්ධති ක්‍රියාත්මකයි",
-    categories: {
-      Platform: {
-        title: "වේදිකාව",
-        links: [
-          { label: "ක්‍රියාත්මක වන ආකාරය", href: "/how-it-works" },
-          { label: "මිල ගණන්", href: "/pricing" },
-          { label: "නීතිඥයෙකු සොයන්න", href: "/lawyers" },
-          { label: "නීතිමය AI", href: "/ai" },
-        ],
-      },
-      Company: {
-        title: "සමාගම",
-        links: [
-          { label: "අප ගැන", href: "/about" },
-          { label: "රැකියා", href: "/careers" },
-          { label: "බ්ලොග්", href: "/blog" },
-          { label: "මාධ්‍ය", href: "/press" },
-        ],
-      },
-      Legal: {
-        title: "නීතිමය",
-        links: [
-          { label: "රහස්‍යතා ප්‍රතිපත්තිය", href: "/privacy" },
-          { label: "සේවා කොන්දේසි", href: "/terms" },
-          { label: "කුකීස් ප්‍රතිපත්තිය", href: "/cookies" },
-          { label: "වියාචනය", href: "/disclaimer" },
-        ],
-      },
-      Support: {
-        title: "සහාය",
-        links: [
-          { label: "උදව් මධ්‍යස්ථානය", href: "/help" },
-          { label: "අප අමතන්න", href: "/contact" },
-          { label: "ප්‍රජාව", href: "/community" },
-          { label: "තත්ත්වය", href: "/status" },
-        ],
-      },
-    }
-  }
-};
+  {
+    key: "company",
+    links: [
+      { id: "aboutUs", href: "/about" },
+      { id: "careers", href: "/careers" },
+      { id: "blog", href: "/blog" },
+      { id: "press", href: "/press" },
+    ],
+  },
+  {
+    key: "legal",
+    links: [
+      { id: "privacy", href: "/privacy" },
+      { id: "terms", href: "/terms" },
+      { id: "cookie", href: "/cookies" },
+      { id: "disclaimer", href: "/disclaimer" },
+    ],
+  },
+  {
+    key: "support",
+    links: [
+      { id: "helpCenter", href: "/help" },
+      { id: "contact", href: "/contact" },
+      { id: "community", href: "/community" },
+      { id: "statusLink", href: "/status" },
+    ],
+  },
+];
 
 export default function Footer() {
   const { lang, toggle } = useLanguage();
-  const tx = content[lang as keyof typeof content] || content.en;
+  const { t } = useTranslation();
 
   return (
     <footer className="bg-[#050B14] text-white pt-20 px-6 pb-8 border-t border-gray-800">
@@ -123,7 +74,7 @@ export default function Footer() {
             </Link>
 
             <p className="text-gray-400 leading-relaxed max-w-sm mb-8">
-              {tx.description}
+              {t("landing.footer.description")}
             </p>
 
             {/* Socials */}
@@ -147,19 +98,19 @@ export default function Footer() {
           </div>
 
           {/* Links Grid */}
-          {Object.entries(tx.categories).map(([key, category]) => (
-            <div key={key}>
+          {footerLinksConfig.map((category) => (
+            <div key={category.key}>
               <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-6">
-                {category.title}
+                {t(`landing.footer.${category.key}`)}
               </h4>
               <ul className="space-y-4">
                 {category.links.map((link) => (
-                  <li key={link.label}>
+                  <li key={link.id}>
                     <Link
                       href={link.href}
                       className="text-gray-400 hover:text-white transition-colors duration-200 block"
                     >
-                      {link.label}
+                      {t(`landing.footer.links.${link.id}`)}
                     </Link>
                   </li>
                 ))}
@@ -170,7 +121,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} JusticePal. {tx.rights}</p>
+          <p>© {new Date().getFullYear()} JusticePal. {t("landing.footer.rights")}</p>
 
           <div className="flex items-center gap-6">
             <button
@@ -185,7 +136,7 @@ export default function Footer() {
             </button>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-              <span>{tx.status}</span>
+              <span>{t("landing.footer.status")}</span>
             </div>
           </div>
         </div>

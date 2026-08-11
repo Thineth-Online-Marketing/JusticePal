@@ -1,9 +1,8 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { generateConsultationSummary } from '../services/consultationService';
-
-const prisma = new PrismaClient();
 
 // Prisma-generated type for a ConsultationRoom record
 type ConsultationRoom = Prisma.ConsultationRoomGetPayload<Record<string, never>>;

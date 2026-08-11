@@ -1,10 +1,8 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import admin from 'firebase-admin';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { createNotification } from './notificationController';
-
-const prisma = new PrismaClient();
 
 // Helper to extract storage path from Firebase/GCS URL
 const getStoragePathFromUrl = (url: string): string => {
