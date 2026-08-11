@@ -1,25 +1,9 @@
 "use client";
 import Link from "next/link";
-import { useLanguage } from "../context/LanguageContext";
-
-const content = {
-  en: {
-    heading: "Ready to find your legal partner?",
-    subheading: "Get started today and experience the future of legal consultation in Sri Lanka. AI-fast results, expert-quality advice.",
-    btnPrimary: "Get Started for Free",
-    btnSecondary: "Learn More",
-  },
-  si: {
-    heading: "ඔබේ නීති හවුල්කරු සොයා ගැනීමට සූදානම්ද?",
-    subheading: "අදම ආරම්භ කර ශ්‍රී ලංකාවේ නීති උපදේශනයේ අනාගතය අත්විඳින්න. AI වේගවත් ප්‍රතිඵල, විශේෂඥ තත්ත්වයේ උපදෙස්.",
-    btnPrimary: "නොමිලේ ආරම්භ කරන්න",
-    btnSecondary: "තව දැනගන්න",
-  },
-};
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function CTABanner() {
-  const { lang } = useLanguage();
-  const tx = content[lang];
+  const { t } = useTranslation();
 
   return (
     <section className="relative py-28 px-6 bg-gradient-to-br from-[#0B1B3A] via-[#1B3A6B] to-[#0A1630] overflow-hidden">
@@ -34,29 +18,30 @@ export default function CTABanner() {
           </svg>
         </div>
 
-        <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-6 leading-tight">
-          {tx.heading}
-        </h2>
-        
-        <p className="text-base md:text-lg text-blue-100/80 mb-10 max-w-2xl mx-auto leading-relaxed">
-          {tx.subheading}
-        </p>
+        <div className="max-w-3xl mx-auto mb-10">
+          <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-6 leading-tight tracking-tight">
+            {t("landing.cta.heading")}
+          </h2>
+          <p className="text-blue-100 text-lg md:text-xl leading-relaxed">
+            {t("landing.cta.subheading")}
+          </p>
+        </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
           <Link
             href="/register"
-            className="w-full sm:w-auto px-8 py-4 bg-white text-blue-950 font-bold rounded-xl shadow-lg shadow-white/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-white/20 transition-all duration-300 flex items-center justify-center gap-2"
+            className="bg-white text-[#1B3A6B] px-8 py-4 rounded-xl font-bold hover:bg-blue-50 transition-all shadow-xl shadow-black/10 active:scale-95 flex items-center gap-2"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+            {t("landing.cta.btnPrimary")}
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
-            {tx.btnPrimary}
           </Link>
           <Link
             href="/about"
-            className="w-full sm:w-auto px-8 py-4 bg-transparent text-white font-semibold rounded-xl border-2 border-white/20 hover:border-white/50 hover:bg-white/5 transition-all duration-300"
+            className="bg-transparent border-2 border-white/30 text-white px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition-all active:scale-95"
           >
-            {tx.btnSecondary}
+            {t("landing.cta.btnSecondary")}
           </Link>
         </div>
       </div>

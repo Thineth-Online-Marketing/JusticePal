@@ -1,35 +1,14 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useLanguage } from "../context/LanguageContext";
-
-const content = {
-  en: {
-    pill: "Sri Lanka's Premier AI Legal Assistant",
-    title1: "Legal clarity for",
-    title2: "every citizen.",
-    subtitle: "Navigate the Sri Lankan legal system with confidence. Get instant AI guidance in plain language or seamlessly connect with verified top-tier attorneys.",
-    placeholder: "e.g., I need help with a property dispute...",
-    btnConsult: "Consult AI Now",
-    popular: "Popular:",
-    queries: ["General Queries", "Notaries", "Board Trustees", "Labor Tribunals"],
-  },
-  si: {
-    pill: "ශ්‍රී ලංකාවේ ප්‍රමුඛ AI නීති සහායකයා",
-    title1: "සෑම පුරවැසියෙකුටම",
-    title2: "නීති පැහැදිලිකම.",
-    subtitle: "විශ්වාසයෙන් ශ්‍රී ලාංකික නීති ක්‍රමය ඔස්සේ ගමන් කරන්න. AI මාර්ගෝපදේශය ලබාගන්න හෝ සත්‍යාපිත නීතිඥයින් සමඟ සම්බන්ධ වන්න.",
-    placeholder: "උදා: මට ඉඩම් ආරවුලක් ගැන උදව් අවශ්‍යයි...",
-    btnConsult: "AI ට විමසන්න",
-    popular: "ජනප්‍රිය:",
-    queries: ["සාමාන්‍ය විමසුම්", "නොතාරිස්", "භාරකාර මණ්ඩල", "කම්කරු අධිකරණ"],
-  },
-};
+import { useTranslation } from "../hooks/useTranslation";
+import { Search } from "lucide-react";
+import Image from "next/image";
 
 export default function HeroSection() {
   const [searchValue, setSearchValue] = useState("");
-  const { lang } = useLanguage();
-  const tx = content[lang as keyof typeof content] || content.en;
+  const { t } = useTranslation();
+  const queries = t("landing.hero.queries", { returnObjects: true }) as string[];
 
   return (
     <section className="relative w-full pt-32 pb-24 md:pt-40 md:pb-32 overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white">
@@ -40,44 +19,35 @@ export default function HeroSection() {
       <div className="relative max-w-[1200px] mx-auto px-6 text-center z-10 flex flex-col items-center">
         
         {/* Trust Pill */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-900/5 border border-blue-900/10 mb-8 backdrop-blur-sm animate-fade-in-up">
-          <span className="text-xs">⚖️</span>
-          <span className="text-xs font-medium tracking-wide text-blue-900">
-            {tx.pill}
-          </span>
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50/50 backdrop-blur-md border border-blue-100/50 mb-8 animate-fade-in-up">
+          <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
+          <span className="text-sm font-semibold text-[#1B3A6B] tracking-wide">{t("landing.hero.pill")}</span>
         </div>
 
         {/* Dynamic Title */}
-        <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight leading-[1.1] mb-6 animate-fade-in-up animation-delay-100">
-          {tx.title1}{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-900 to-blue-600 inline-block px-1">
-            {tx.title2}
-          </span>
+        <h1 className="text-5xl md:text-7xl font-extrabold text-[#1B3A6B] leading-[1.1] mb-6 tracking-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          {t("landing.hero.title1")} <br className="hidden md:block"/>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{t("landing.hero.title2")}</span>
         </h1>
 
         {/* Subtitle */}
-        <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up animation-delay-200">
-          {tx.subtitle}
+        <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl leading-relaxed mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          {t("landing.hero.subtitle")}
         </p>
 
         {/* Search Bar Container */}
         <div className="w-full max-w-3xl mx-auto mb-8 animate-fade-in-up animation-delay-300">
-          <div className="flex flex-col sm:flex-row items-center bg-white p-2 md:p-3 rounded-2xl shadow-xl shadow-blue-900/5 border border-gray-100 focus-within:ring-4 focus-within:ring-blue-500/20 focus-within:border-blue-400 transition-all duration-300">
-            
-            <div className="flex w-full items-center pl-4 pr-2 py-2 flex-grow">
-              <svg className="w-5 h-5 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-              <input
-                type="text"
+          <div className="flex flex-col sm:flex-row gap-3 p-2 bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-gray-100 mb-6">
+            <div className="flex-1 flex items-center gap-3 px-4 py-3 sm:py-0">
+              <Search className="w-6 h-6 text-blue-400" />
+              <input 
+                type="text" 
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                placeholder={tx.placeholder}
-                className="w-full bg-transparent border-none outline-none pl-4 text-base md:text-lg text-gray-800 placeholder:text-gray-400"
+                placeholder={t("landing.hero.placeholder")}
+                className="w-full bg-transparent border-none focus:outline-none text-gray-700 placeholder:text-gray-400 text-lg"
               />
             </div>
-            
             <Link
               href={`/ai?q=${encodeURIComponent(searchValue)}`}
               className="w-full sm:w-auto mt-3 sm:mt-0 px-8 py-4 bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white font-semibold rounded-xl shadow-md transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
@@ -87,15 +57,15 @@ export default function HeroSection() {
                 <path d="M12 16v-4"/>
                 <path d="M12 8h.01"/>
               </svg>
-              {tx.btnConsult}
+              {t("landing.hero.btnConsult")}
             </Link>
           </div>
         </div>
 
         {/* Quick Queries Tags */}
         <div className="flex flex-wrap items-center justify-center gap-3 animate-fade-in-up animation-delay-400">
-          <span className="text-sm font-medium text-gray-500">{tx.popular}</span>
-          {tx.queries.map((q) => (
+          <span className="text-sm font-medium text-gray-500">{t("landing.hero.popular")}</span>
+          {Array.isArray(queries) && queries.map((q: string) => (
             <button
               key={q}
               onClick={() => setSearchValue(q)}

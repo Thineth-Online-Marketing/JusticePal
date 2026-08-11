@@ -512,94 +512,98 @@ export default function FindLawyerPage() {
             />
           </div>
 
-          <div className="px-6 pb-4 flex items-start gap-2 text-xs text-gray-500">
-            <Sparkles className="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" />
-            <span>{tx.aiNote}</span>
-          </div>
-
-          <div className="px-6 pb-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">{tx.suggestionsTitle}</p>
-              {aiLoading && (
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-blue-600">
-                  <Loader2 className="w-3 h-3 animate-spin" /> Analyzing...
-                </span>
-              )}
-            </div>
-
-            {/* Case Type chip row */}
-            <div className="flex flex-col gap-2 mt-4">
-              <span className="text-xs font-semibold text-gray-500">{tx.caseType}</span>
-              <div className="flex flex-wrap items-center gap-2">
-                {SPECIALTY_OPTIONS.map(opt => (
-                  <Chip
-                    key={opt}
-                    label={opt}
-                    active={chipCaseType === opt}
-                    activeClass="bg-blue-100 text-blue-800 border-blue-300 shadow-sm"
-                    icon={aiSuggestions.case_type === opt && chipCaseType === opt ? <Sparkles className="w-3.5 h-3.5 text-blue-500" /> : chipCaseType === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
-                    onClick={() => handleChipClick('case_type', opt)}
-                  />
-                ))}
+          {caseText.trim().length > 0 && (
+            <>
+              <div className="px-6 pb-4 flex items-start gap-2 text-xs text-gray-500">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" />
+                <span>{tx.aiNote}</span>
               </div>
-            </div>
 
-            {/* Location chip row */}
-            <div className="flex flex-col gap-2 mt-4">
-              <span className="text-xs font-semibold text-gray-500">{tx.location}</span>
-              <div className="flex flex-wrap items-center gap-2">
-                {LOCATION_OPTIONS.map(opt => (
-                  <Chip
-                    key={opt}
-                    label={opt}
-                    active={chipLocation === opt}
-                    activeClass="bg-green-100 text-green-800 border-green-300 shadow-sm"
-                    icon={aiSuggestions.location === opt && chipLocation === opt ? <Sparkles className="w-3.5 h-3.5 text-green-500" /> : chipLocation === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
-                    onClick={() => handleChipClick('location', opt)}
-                  />
-                ))}
-              </div>
-            </div>
+              <div className="px-6 pb-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">{tx.suggestionsTitle}</p>
+                  {aiLoading && (
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-blue-600">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Analyzing...
+                    </span>
+                  )}
+                </div>
 
-            {/* Budget chip row */}
-            <div className="flex flex-col gap-2 mt-4">
-              <span className="text-xs font-semibold text-gray-500">{tx.budget}</span>
-              <div className="flex flex-wrap items-center gap-2">
-                {BUDGET_TIERS.map(opt => (
-                  <Chip
-                    key={opt}
-                    label={opt}
-                    active={chipBudget === opt}
-                    activeClass="bg-purple-100 text-purple-800 border-purple-300 shadow-sm"
-                    icon={aiSuggestions.budget === opt && chipBudget === opt ? <Sparkles className="w-3.5 h-3.5 text-purple-500" /> : chipBudget === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
-                    onClick={() => handleChipClick('budget', opt)}
-                  />
-                ))}
-              </div>
-            </div>
+                {/* Case Type chip row */}
+                <div className="flex flex-col gap-2 mt-4">
+                  <span className="text-xs font-semibold text-gray-500">{tx.caseType}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {SPECIALTY_OPTIONS.map(opt => (
+                      <Chip
+                        key={opt}
+                        label={opt}
+                        active={chipCaseType === opt}
+                        activeClass="bg-blue-100 text-blue-800 border-blue-300 shadow-sm"
+                        icon={aiSuggestions.case_type === opt && chipCaseType === opt ? <Sparkles className="w-3.5 h-3.5 text-blue-500" /> : chipCaseType === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
+                        onClick={() => handleChipClick('case_type', opt)}
+                      />
+                    ))}
+                  </div>
+                </div>
 
-            {/* Language chip row */}
-            <div className="flex flex-col gap-2 mt-4">
-              <span className="text-xs font-semibold text-gray-500">{tx.language}</span>
-              <div className="flex flex-wrap items-center gap-2">
-                {LANGUAGE_OPTIONS.map(opt => (
-                  <Chip
-                    key={opt}
-                    label={opt}
-                    active={chipLanguage === opt}
-                    activeClass="bg-orange-100 text-orange-800 border-orange-300 shadow-sm"
-                    icon={aiSuggestions.language === opt && chipLanguage === opt ? <Sparkles className="w-3.5 h-3.5 text-orange-500" /> : chipLanguage === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
-                    onClick={() => handleChipClick('language', opt)}
-                  />
-                ))}
+                {/* Location chip row */}
+                <div className="flex flex-col gap-2 mt-4">
+                  <span className="text-xs font-semibold text-gray-500">{tx.location}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {LOCATION_OPTIONS.map(opt => (
+                      <Chip
+                        key={opt}
+                        label={opt}
+                        active={chipLocation === opt}
+                        activeClass="bg-green-100 text-green-800 border-green-300 shadow-sm"
+                        icon={aiSuggestions.location === opt && chipLocation === opt ? <Sparkles className="w-3.5 h-3.5 text-green-500" /> : chipLocation === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
+                        onClick={() => handleChipClick('location', opt)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Budget chip row */}
+                <div className="flex flex-col gap-2 mt-4">
+                  <span className="text-xs font-semibold text-gray-500">{tx.budget}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {BUDGET_TIERS.map(opt => (
+                      <Chip
+                        key={opt}
+                        label={opt}
+                        active={chipBudget === opt}
+                        activeClass="bg-purple-100 text-purple-800 border-purple-300 shadow-sm"
+                        icon={aiSuggestions.budget === opt && chipBudget === opt ? <Sparkles className="w-3.5 h-3.5 text-purple-500" /> : chipBudget === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
+                        onClick={() => handleChipClick('budget', opt)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Language chip row */}
+                <div className="flex flex-col gap-2 mt-4">
+                  <span className="text-xs font-semibold text-gray-500">{tx.language}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {LANGUAGE_OPTIONS.map(opt => (
+                      <Chip
+                        key={opt}
+                        label={opt}
+                        active={chipLanguage === opt}
+                        activeClass="bg-orange-100 text-orange-800 border-orange-300 shadow-sm"
+                        icon={aiSuggestions.language === opt && chipLanguage === opt ? <Sparkles className="w-3.5 h-3.5 text-orange-500" /> : chipLanguage === opt ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
+                        onClick={() => handleChipClick('language', opt)}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
           <div className="px-6 pb-6 flex flex-wrap items-center gap-3">
             <button
               onClick={handleSearch}
-              disabled={matchLoading}
+              disabled={matchLoading || caseText.trim() === ""}
               className="inline-flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#112549] disabled:opacity-60 text-white px-6 py-3 rounded-xl font-semibold text-sm shadow-lg shadow-blue-900/20 hover:shadow-blue-900/30 transition-all hover:-translate-y-0.5 active:translate-y-0"
             >
               {matchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}

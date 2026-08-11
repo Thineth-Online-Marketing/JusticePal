@@ -175,14 +175,14 @@ def find_matching_lawyers(
     if ai_suggestions.case_type:
         query_parts.append(ai_suggestions.case_type)
 
-    # If location was extracted by AI, narrow the pool first for efficiency
+    # If location was extracted by AI, narrow the pool strictly
     pool = lawyer_database
     if ai_suggestions.location:
-        location_filtered = _filter_by_field(
+        pool = _filter_by_field(
             lawyer_database, "location", ai_suggestions.location
         )
-        if location_filtered:          # only narrow if there are matches
-            pool = location_filtered
+        if not pool:
+            return []
 
     if not query_parts:
         # No case_type from AI – fall back to rating sort over full pool
@@ -249,8 +249,12 @@ def _semantic_search(
     for dist, idx in zip(distances[0], indices[0]):
         if idx == -1:
             continue
+        score = float(np.clip(dist, 0.0, 1.0))
+        if score < 0.20:
+            continue
+            
         lawyer = dict(indexed_lawyers[idx])          # shallow copy
-        lawyer["_score"] = float(np.clip(dist, 0.0, 1.0))  # IP is cosine
+        lawyer["_score"] = score  # IP is cosine
         results.append(lawyer)
 
     return results

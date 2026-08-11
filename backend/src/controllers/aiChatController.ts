@@ -1,9 +1,7 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { queryKnowledge, queryLawyers } from '../services/pineconeService';
-
-const prisma = new PrismaClient();
 
 /**
  * POST /api/ai/chat
