@@ -43,7 +43,7 @@ export default function ClientDashboard() {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/users/profile`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/users/profile`,
           {
             headers: { Authorization: `Bearer ${idToken}` },
           }
@@ -83,7 +83,7 @@ export default function ClientDashboard() {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app"}/api/notifications`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/notifications`,
           {
             headers: { Authorization: `Bearer ${idToken}` },
           }
@@ -130,7 +130,7 @@ export default function ClientDashboard() {
       try {
         const idToken = await user.getIdToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments`,
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
         if (res.ok) {
