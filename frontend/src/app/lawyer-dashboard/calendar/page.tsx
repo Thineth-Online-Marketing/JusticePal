@@ -125,7 +125,34 @@ function CalendarContent() {
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [eventForm, setEventForm] = useState({
     title: '', description: '', start: '', end: '', location: '',
+    // Split date/time fields for clean UI
+    startDate: '', startHour: '09', startMinute: '00', startAmpm: 'AM',
+    endDate: '',   endHour: '10',   endMinute: '00', endAmpm: 'AM',
   });
+
+  // ── Date/time helpers ───────────────────────────────────────────
+  // Parse an ISO string → { date:'YYYY-MM-DD', hour:'hh', minute:'mm', ampm:'AM'|'PM' }
+  const parseDateTime = (iso: string) => {
+    if (!iso) return { date: '', hour: '09', minute: '00', ampm: 'AM' as 'AM'|'PM' };
+    const d = new Date(iso);
+    const rawH = d.getHours();
+    const ampm = rawH >= 12 ? 'PM' : 'AM';
+    let h = rawH % 12;
+    if (h === 0) h = 12;
+    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return { date, hour: String(h).padStart(2, '0'), minute: String(d.getMinutes()).padStart(2, '0'), ampm };
+  };
+
+  // Build ISO string from split fields
+  const buildISO = (date: string, hour: string, minute: string, ampm: 'AM'|'PM') => {
+    if (!date) return '';
+    let h = parseInt(hour);
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    const d = new Date(date);
+    d.setHours(h, parseInt(minute), 0, 0);
+    return d.toISOString();
+  };
 
   // Feedback
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -266,7 +293,7 @@ function CalendarContent() {
       };
       setEvents(prev => [...prev, newEvent]);
       setShowEventModal(false);
-      setEventForm({ title: '', description: '', start: '', end: '', location: '' });
+      setEventForm({ title: '', description: '', start: '', end: '', location: '', startDate: '', startHour: '09', startMinute: '00', startAmpm: 'AM', endDate: '', endHour: '10', endMinute: '00', endAmpm: 'AM' });
       showFeedback('success', 'Event saved!');
     } catch (err) {
       showFeedback('error', tx.error);
@@ -304,7 +331,7 @@ function CalendarContent() {
 
       setEditingEvent(null);
       setShowEventModal(false);
-      setEventForm({ title: '', description: '', start: '', end: '', location: '' });
+      setEventForm({ title: '', description: '', start: '', end: '', location: '', startDate: '', startHour: '09', startMinute: '00', startAmpm: 'AM', endDate: '', endHour: '10', endMinute: '00', endAmpm: 'AM' });
       showFeedback('success', 'Event updated!');
     } catch (err) {
       showFeedback('error', tx.error);
@@ -341,11 +368,14 @@ function CalendarContent() {
 
   const openEditModal = (event: CalendarEvent) => {
     setEditingEvent(event);
+    const s = parseDateTime(event.start);
+    const e = parseDateTime(event.end);
     setEventForm({
       title: event.title, description: event.description,
-      start: event.start ? new Date(event.start).toISOString().slice(0, 16) : '',
-      end: event.end ? new Date(event.end).toISOString().slice(0, 16) : '',
+      start: event.start || '', end: event.end || '',
       location: event.location,
+      startDate: s.date, startHour: s.hour, startMinute: s.minute, startAmpm: s.ampm,
+      endDate:   e.date, endHour:   e.hour, endMinute:   e.minute, endAmpm:   e.ampm,
     });
     setShowEventModal(true);
   };
@@ -354,11 +384,14 @@ function CalendarContent() {
     setEditingEvent(null);
     const now = defaultStart || new Date();
     const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+    const s = parseDateTime(now.toISOString());
+    const e = parseDateTime(oneHourLater.toISOString());
     setEventForm({
       title: '', description: '',
-      start: now.toISOString().slice(0, 16),
-      end: oneHourLater.toISOString().slice(0, 16),
+      start: now.toISOString(), end: oneHourLater.toISOString(),
       location: '',
+      startDate: s.date, startHour: s.hour, startMinute: s.minute, startAmpm: s.ampm,
+      endDate:   e.date, endHour:   e.hour, endMinute:   e.minute, endAmpm:   e.ampm,
     });
     setShowEventModal(true);
   };
@@ -917,26 +950,95 @@ function CalendarContent() {
                       />
                     </div>
 
+                    {/* ── Date & Time pickers ── */}
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-700">{tx.eventStart}</label>
-                        <input
-                          type="datetime-local"
-                          value={eventForm.start}
-                          onChange={(e) => setEventForm({ ...eventForm, start: e.target.value })}
-                          className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#1B3A6B] focus:ring-1 focus:ring-[#1B3A6B] transition-all"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-700">{tx.eventEnd}</label>
-                        <input
-                          type="datetime-local"
-                          value={eventForm.end}
-                          onChange={(e) => setEventForm({ ...eventForm, end: e.target.value })}
-                          className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#1B3A6B] focus:ring-1 focus:ring-[#1B3A6B] transition-all"
-                        />
-                      </div>
+                    {(['Start', 'End'] as const).map((slot) => {
+                      const dateKey  = (slot === 'Start' ? 'startDate'   : 'endDate')   as keyof typeof eventForm;
+                      const hourKey  = (slot === 'Start' ? 'startHour'   : 'endHour')   as keyof typeof eventForm;
+                      const minKey   = (slot === 'Start' ? 'startMinute' : 'endMinute') as keyof typeof eventForm;
+                      const ampmKey  = (slot === 'Start' ? 'startAmpm'   : 'endAmpm')   as keyof typeof eventForm;
+                      const isoKey   = (slot === 'Start' ? 'start'       : 'end')       as keyof typeof eventForm;
+                      const label    = slot === 'Start' ? tx.eventStart : tx.eventEnd;
+
+                      const selectCls = 'flex-1 px-2 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 focus:outline-none focus:border-[#1B3A6B] focus:ring-1 focus:ring-[#1B3A6B] transition-all appearance-none text-center cursor-pointer';
+
+                      return (
+                        <div key={slot} className="space-y-2">
+                          <label className="text-sm font-bold text-gray-700">{label}</label>
+
+                          {/* Date */}
+                          <input
+                            type="date"
+                            value={eventForm[dateKey] as string}
+                            onChange={e => {
+                              const updated = { ...eventForm, [dateKey]: e.target.value };
+                              updated[isoKey] = buildISO(e.target.value, updated[hourKey] as string, updated[minKey] as string, updated[ampmKey] as 'AM'|'PM') as any;
+                              setEventForm(updated);
+                            }}
+                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 focus:outline-none focus:border-[#1B3A6B] focus:ring-1 focus:ring-[#1B3A6B] transition-all cursor-pointer"
+                          />
+
+                          {/* Time row */}
+                          <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-gray-200 rounded-lg p-1">
+                            {/* Hour */}
+                            <select
+                              value={eventForm[hourKey] as string}
+                              onChange={e => {
+                                const updated = { ...eventForm, [hourKey]: e.target.value };
+                                updated[isoKey] = buildISO(updated[dateKey] as string, e.target.value, updated[minKey] as string, updated[ampmKey] as 'AM'|'PM') as any;
+                                setEventForm(updated);
+                              }}
+                              className={selectCls}
+                            >
+                              {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(h => (
+                                <option key={h} value={h}>{h}</option>
+                              ))}
+                            </select>
+
+                            <span className="text-gray-400 font-black text-base select-none">:</span>
+
+                            {/* Minute */}
+                            <select
+                              value={eventForm[minKey] as string}
+                              onChange={e => {
+                                const updated = { ...eventForm, [minKey]: e.target.value };
+                                updated[isoKey] = buildISO(updated[dateKey] as string, updated[hourKey] as string, e.target.value, updated[ampmKey] as 'AM'|'PM') as any;
+                                setEventForm(updated);
+                              }}
+                              className={selectCls}
+                            >
+                              {['00','05','10','15','20','25','30','35','40','45','50','55'].map(m => (
+                                <option key={m} value={m}>{m}</option>
+                              ))}
+                            </select>
+
+                            {/* AM / PM */}
+                            <div className="flex rounded-md overflow-hidden border border-gray-200 flex-shrink-0">
+                              {(['AM', 'PM'] as const).map(period => (
+                                <button
+                                  key={period}
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = { ...eventForm, [ampmKey]: period };
+                                    updated[isoKey] = buildISO(updated[dateKey] as string, updated[hourKey] as string, updated[minKey] as string, period) as any;
+                                    setEventForm(updated);
+                                  }}
+                                  className={`px-3 py-2 text-xs font-black transition-colors ${
+                                    (eventForm[ampmKey] as string) === period
+                                      ? 'bg-[#1B3A6B] text-white'
+                                      : 'bg-white text-gray-500 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {period}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                     </div>
+
 
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-gray-700">{tx.eventLocation}</label>
