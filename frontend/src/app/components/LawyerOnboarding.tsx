@@ -35,6 +35,10 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
   const handleProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 3 * 1024 * 1024) {
+        alert("Image is too large. Please select an image under 3MB.");
+        return;
+      }
       if (file.type === "image/jpeg" || file.type === "image/png") {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -71,8 +75,13 @@ export default function LawyerOnboarding({ dbUser, initialStep, onComplete }: { 
 
       // Update Firebase Auth profile for instant header sync
       if (auth.currentUser) {
+        // Firebase Auth rejects base64 strings for photoURL (400 Bad Request)
+        // We only pass photoURL if it's a standard URL, otherwise we just update the displayName
+        const isValidUrl = profilePicture && !profilePicture.startsWith("data:image");
+        const newPhotoURL = isValidUrl ? profilePicture : auth.currentUser.photoURL;
+
         await updateProfile(auth.currentUser, {
-          photoURL: profilePicture || auth.currentUser.photoURL,
+          photoURL: newPhotoURL || null,
           displayName: dbUser?.name || auth.currentUser.displayName,
         });
         await refreshUser();
