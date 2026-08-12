@@ -225,101 +225,121 @@ export default function LawyerDashboard() {
   return (
     <>
       <main className="flex-1 overflow-y-auto p-8 relative h-full">
-        {/* Action Task Cards Container */}
-        {hasOnboardingTasks && (
-          <div className="w-full space-y-4 mb-8">
-            
-            {showBioTask && (
-              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
-                <div>
-                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                    {t("dashboardLawyer.onboarding.addBio.title")}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">{t("dashboardLawyer.onboarding.addBio.desc")}</p>
-                </div>
-                <button onClick={() => setSetupStep(1)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
-                  {t("dashboardLawyer.onboarding.addBio.btn")}
-                </button>
-              </div>
-            )}
-
-            {showPhoneTask && (
-              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
-                <div>
-                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                    {t("dashboardLawyer.onboarding.verifyPhone.title")}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">{t("dashboardLawyer.onboarding.verifyPhone.desc")}</p>
-                </div>
-                <button onClick={() => setSetupStep(2)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
-                  {t("dashboardLawyer.onboarding.verifyPhone.btn")}
-                </button>
-              </div>
-            )}
-
-            {showIdTask && (
-              <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500 opacity-90">
-                <div>
-                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
-                    {t("dashboardLawyer.onboarding.verifyId.title")}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {t("dashboardLawyer.onboarding.verifyId.desc")}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setSetupStep(3)} 
-                  className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap"
-                >
-                  {t("dashboardLawyer.onboarding.verifyId.btn")}
-                </button>
-              </div>
-            )}
-
-            {showPendingApproval && (
-              <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-orange-500">
-                <div>
-                  <h3 className="text-base font-bold text-orange-800 flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    {t("dashboardLawyer.onboarding.pendingApproval.title")}
-                  </h3>
-                  <p className="text-xs text-orange-700 mt-1">{t("dashboardLawyer.onboarding.pendingApproval.desc")}</p>
-                </div>
-                <button disabled className="mt-3 md:mt-0 px-5 py-2 bg-orange-200 text-orange-800 rounded-lg text-xs font-medium cursor-not-allowed whitespace-nowrap">
-                  {t("dashboardLawyer.onboarding.pendingApproval.btn")}
-                </button>
-              </div>
-            )}
-
-          </div>
-        )}
-
         <div className="w-full space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-[#1B3A6B]">{t("dashboardLawyer.dashboard")} {t("dashboardLawyer.analytics")}</h2>
-            <button
-              onClick={handlePreviewReport}
-              className="flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#112549] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
-            >
-              <FileDown className="w-4 h-4" />
-              {t("dashboardLawyer.downloadReport")}
-            </button>
+          
+          {/* Action Task Cards Container (Onboarding) */}
+          {hasOnboardingTasks && (
+            <div className="w-full space-y-4">
+              {showBioTask && (
+                <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      {t("dashboardLawyer.onboarding.addBio.title")}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">{t("dashboardLawyer.onboarding.addBio.desc")}</p>
+                  </div>
+                  <button onClick={() => setSetupStep(1)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
+                    {t("dashboardLawyer.onboarding.addBio.btn")}
+                  </button>
+                </div>
+              )}
+
+              {showPhoneTask && (
+                <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                      {t("dashboardLawyer.onboarding.verifyPhone.title")}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">{t("dashboardLawyer.onboarding.verifyPhone.desc")}</p>
+                  </div>
+                  <button onClick={() => setSetupStep(2)} className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap">
+                    {t("dashboardLawyer.onboarding.verifyPhone.btn")}
+                  </button>
+                </div>
+              )}
+
+              {showIdTask && (
+                <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-blue-500 opacity-90">
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
+                      {t("dashboardLawyer.onboarding.verifyId.title")}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {t("dashboardLawyer.onboarding.verifyId.desc")}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => setSetupStep(3)} 
+                    className="mt-3 md:mt-0 px-5 py-2 bg-[#1B3A6B] text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors whitespace-nowrap"
+                  >
+                    {t("dashboardLawyer.onboarding.verifyId.btn")}
+                  </button>
+                </div>
+              )}
+
+              {showPendingApproval && (
+                <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between shadow-sm border-l-4 border-l-orange-500">
+                  <div>
+                    <h3 className="text-base font-bold text-orange-800 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      {t("dashboardLawyer.onboarding.pendingApproval.title")}
+                    </h3>
+                    <p className="text-xs text-orange-700 mt-1">{t("dashboardLawyer.onboarding.pendingApproval.desc")}</p>
+                  </div>
+                  <button disabled className="mt-3 md:mt-0 px-5 py-2 bg-orange-200 text-orange-800 rounded-lg text-xs font-medium cursor-not-allowed whitespace-nowrap">
+                    {t("dashboardLawyer.onboarding.pendingApproval.btn")}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Welcome / Overview Header Banner */}
+          <div className="bg-gradient-to-r from-[#1B3A6B] via-[#112549] to-[#1E3A8A] rounded-2xl p-6 md:p-8 text-white shadow-md relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="relative z-10 space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-200 text-xs font-semibold backdrop-blur-sm border border-white/10">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Active Practitioner Workspace
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">
+                {t("dashboardLawyer.welcomeBack") || "Welcome back"}, {dbUser?.name || user?.displayName || "Advocate"}! 👋
+              </h1>
+              <p className="text-xs md:text-sm text-blue-100 max-w-xl leading-relaxed">
+                Manage your consultations, stay updated with Sri Lankan legal notifications, and review active client cases in your workspace.
+              </p>
+            </div>
+            
+            <div className="relative z-10 flex items-center gap-3 flex-shrink-0">
+              <button
+                onClick={() => router.push('/lawyer-dashboard/calendar')}
+                className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all border border-white/20 flex items-center gap-2"
+              >
+                📅 View Schedule
+              </button>
+              <button
+                onClick={handlePreviewReport}
+                className="px-4 py-2.5 bg-[#F97316] hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2"
+              >
+                <FileDown className="w-4 h-4" />
+                {t("dashboardLawyer.downloadReport") || "Download Report"}
+              </button>
+            </div>
           </div>
           
-          {/* Top Stat Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Top Stat Cards (4 Columns - Full Width) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             {/* Upcoming Appointments */}
-            <div className="bg-white rounded-xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex flex-col justify-between">
+            <div className="bg-white rounded-2xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.06)] border border-gray-100 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{t("dashboardLawyer.stats.upcomingAppointments")}</h3>
                   <p className="text-3xl font-bold text-gray-900">{analyticsData?.upcomingAppointments || 0}</p>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
@@ -334,13 +354,13 @@ export default function LawyerDashboard() {
             </div>
 
             {/* Total Earnings */}
-            <div className="bg-white rounded-xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex flex-col justify-between">
+            <div className="bg-white rounded-2xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.06)] border border-gray-100 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{t("dashboardLawyer.stats.totalEarnings")}</h3>
                   <p className="text-2xl font-bold text-gray-900">Rs. {(analyticsData?.totalEarnings || 0).toLocaleString()}</p>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -352,13 +372,13 @@ export default function LawyerDashboard() {
             </div>
 
             {/* Unique Clients */}
-            <div className="bg-white rounded-xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex flex-col justify-between">
+            <div className="bg-white rounded-2xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.06)] border border-gray-100 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{t("dashboardLawyer.stats.uniqueClients")}</h3>
                   <p className="text-3xl font-bold text-amber-600">{analyticsData?.uniqueClients || 0}</p>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -370,13 +390,13 @@ export default function LawyerDashboard() {
             </div>
 
             {/* Completed Appointments */}
-            <div className="bg-white rounded-xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex flex-col justify-between">
+            <div className="bg-white rounded-2xl p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.06)] border border-gray-100 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{t("dashboardLawyer.stats.completedMonth")}</h3>
                   <p className="text-3xl font-bold text-gray-900">{analyticsData?.completedAppointments || 0}</p>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -388,16 +408,22 @@ export default function LawyerDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Full-Width Grid Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
             
-            {/* Left Column (Main) */}
+            {/* Main Content Area (Left / Center - Wide 2 Columns) */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Appointments */}
-              <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-6">
+              {/* Active Consultations */}
+              <div className="bg-white rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.06)] border border-gray-100 p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-gray-900">{t("dashboardLawyer.consultations.title")}</h2>
-                  <button onClick={() => router.push('/lawyer-dashboard/calendar')} className="text-sm font-semibold text-[#1B3A6B] hover:underline">{t("dashboardLawyer.consultations.viewFullCalendar")}</button>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">{t("dashboardLawyer.consultations.title")}</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Manage and respond to client appointment requests</p>
+                  </div>
+                  <button onClick={() => router.push('/lawyer-dashboard/calendar')} className="text-xs font-bold text-[#1B3A6B] hover:underline bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
+                    {t("dashboardLawyer.consultations.viewFullCalendar")} →
+                  </button>
                 </div>
                 
                 <div className="space-y-4">
@@ -405,29 +431,37 @@ export default function LawyerDashboard() {
                     appointments.map((appt, idx) => (
                       <div 
                         key={appt.id || idx}
-                        className="flex flex-col gap-3 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 transition-colors group"
+                        className="flex flex-col gap-3 p-4 rounded-xl bg-[#F9FAFC] border border-gray-100 transition-all hover:border-blue-200 group"
                       >
-                        <div className="flex gap-4 items-center">
-                          <div className="w-20 text-right flex-shrink-0">
-                            <p className="font-bold text-gray-900 text-sm">
+                        <div className="flex gap-4 items-center flex-wrap sm:flex-nowrap">
+                          <div className="w-24 text-left sm:text-right flex-shrink-0">
+                            <p className="font-bold text-gray-900 text-xs">
                               {new Date(appt.scheduledAt).toLocaleDateString()}<br/>
-                              {new Date(appt.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              <span className="text-gray-500 font-semibold">{new Date(appt.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </p>
                           </div>
-                          <div className={`w-1 rounded-full h-12 ${appt.status === 'CONFIRMED' ? 'bg-green-500' : appt.status === 'REJECTED' ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
+                          <div className={`w-1 rounded-full h-12 hidden sm:block ${appt.status === 'CONFIRMED' ? 'bg-green-500' : appt.status === 'REJECTED' ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
                           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => {
                             if (appt.status === 'CONFIRMED') {
                               router.push(`/consultation?role=lawyer&appointmentId=${appt.id}`);
                             }
                           }}>
                             <p className="font-bold text-gray-900 text-sm truncate group-hover:text-[#1B3A6B] transition-colors">{appt.caseDescription || t("dashboardLawyer.consultations.defaultCaseDesc")}</p>
-                            <p className="text-xs text-gray-500 font-medium mt-1 truncate">{t("dashboardLawyer.consultations.client").replace("{{name}}", appt.user?.name || t("dashboardLawyer.consultations.unknown"))}</p>
+                            <p className="text-xs text-gray-500 font-medium mt-0.5 truncate">{t("dashboardLawyer.consultations.client").replace("{{name}}", appt.user?.name || t("dashboardLawyer.consultations.unknown"))}</p>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {appt.status === 'CONFIRMED' && (
+                              <button
+                                onClick={() => router.push(`/consultation?role=lawyer&appointmentId=${appt.id}`)}
+                                className="px-3 py-1.5 bg-[#1B3A6B] hover:bg-[#112549] text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5"
+                              >
+                                🎥 Join Call
+                              </button>
+                            )}
                             <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                              appt.status === 'CONFIRMED' ? 'bg-green-50 text-green-700' :
-                              appt.status === 'REJECTED' ? 'bg-red-50 text-red-700' :
-                              'bg-yellow-50 text-yellow-700'
+                              appt.status === 'CONFIRMED' ? 'bg-green-50 text-green-700 border border-green-200' :
+                              appt.status === 'REJECTED' ? 'bg-red-50 text-red-700 border border-red-200' :
+                              'bg-yellow-50 text-yellow-700 border border-yellow-200'
                             }`}>
                               {appt.status === 'CONFIRMED' ? t("dashboardLawyer.consultations.confirmed") : 
                                appt.status === 'REJECTED' ? t("dashboardLawyer.consultations.rejected") : 
@@ -435,13 +469,13 @@ export default function LawyerDashboard() {
                                appt.status}
                             </span>
                             {appt.status !== 'CONFIRMED' && appt.status !== 'REJECTED' && (
-                              <div className="flex gap-2 ml-2">
+                              <div className="flex gap-2">
                                 <button
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     try {
                                       const idToken = await auth.currentUser?.getIdToken();
-                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments/${appt.id}/status`, {
+                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments/${appt.id}/status`, {
                                         method: 'PATCH',
                                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
                                         body: JSON.stringify({ status: 'CONFIRMED' })
@@ -453,7 +487,7 @@ export default function LawyerDashboard() {
                                       console.error(err);
                                     }
                                   }}
-                                  className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors"
+                                  className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
                                   title="Confirm"
                                 >
                                   <CheckCircle size={16} />
@@ -463,7 +497,7 @@ export default function LawyerDashboard() {
                                     e.stopPropagation();
                                     try {
                                       const idToken = await auth.currentUser?.getIdToken();
-                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments/${appt.id}/status`, {
+                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments/${appt.id}/status`, {
                                         method: 'PATCH',
                                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
                                         body: JSON.stringify({ status: 'REJECTED' })
@@ -475,7 +509,7 @@ export default function LawyerDashboard() {
                                       console.error(err);
                                     }
                                   }}
-                                  className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
+                                  className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
                                   title="Reject"
                                 >
                                   <XCircle size={16} />
@@ -488,105 +522,159 @@ export default function LawyerDashboard() {
                     ))
                   ) : (
                     <div className="flex flex-col items-center justify-center py-10 bg-[#F9FAFC] border border-dashed border-gray-200 rounded-xl">
-                      <div className="w-12 h-12 bg-blue-50 text-blue-300 rounded-full flex items-center justify-center mb-3">
+                      <div className="w-12 h-12 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center mb-3">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <p className="text-gray-900 font-medium text-sm">{t("dashboardLawyer.consultations.empty")}</p>
+                      <p className="text-gray-900 font-bold text-sm">{t("dashboardLawyer.consultations.empty")}</p>
+                      <p className="text-gray-400 text-xs mt-1">Scheduled appointments will appear here automatically.</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Recent Activity Feed */}
-              <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-gray-900">{t("dashboardLawyer.recentActivity.title")}</h2>
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </button>
-                </div>
-                
-                <div className="space-y-6">
-                  {/* Empty state for activities */}
-                  <div className="flex flex-col items-center justify-center py-10">
-                    <div className="w-12 h-12 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mb-3">
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-500 font-medium text-sm">{t("dashboardLawyer.recentActivity.emptyTitle")}</p>
-                    <p className="text-gray-400 text-xs mt-1">{t("dashboardLawyer.recentActivity.emptyDesc")}</p>
+              {/* Latest Sri Lankan Legal Updates Widget (Spans Main Left Area) */}
+              <div className="w-full">
+                <LegalNewsWidget />
+              </div>
+
+              {/* Priority Cases Card (Main Left Area) */}
+              <div className="bg-white rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.06)] border border-gray-100 p-6 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">{t("dashboardLawyer.priorityCases.title")}</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">High priority active client cases requiring immediate attention</p>
                   </div>
+                  <span className="px-2.5 py-0.5 bg-orange-50 text-[#F97316] text-[10px] font-bold rounded-md uppercase tracking-wider border border-orange-200">Priority</span>
                 </div>
-              </div>
-
-            </div>
-
-            {/* Right Column (Sidebar Cards) */}
-            <div className="space-y-6">
-              
-              {/* Quick Actions (Dark Blue Card) */}
-              <div className="bg-[#1B3A6B] rounded-xl p-6 text-white shadow-md">
-                <h2 className="text-lg font-bold mb-4">{t("dashboardLawyer.quickActions.title")}</h2>
-                <div className="grid grid-cols-2 gap-3">
-                  <button className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-3 flex flex-col items-center justify-center gap-2 aspect-square">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
-                    <span className="text-xs font-medium">{t("dashboardLawyer.quickActions.addTask")}</span>
-                  </button>
-                  <button className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-3 flex flex-col items-center justify-center gap-2 aspect-square">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                    </svg>
-                    <span className="text-xs font-medium">{t("dashboardLawyer.quickActions.shareDoc")}</span>
-                  </button>
-                  <button className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-3 flex flex-col items-center justify-center gap-2 aspect-square">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span className="text-xs font-medium">{t("dashboardLawyer.quickActions.invoice")}</span>
-                  </button>
-                  <button className="bg-white/10 hover:bg-white/20 transition-colors rounded-lg p-3 flex flex-col items-center justify-center gap-2 aspect-square">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                    </svg>
-                    <span className="text-xs font-medium">{t("dashboardLawyer.quickActions.more")}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Priority Cases */}
-              <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-6 flex flex-col">
-                <h2 className="text-lg font-bold text-gray-900 mb-6">{t("dashboardLawyer.priorityCases.title")}</h2>
                 
-                <div className="space-y-6">
-                  <div className="flex flex-col items-center justify-center py-8">
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center justify-center py-6 text-center">
                     <div className="w-12 h-12 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mb-3">
                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
-                    <p className="text-gray-500 font-medium text-sm">{t("dashboardLawyer.priorityCases.empty")}</p>
+                    <p className="text-gray-700 font-bold text-sm">{t("dashboardLawyer.priorityCases.empty")}</p>
+                    <p className="text-gray-400 text-xs mt-1">High priority legal cases assigned to you will be pinned here.</p>
                   </div>
                 </div>
 
-                <button className="w-full mt-6 py-2.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                <button 
+                  onClick={() => router.push('/lawyer-dashboard/calendar')}
+                  className="w-full mt-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
                   {t("dashboardLawyer.priorityCases.viewAll")}
                 </button>
               </div>
-              
-              {/* Legal News Widget */}
-              <div className="h-[450px]">
-                <LegalNewsWidget />
+
+              {/* Recent Activity Feed */}
+              <div className="bg-white rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.06)] border border-gray-100 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">{t("dashboardLawyer.recentActivity.title")}</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Real-time workspace notifications and updates</p>
+                  </div>
+                  <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {todayAppointments.length > 0 ? (
+                    todayAppointments.map((appt, i) => (
+                      <div key={i} className="flex items-center gap-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                        <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                        <p className="text-xs text-gray-700 font-medium">
+                          Appointment scheduled with <span className="font-bold text-gray-900">{appt.user?.name || "Client"}</span> at {new Date(appt.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <div className="w-12 h-12 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mb-3">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-700 font-bold text-sm">{t("dashboardLawyer.recentActivity.emptyTitle")}</p>
+                      <p className="text-gray-400 text-xs mt-1">{t("dashboardLawyer.recentActivity.emptyDesc")}</p>
+                    </div>
+                  )}
+                </div>
               </div>
+
+            </div>
+
+            {/* Sidebar (Right - 1 Column) */}
+            <div className="lg:col-span-1 space-y-6">
               
+              {/* Quick Actions Card (Dark Navy Header) */}
+              <div className="bg-gradient-to-br from-[#1B3A6B] to-[#112549] rounded-2xl p-6 text-white shadow-md">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#F97316]"></span>
+                  {t("dashboardLawyer.quickActions.title")}
+                </h2>
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => router.push('/lawyer-dashboard/calendar')}
+                    className="bg-white/10 hover:bg-white/20 transition-all rounded-xl p-3 flex flex-col items-center justify-center gap-2 aspect-square border border-white/10 group"
+                  >
+                    <svg className="w-6 h-6 text-blue-200 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-xs font-semibold">{t("dashboardLawyer.quickActions.addTask") || "Calendar"}</span>
+                  </button>
+                  <button 
+                    onClick={() => router.push('/lawyer-dashboard/messages')}
+                    className="bg-white/10 hover:bg-white/20 transition-all rounded-xl p-3 flex flex-col items-center justify-center gap-2 aspect-square border border-white/10 group"
+                  >
+                    <svg className="w-6 h-6 text-blue-200 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    <span className="text-xs font-semibold">Messages</span>
+                  </button>
+                  <button 
+                    onClick={handlePreviewReport}
+                    className="bg-white/10 hover:bg-white/20 transition-all rounded-xl p-3 flex flex-col items-center justify-center gap-2 aspect-square border border-white/10 group"
+                  >
+                    <svg className="w-6 h-6 text-blue-200 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-xs font-semibold">{t("dashboardLawyer.quickActions.invoice") || "Reports"}</span>
+                  </button>
+                  <button 
+                    onClick={() => router.push('/lawyer-dashboard/settings')}
+                    className="bg-white/10 hover:bg-white/20 transition-all rounded-xl p-3 flex flex-col items-center justify-center gap-2 aspect-square border border-white/10 group"
+                  >
+                    <svg className="w-6 h-6 text-blue-200 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    </svg>
+                    <span className="text-xs font-semibold">Settings</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Practitioner Status Card */}
+              <div className="bg-white rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.06)] border border-gray-100 p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-gray-900">Practice Status</h3>
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[11px] font-bold border border-emerald-200">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Available for Bookings
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Your profile is active on the Sri Lanka legal directory. Clients can request consultations based on your Cal.com schedule.
+                </p>
+              </div>
+
             </div>
           </div>
+
         </div>
       </main>
 

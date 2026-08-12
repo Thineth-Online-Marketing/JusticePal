@@ -342,12 +342,16 @@ export default function ClientDashboard() {
                       progress={appt.status === 'confirmed' ? 100 : 50}
                       avatars={[
                         appt.lawyer?.user?.profilePicture || "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&w=100&h=100",
-                        user?.photoURL || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=100&h=100"
                       ]}
                     />
                   ))
                 )}
               </div>
+            </section>
+
+            {/* Legal News Widget */}
+            <section className="w-full">
+              <LegalNewsWidget />
             </section>
             
           </div>
@@ -424,11 +428,6 @@ export default function ClientDashboard() {
                 {t("dashboardClient.assistance.btn")}
               </button>
             </section>
-            
-            {/* Legal News Widget */}
-            <div className="h-[450px]">
-              <LegalNewsWidget />
-            </div>
 
           </div>
         </div>

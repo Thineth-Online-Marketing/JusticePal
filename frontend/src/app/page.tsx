@@ -24,14 +24,14 @@ export default function Home() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("redirect") === "false") {
-        setChecking(false);
+        setTimeout(() => setChecking(false), 0);
         return;
       }
     }
 
     // Not logged in — show landing page
     if (!user) {
-      setChecking(false);
+      setTimeout(() => setChecking(false), 0);
       return;
     }
 

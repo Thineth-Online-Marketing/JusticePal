@@ -656,13 +656,21 @@ function CalendarContent() {
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
             return (
-              <button
+              <div
                 key={date.toISOString()}
+                role="button"
+                tabIndex={0}
                 onClick={() => {
                   setCurrentDay(date);
                   setView('Day');
                 }}
-                className={`min-h-[120px] border-r border-b border-gray-100 flex flex-col items-start p-2 gap-1 text-left hover:bg-blue-50/30 transition-colors group relative ${isWeekend ? 'bg-gray-50/30' : ''} ${isToday ? 'bg-blue-50/60' : ''}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    setCurrentDay(date);
+                    setView('Day');
+                  }
+                }}
+                className={`min-h-[120px] border-r border-b border-gray-100 flex flex-col items-start p-2 gap-1 text-left hover:bg-blue-50/30 transition-colors group relative cursor-pointer ${isWeekend ? 'bg-gray-50/30' : ''} ${isToday ? 'bg-blue-50/60' : ''}`}
               >
                 <span className={`w-7 h-7 flex items-center justify-center rounded-full text-sm font-black transition-all ${isToday ? 'bg-[#1B3A6B] text-white shadow-md' : isWeekend ? 'text-gray-300' : 'text-gray-700 group-hover:bg-blue-100/60'}`}>
                   {date.getDate()}
@@ -695,7 +703,7 @@ function CalendarContent() {
                     +
                   </button>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>

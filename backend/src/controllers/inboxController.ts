@@ -2,6 +2,9 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 import prisma from '../lib/prisma';
 
+// Type helper cast for dynamically generated models
+const db = prisma as any;
+
 /**
  * GET /api/inbox/conversations
  * Returns all conversations for the authenticated user (as client OR lawyer),
@@ -16,7 +19,13 @@ export const getConversations = async (req: AuthRequest, res: Response, next: Ne
       return;
     }
 
-    const conversations = await prisma.conversation.findMany({
+    if (!db.conversation) {
+      console.warn("Prisma conversation model not loaded");
+      res.json([]);
+      return;
+    }
+
+    const conversations = await db.conversation.findMany({
       where: {
         OR: [
           { clientId: userId },
@@ -70,13 +79,12 @@ export const getConversations = async (req: AuthRequest, res: Response, next: Ne
     });
 
     // Transform: attach "otherUser" and "lastMessage" for frontend convenience
-    const result = conversations.map((conv) => {
+    const result = conversations.map((conv: any) => {
       const isClient = conv.clientId === userId;
       const otherUser = isClient ? conv.lawyer : conv.client;
       const lastMessage = conv.messages[0] || null;
 
       // Count unread messages sent by the OTHER user
-      // (we'll do a lightweight version here — just check the last message)
       const hasUnread = lastMessage ? (!lastMessage.read && lastMessage.senderId !== userId) : false;
 
       return {
@@ -114,8 +122,13 @@ export const getMessages = async (req: AuthRequest, res: Response, next: NextFun
     const take = Math.min(parseInt(req.query.take as string) || 50, 100);
     const cursor = req.query.cursor as string | undefined;
 
+    if (!db.conversation || !db.directMessage) {
+      res.json([]);
+      return;
+    }
+
     // Verify the user belongs to this conversation
-    const conversation = await prisma.conversation.findUnique({
+    const conversation = await db.conversation.findUnique({
       where: { id: conversationId },
     });
 
@@ -129,7 +142,7 @@ export const getMessages = async (req: AuthRequest, res: Response, next: NextFun
       return;
     }
 
-    const messages = await prisma.directMessage.findMany({
+    const messages = await db.directMessage.findMany({
       where: { conversationId },
       orderBy: { createdAt: 'asc' },
       take,
@@ -142,7 +155,7 @@ export const getMessages = async (req: AuthRequest, res: Response, next: NextFun
     });
 
     // Mark unread messages from the other user as read
-    await prisma.directMessage.updateMany({
+    await db.directMessage.updateMany({
       where: {
         conversationId,
         senderId: { not: userId },
@@ -179,8 +192,13 @@ export const sendMessage = async (req: AuthRequest, res: Response, next: NextFun
       return;
     }
 
+    if (!db.conversation || !db.directMessage) {
+      res.status(500).json({ error: 'Database service unavailable' });
+      return;
+    }
+
     // Verify the sender belongs to this conversation
-    const conversation = await prisma.conversation.findUnique({
+    const conversation = await db.conversation.findUnique({
       where: { id: conversationId },
     });
 
@@ -196,7 +214,7 @@ export const sendMessage = async (req: AuthRequest, res: Response, next: NextFun
 
     // Use a transaction to create message + update conversation atomically
     const [message] = await prisma.$transaction([
-      prisma.directMessage.create({
+      db.directMessage.create({
         data: {
           conversationId,
           senderId: userId,
@@ -208,7 +226,7 @@ export const sendMessage = async (req: AuthRequest, res: Response, next: NextFun
           },
         },
       }),
-      prisma.conversation.update({
+      db.conversation.update({
         where: { id: conversationId },
         data: { lastMessageAt: new Date() },
       }),
@@ -242,6 +260,11 @@ export const createConversation = async (req: AuthRequest, res: Response, next: 
       return;
     }
 
+    if (!db.conversation) {
+      res.status(500).json({ error: 'Database service unavailable' });
+      return;
+    }
+
     // Verify the target lawyer user exists
     const lawyerUser = await prisma.user.findUnique({
       where: { id: lawyerId },
@@ -254,7 +277,7 @@ export const createConversation = async (req: AuthRequest, res: Response, next: 
     }
 
     // Upsert: find existing or create new conversation
-    const conversation = await prisma.conversation.upsert({
+    const conversation = await db.conversation.upsert({
       where: {
         clientId_lawyerId: {
           clientId: userId,

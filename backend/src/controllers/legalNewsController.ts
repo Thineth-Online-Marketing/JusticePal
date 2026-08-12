@@ -5,6 +5,7 @@ export interface LegalNewsItem {
   title: string;
   category: string;
   date: string;
+  rawTime?: number;
   summary: string;
   url: string;
 }
@@ -14,7 +15,8 @@ const fallbackNews: LegalNewsItem[] = [
     id: '1',
     title: 'Supreme Court Issues New Practice Direction on Electronic Filing',
     category: 'Supreme Court',
-    date: new Date().toLocaleDateString(),
+    date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+    rawTime: Date.now(),
     summary: 'The Supreme Court of Sri Lanka has published revised guidelines for digital document submissions in commercial appeals.',
     url: 'https://www.supremecourt.lk'
   },
@@ -22,7 +24,8 @@ const fallbackNews: LegalNewsItem[] = [
     id: '2',
     title: 'Extraordinary Gazette Published: Commercial Law Amendments 2026',
     category: 'Gazette',
-    date: new Date().toLocaleDateString(),
+    date: new Date(Date.now() - 86400000).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+    rawTime: Date.now() - 86400000,
     summary: 'New statutory provisions regarding corporate dispute resolution mechanisms take effect this month.',
     url: 'http://www.documents.gov.lk'
   },
@@ -30,7 +33,8 @@ const fallbackNews: LegalNewsItem[] = [
     id: '3',
     title: 'Bar Association of Sri Lanka (BASL) Annual Legal Tech Seminar',
     category: 'BASL Notice',
-    date: new Date().toLocaleDateString(),
+    date: new Date(Date.now() - 172800000).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+    rawTime: Date.now() - 172800000,
     summary: 'Notice to all legal practitioners regarding upcoming mandatory continuing legal education (CLE) workshops.',
     url: 'https://basl.lk'
   }
@@ -61,24 +65,34 @@ export const getLegalNews = async (req: Request, res: Response): Promise<void> =
       const data = await response.json();
       
       if (data && data.items && Array.isArray(data.items) && data.items.length > 0) {
-        const fetchedNews: LegalNewsItem[] = data.items.slice(0, 10).map((item: any, index: number) => {
+        const fetchedNews: LegalNewsItem[] = data.items.map((item: any, index: number) => {
           let category = 'Legal News';
-          const titleLower = item.title.toLowerCase();
+          const titleLower = (item.title || '').toLowerCase();
           if (titleLower.includes('gazette')) category = 'Gazette';
           else if (titleLower.includes('supreme court')) category = 'Supreme Court';
           else if (titleLower.includes('basl')) category = 'BASL Notice';
-          
+
+          const parsedDate = item.pubDate ? new Date(item.pubDate) : new Date();
+          const rawTime = !isNaN(parsedDate.getTime()) ? parsedDate.getTime() : Date.now();
+          const formattedDate = !isNaN(parsedDate.getTime())
+            ? parsedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+            : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
           return {
             id: `ext-${index}-${Date.now()}`,
             title: item.title,
             category: category,
-            date: new Date(item.pubDate).toLocaleDateString(),
+            date: formattedDate,
+            rawTime,
             summary: item.description ? item.description.replace(/<[^>]*>?/gm, '').substring(0, 200) + '...' : 'No summary available.',
             url: item.link,
           };
         });
 
-        cachedNews = fetchedNews;
+        // Sort descending: newest published items first
+        fetchedNews.sort((a, b) => (b.rawTime || 0) - (a.rawTime || 0));
+
+        cachedNews = fetchedNews.slice(0, 10);
         lastFetchedTime = now;
         res.status(200).json({ success: true, data: cachedNews, source: 'api' });
         return;
