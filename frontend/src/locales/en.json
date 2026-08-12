@@ -387,5 +387,72 @@
       "brandDesc": "Empowering Sri Lankans with instant, accessible legal insights and seamless attorney connections.",
       "backToHome": "Back to home"
     }
+  },
+  "userGuide": {
+    "heroTitle": "How can we assist you today?",
+    "heroSub": "Search our comprehensive documentation, workflow guides, and security protocols to master the JusticePal network.",
+    "searchPlaceholder": "Search documentation, topics, or FAQs...",
+    "categoriesTitle": "Categories",
+    "catGettingStarted": "Getting Started",
+    "catClientDashboard": "Client Dashboard Guide",
+    "catLawyerPortal": "Lawyer Practice Portal",
+    "catAiChat": "AI Consultation & Chat Rules",
+    "catBilling": "Billing & Account Security",
+    "gettingStarted": {
+      "title": "Getting Started with JusticePal",
+      "sub": "Welcome to Sri Lanka's premier legal assistance network. Follow these quick steps to set up your account and begin finding legal support.",
+      "step1Title": "Step 1: Account Verification",
+      "step1Desc": "Complete your profile by verifying your email and uploading a valid Sri Lankan National Identity Card (NIC). This ensures trust across the platform.",
+      "step2Title": "Step 2: Case Discovery",
+      "step2Desc": "Use the 'Find Lawyer' directory to browse specialists. You can filter by region, expertise (e.g., Property Law, Corporate Law), and hourly rate.",
+      "step3Title": "Step 3: Initial Consultation",
+      "step3Desc": "Book an AI-assisted video consultation. Our built-in tools will help summarize the meeting notes automatically for both parties."
+    },
+    "clientDashboard": {
+      "title": "Navigating the Client Dashboard",
+      "sub": "Your central hub for tracking cases, messages, and billing.",
+      "activeCasesTitle": "Active Cases View",
+      "activeCasesDesc": "Monitor all ongoing legal disputes, track document submissions, and see next scheduled court dates securely.",
+      "docVaultTitle": "Document Vault",
+      "docVaultDesc": "A secure, encrypted repository for all your sensitive legal documents, deeds, and case files."
+    },
+    "lawyerPortal": {
+      "title": "Lawyer Practice Portal",
+      "sub": "Tools and workflows for legal professionals on JusticePal.",
+      "calendarTitle": "Integrated Calendar & Cal.com",
+      "calendarDesc": "Schedule client sessions seamlessly and link your appointments.",
+      "clientManagementTitle": "Client Management",
+      "clientManagementDesc": "Track active legal representation contracts and communicate securely."
+    },
+    "aiChat": {
+      "title": "AI Consultation & Chat Rules",
+      "sub": "Understanding how our AI assistant aids your legal journey securely.",
+      "privacyTitle": "Data Privacy & Encryption",
+      "privacyDesc": "The JusticePal AI Assistant is strictly bound by client-attorney privilege simulation rules. It does not store your specific names or case data for training external models.",
+      "bullet1": "Always redact sensitive government IDs before asking the AI questions.",
+      "bullet2": "The AI provides generalized legal information, NOT official legal advice.",
+      "bullet3": "All chat logs are end-to-end encrypted in your Document Vault."
+    },
+    "billing": {
+      "title": "Billing & Account Security",
+      "sub": "Secure payments, invoice tracking, and account security management.",
+      "escrowTitle": "Escrow Protection System",
+      "escrowDesc": "Funds are held securely and released to lawyers only upon milestone completion.",
+      "securityTitle": "Two-Factor Authentication",
+      "securityDesc": "Enhance account security with 2FA email verification codes."
+    },
+    "comingSoon": {
+      "title": "Documentation Coming Soon",
+      "sub": "Detailed guides for this section are currently being drafted by our legal tech team."
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "q1": "Is my personal data visible to all lawyers?",
+      "a1": "No. Your detailed case information and personal identity are only revealed to a lawyer once you explicitly initiate a consultation or secure their services.",
+      "q2": "How does the billing system work?",
+      "a2": "JusticePal uses an escrow-style payment holding system. Funds are released to the lawyer only after milestones or consultations are successfully completed as per your agreement.",
+      "q3": "Can I switch lawyers mid-case?",
+      "a3": "Yes. Our platform allows you to formally request a case transfer. You can securely export your Document Vault package to hand over to a new attorney."
+    }
   }
 }

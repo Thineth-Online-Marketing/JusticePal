@@ -11,6 +11,7 @@ interface LegalNewsItem {
   category: string;
   url: string;
   date: string;
+  rawTime?: number;
 }
 
 const fallbackNewsData: LegalNewsItem[] = [
@@ -18,7 +19,8 @@ const fallbackNewsData: LegalNewsItem[] = [
     id: '1',
     title: 'Supreme Court Issues New Practice Direction on Electronic Filing',
     category: 'Supreme Court',
-    date: new Date().toLocaleDateString(),
+    date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+    rawTime: Date.now(),
     summary: 'The Supreme Court of Sri Lanka has published revised guidelines for digital document submissions in commercial appeals.',
     url: 'https://www.supremecourt.lk'
   },
@@ -26,7 +28,8 @@ const fallbackNewsData: LegalNewsItem[] = [
     id: '2',
     title: 'Extraordinary Gazette Published: Commercial Law Amendments 2026',
     category: 'Gazette',
-    date: new Date().toLocaleDateString(),
+    date: new Date(Date.now() - 86400000).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+    rawTime: Date.now() - 86400000,
     summary: 'New statutory provisions regarding corporate dispute resolution mechanisms take effect this month.',
     url: 'http://www.documents.gov.lk'
   },
@@ -34,11 +37,20 @@ const fallbackNewsData: LegalNewsItem[] = [
     id: '3',
     title: 'Bar Association of Sri Lanka (BASL) Annual Legal Tech Seminar',
     category: 'BASL Notice',
-    date: new Date().toLocaleDateString(),
+    date: new Date(Date.now() - 172800000).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+    rawTime: Date.now() - 172800000,
     summary: 'Notice to all legal practitioners regarding upcoming mandatory continuing legal education (CLE) workshops.',
     url: 'https://basl.lk'
   }
 ];
+
+const sortNewsDescending = (items: LegalNewsItem[]): LegalNewsItem[] => {
+  return [...items].sort((a, b) => {
+    const timeA = a.rawTime || Date.parse(a.date) || 0;
+    const timeB = b.rawTime || Date.parse(b.date) || 0;
+    return timeB - timeA;
+  });
+};
 
 export default function LegalNewsWidget() {
   const [news, setNews] = useState<LegalNewsItem[]>([]);
@@ -67,15 +79,15 @@ export default function LegalNewsWidget() {
         
         if (isMounted) {
           if (data && data.success && Array.isArray(data.data) && data.data.length > 0) {
-            setNews(data.data);
+            setNews(sortNewsDescending(data.data));
           } else {
-            setNews(fallbackNewsData);
+            setNews(sortNewsDescending(fallbackNewsData));
           }
         }
       } catch (err) {
         console.warn("Legal News API failed, using frontend local fallback.", err);
         if (isMounted) {
-          setNews(fallbackNewsData);
+          setNews(sortNewsDescending(fallbackNewsData));
         }
       } finally {
         if (isMounted) {
