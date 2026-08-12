@@ -15,9 +15,8 @@ import {
   AlertCircle,
   Users
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 
 interface AppointmentData {
   id: string;
@@ -41,20 +40,15 @@ function getInitials(name: string) {
 
 
 export default function ConsultationManagementPage() {
-  const { user } = useAuth();
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     const fetchAppointments = async () => {
-      if (!user) return;
       try {
         setIsLoading(true);
-        const token = await user.getIdToken();
-        const res = await fetch(`${BACKEND_URL}/api/admin/appointments`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await fetch(`${BACKEND_URL}/api/admin/appointments`);
         if (!res.ok) throw new Error("Failed to fetch appointments");
         const data = await res.json();
 
@@ -112,7 +106,7 @@ export default function ConsultationManagementPage() {
       isMounted = false;
       clearTimeout(fallback);
     };
-  }, [user?.uid]);
+  }, []);
   const totalAppointments = appointments.length;
   const pendingCount = appointments.filter(a => a.status === "Pending").length;
   const completedCount = appointments.filter(a => a.status === "Paid").length;
