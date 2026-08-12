@@ -18,7 +18,7 @@ import LawyerCardSkeleton from "../../components/LawyerCardSkeleton";
 // ---------------------------------------------------------------------------
 // AI Service URL (FastAPI microservice)
 // ---------------------------------------------------------------------------
-const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || "http://localhost:8000";
+const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 // ---------------------------------------------------------------------------
 // Types for AI service responses
