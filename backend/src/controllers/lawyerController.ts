@@ -434,3 +434,78 @@ export const generateFinancialReport = async (req: AuthRequest, res: Response, n
     next(error);
   }
 };
+
+// @desc    Get lawyer active cases & appointments
+// @route   GET /api/lawyers/cases
+// @access  Private (Lawyer)
+export const getLawyerCases = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const lawyer = await prisma.lawyer.findUnique({
+      where: { userId },
+    });
+
+    if (!lawyer) {
+      res.status(404).json({ error: 'Lawyer profile not found' });
+      return;
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where: { lawyerId: lawyer.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        caseFiles: {
+          select: { id: true },
+        },
+      },
+      orderBy: { scheduledAt: 'desc' },
+    });
+
+    const cases = appointments.map((appt) => {
+      const scheduledDate = new Date(appt.scheduledAt);
+      const now = new Date();
+      const isToday =
+        scheduledDate.getDate() === now.getDate() &&
+        scheduledDate.getMonth() === now.getMonth() &&
+        scheduledDate.getFullYear() === now.getFullYear();
+
+      const dateStr = isToday
+        ? 'Today'
+        : scheduledDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      const timeStr = scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      return {
+        id: appt.id,
+        clientId: appt.user?.id || '',
+        name: appt.user?.name || 'Client',
+        email: appt.user?.email || '',
+        docket: `#${appt.id.substring(0, 8).toUpperCase()}`,
+        type: appt.caseDescription || 'Legal Consultation',
+        status: appt.status || 'PENDING',
+        scheduledAt: appt.scheduledAt,
+        nextMeetingDate: dateStr,
+        nextMeetingTime: `${timeStr} (Video Call)`,
+        isToday,
+        fileCount: appt.caseFiles?.length || 0,
+        createdAt: appt.createdAt,
+      };
+    });
+
+    res.status(200).json(cases);
+  } catch (error) {
+    console.error('Error fetching lawyer cases:', error);
+    next(error);
+  }
+};

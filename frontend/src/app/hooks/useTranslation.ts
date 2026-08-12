@@ -12,7 +12,7 @@ const translations: Record<string, any> = {
 export function useTranslation() {
   const { lang } = useLanguage();
 
-  const t = (key: string, variables?: Record<string, any>) => {
+  const t = (key: string, variables?: Record<string, any>): any => {
     const keys = key.split(".");
     let value = translations[lang];
 
@@ -32,16 +32,18 @@ export function useTranslation() {
 
     if (typeof value !== "string") {
       if (typeof value === "object" && value !== null) {
-        return value as any;
+        return value;
       }
       return key; // return key if no translation found
     }
 
     // Handle variables (e.g., "Hello {{name}}")
     if (variables) {
+      let strVal = value as string;
       Object.keys(variables).forEach((varKey) => {
-        value = (value as string).replace(new RegExp(`{{${varKey}}}`, "g"), String(variables[varKey]));
+        strVal = strVal.replace(new RegExp(`{{${varKey}}}`, "g"), String(variables[varKey]));
       });
+      return strVal;
     }
 
     return value as string;
