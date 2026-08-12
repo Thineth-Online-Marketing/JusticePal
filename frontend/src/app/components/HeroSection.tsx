@@ -49,7 +49,7 @@ export default function HeroSection() {
               />
             </div>
             <Link
-              href={`/ai?q=${encodeURIComponent(searchValue)}`}
+              href={`/chat-ai?guestQuery=${encodeURIComponent(searchValue)}`}
               className="w-full sm:w-auto mt-3 sm:mt-0 px-8 py-4 bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white font-semibold rounded-xl shadow-md transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

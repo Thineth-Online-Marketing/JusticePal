@@ -8,7 +8,7 @@ import { useSessionTimeout } from "../hooks/useSessionTimeout";
 import { initFetchInterceptor } from "../lib/apiInterceptor";
 
 // Define routes that can be accessed without logging in
-const publicRoutes = ["/", "/login", "/register", "/about", "/privacy"];
+const publicRoutes = ["/", "/login", "/register", "/about", "/privacy", "/chat-ai"];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   // Initialize security monitors

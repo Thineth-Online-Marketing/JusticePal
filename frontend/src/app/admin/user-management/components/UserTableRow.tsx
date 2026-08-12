@@ -4,7 +4,7 @@ import React from "react";
 import { Eye, Ban, Trash2 } from "lucide-react";
 
 export interface UserData {
-  id: number;
+  id: string | number;
   name: string;
   email: string;
   accountType: string;

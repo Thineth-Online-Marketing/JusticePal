@@ -13,4 +13,7 @@ router.post('/match-lawyers', protect, matchLawyers);
 // POST /api/ai/draft-document — AI Document Drafting
 router.post('/draft-document', protect, draftDocument);
 
+// POST /api/ai/guest-chat — Unauthenticated guest preview (stateless Pinecone query only)
+router.post('/guest-chat', chatWithAI);
+
 export default router;

@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, browserLocalPersistence, setPersistence } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDfkc6dY-QML7rYsWeVQzXa9JF2XjQsrPg",
@@ -15,4 +15,13 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
 export const auth = getAuth(app);
+
+// Use localStorage-based persistence instead of the default IndexedDB.
+// IndexedDB can throw "Database is closing/hidden" when the browser tab is
+// hidden or during popup sign-in flows.
+setPersistence(auth, browserLocalPersistence).catch(() => {
+  // Silently ignore if persistence can't be set (e.g. SSR context)
+});
+
 export default app;
+
