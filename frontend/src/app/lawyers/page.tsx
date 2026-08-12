@@ -203,13 +203,7 @@ export default function LawyersPage() {
                 </div>
 
                 <button 
-                  onClick={() => {
-                    if (user) {
-                      router.push(`/lawyers/${lawyer.id}`);
-                    } else {
-                      router.push("/login");
-                    }
-                  }}
+                  onClick={() => router.push(`/lawyers/${lawyer.id}`)}
                   className="w-full mt-auto bg-[#1B3A6B] text-white font-semibold py-3 rounded-lg hover:bg-[#112549] transition-colors"
                 >
                   {t.viewProfile}

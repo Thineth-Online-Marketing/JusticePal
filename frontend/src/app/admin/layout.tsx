@@ -43,6 +43,10 @@ export default function AdminLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
   const sidebarRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -52,8 +56,29 @@ export default function AdminLayout({
   const userEmail = "admin@justicepal.com";
   const initials = "AD";
 
+  // Check sessionStorage on mount
+  useEffect(() => {
+    if (sessionStorage.getItem("adminLoggedIn") === "true") {
+      setIsAdminLoggedIn(true);
+    }
+  }, []);
+
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    if (username === "admin" && password === "admin") {
+      sessionStorage.setItem("adminLoggedIn", "true");
+      setIsAdminLoggedIn(true);
+    } else {
+      setLoginError("Invalid username or password.");
+    }
+  };
+
   const handleLogout = () => {
-    router.push("/");
+    sessionStorage.removeItem("adminLoggedIn");
+    setIsAdminLoggedIn(false);
+    setUsername("");
+    setPassword("");
   };
 
   // Close sidebar and dropdown when clicking outside
@@ -99,7 +124,101 @@ export default function AdminLayout({
     };
   }, [sidebarOpen]);
 
+  // ─── SIMPLE ADMIN LOGIN FORM ──────────────────────────
+  if (!isAdminLoggedIn) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center px-4"
+        style={{ background: "linear-gradient(135deg, #0f1d3d 0%, #1e3a8a 60%, #1e40af 100%)" }}
+      >
+        <div
+          className="w-full max-w-md rounded-2xl p-8 sm:p-10"
+          style={{
+            background: "rgba(255,255,255,0.07)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            boxShadow: "0 25px 60px rgba(0,0,0,0.4)",
+          }}
+        >
+          {/* Logo */}
+          <div className="flex flex-col items-center mb-8">
+            <div
+              className="relative flex items-center justify-center rounded-xl overflow-hidden mb-3"
+              style={{ width: 56, height: 56, background: "rgba(255,255,255,0.12)" }}
+            >
+              <Image
+                src="https://res.cloudinary.com/dluwvqdaz/image/upload/v1775969976/Navy_Blue_JusticePal_Logo_with_Dove_Fusion_new_uhyjl0.png"
+                alt="JusticePal Logo"
+                fill
+                className="object-cover"
+              />
+            </div>
+            <h1 className="text-xl font-bold text-white tracking-tight">Admin Panel</h1>
+            <p className="text-sm text-blue-200/60 mt-1">Sign in to access the dashboard</p>
+          </div>
 
+          {/* Error */}
+          {loginError && (
+            <div
+              className="mb-5 px-4 py-2.5 rounded-lg text-sm font-medium text-red-200"
+              style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.25)" }}
+            >
+              {loginError}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleAdminLogin} className="space-y-5">
+            <div>
+              <label className="block text-xs font-semibold text-blue-200/70 mb-1.5 uppercase tracking-wider">
+                Username
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder:text-blue-300/30 outline-none transition-all focus:ring-2 focus:ring-blue-400/50"
+                style={{
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-blue-200/70 mb-1.5 uppercase tracking-wider">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder:text-blue-300/30 outline-none transition-all focus:ring-2 focus:ring-blue-400/50"
+                style={{
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all hover:brightness-110 hover:-translate-y-0.5"
+              style={{
+                background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+                boxShadow: "0 4px 15px rgba(59,130,246,0.35)",
+              }}
+            >
+              <Lock size={15} />
+              Sign In
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   // ─── ADMIN DASHBOARD LAYOUT ───────────────────────────
   const isActive = (href: string) => {

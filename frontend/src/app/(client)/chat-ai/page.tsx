@@ -26,6 +26,7 @@ import {
   LogIn,
   UserPlus,
 } from "lucide-react";
+import Footer from "../../components/Footer";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 const GUEST_MESSAGE_LIMIT = 2;
@@ -640,7 +641,12 @@ export default function ChatAIPage() {
         </div>
       }
     >
-      <ChatAIContent />
+      <div className="min-h-full flex flex-col">
+        <div className="flex-1">
+          <ChatAIContent />
+        </div>
+        <Footer />
+      </div>
     </Suspense>
   );
 }
