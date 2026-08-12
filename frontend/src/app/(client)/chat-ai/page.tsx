@@ -27,7 +27,7 @@ import {
   UserPlus,
 } from "lucide-react";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 const GUEST_MESSAGE_LIMIT = 2;
 
 // --- Types ---

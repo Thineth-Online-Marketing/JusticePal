@@ -1,7 +1,7 @@
 import { GoogleAuthProvider, signInWithPopup, UserCredential } from "firebase/auth";
 import { auth } from "./firebase";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 
 // Shared Google sign-in flow used by both login and register pages
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

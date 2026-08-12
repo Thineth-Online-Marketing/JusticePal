@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 
 // ─── Types ──────────────────────────────────────────────
 interface KnowledgeEntry {
