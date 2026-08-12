@@ -17,9 +17,8 @@ import {
   CreditCard as CreditCardIcon,
   HelpCircle
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 
 interface PaymentData {
   id: string;
@@ -43,7 +42,6 @@ function getInitials(name: string) {
 
 
 export default function PaymentsMonitoringPage() {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("All Transactions");
   const [payments, setPayments] = useState<PaymentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,13 +49,9 @@ export default function PaymentsMonitoringPage() {
   useEffect(() => {
     let isMounted = true;
     const fetchPayments = async () => {
-      if (!user) return;
       try {
         setIsLoading(true);
-        const token = await user.getIdToken();
-        const res = await fetch(`${BACKEND_URL}/api/admin/payments`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await fetch(`${BACKEND_URL}/api/admin/payments`);
         if (!res.ok) throw new Error("Failed to fetch payments");
         const data = await res.json();
 
@@ -110,7 +104,7 @@ export default function PaymentsMonitoringPage() {
       isMounted = false;
       clearTimeout(fallback);
     };
-  }, [user?.uid]);
+  }, []);
 
   const totalRevenue = payments.reduce((sum, p) => sum + parseFloat(p.amount.replace('$', '').replace(/,/g, '') || '0'), 0);
   const monthlyRevenue = totalRevenue * 0.8; // Mocking monthly as 80% of total for now
