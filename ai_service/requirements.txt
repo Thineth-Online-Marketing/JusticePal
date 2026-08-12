@@ -16,10 +16,6 @@ pydantic>=2.7.4
 # --- Environment & utilities ---
 python-dotenv>=1.0.1
 
-# --- AI Semantic Matching ---
-sentence-transformers>=3.3.1
-faiss-cpu>=1.9.0
-numpy>=1.26.4
-
-# --- Database ---
+# --- Database & Arrays ---
 asyncpg>=0.31.0
+numpy>=1.26.4
