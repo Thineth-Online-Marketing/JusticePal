@@ -205,6 +205,7 @@
     }
   },
   "dashboardLawyer": {
+    "welcomeBack": "Welcome back",
     "dashboard": "Dashboard",
     "analytics": "Analytics",
     "downloadReport": "Download Financial Report",
