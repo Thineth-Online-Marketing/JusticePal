@@ -67,7 +67,7 @@ export default function BookingModal({
       const user = auth.currentUser;
       const idToken = user ? await user.getIdToken() : '';
       
-      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments`, {
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",

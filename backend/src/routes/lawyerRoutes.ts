@@ -1,9 +1,10 @@
 import express from 'express';
-import { getLawyers, createLawyerProfile, updateLawyerProfile, getPendingLawyers, verifyLawyer, rejectLawyer, getLawyerById, getLawyerAnalytics, generateFinancialReport } from '../controllers/lawyerController';
+import { getLawyers, createLawyerProfile, updateLawyerProfile, getPendingLawyers, verifyLawyer, rejectLawyer, getLawyerById, getLawyerAnalytics, generateFinancialReport, getLawyerCases } from '../controllers/lawyerController';
 import { protect, adminProtect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
+router.route('/cases').get(protect, getLawyerCases);
 router.route('/report/download').get(protect, generateFinancialReport);
 router.route('/').get(getLawyers).post(protect, createLawyerProfile);
 router.route('/profile').put(protect, updateLawyerProfile);

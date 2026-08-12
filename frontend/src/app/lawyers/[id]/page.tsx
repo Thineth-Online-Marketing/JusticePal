@@ -437,7 +437,7 @@ export default function LawyerProfilePage() {
                           <span className="font-bold text-gray-900 text-sm">In-Person</span>
                           <span className="font-bold text-gray-900 text-sm">Rs. 7,500</span>
                         </div>
-                        <span className="text-[10px] text-gray-500">At Lawyer's Office, {lawyer.location}</span>
+                        <span className="text-[10px] text-gray-500">At Lawyer&apos;s Office, {lawyer.location}</span>
                       </div>
                     </div>
                     <input type="radio" className="hidden" name="type" value="person" onChange={() => setConsultationType('person')} />

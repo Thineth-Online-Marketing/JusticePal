@@ -3,8 +3,8 @@ import prisma from '../lib/prisma';
 
 const router = Router();
 
-// POST /api/v1/extract-case
-router.post('/extract-case', async (req: Request, res: Response) => {
+// POST /api/v1/extract-case and /api/v1/extract-case-details
+const extractCaseHandler = async (req: Request, res: Response) => {
   const { query } = req.body;
   
   if (!query) {
@@ -32,7 +32,10 @@ router.post('/extract-case', async (req: Request, res: Response) => {
       language: query.match(/[\u0D80-\u0DFF]/) ? 'Sinhala' : 'English'
     }
   });
-});
+};
+
+router.post('/extract-case', extractCaseHandler);
+router.post('/extract-case-details', extractCaseHandler);
 
 // POST /api/v1/match-lawyers
 router.post('/match-lawyers', async (req: Request, res: Response) => {
