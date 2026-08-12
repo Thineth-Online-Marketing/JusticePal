@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useTranslation } from "../../hooks/useTranslation";
+import Footer from "../../components/Footer";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 
@@ -310,6 +311,7 @@ export default function DocumentDraftingPage() {
           animation: fade-in 0.4s ease-out;
         }
       `}</style>
+      <Footer />
     </div>
   );
 }
