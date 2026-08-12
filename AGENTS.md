@@ -141,6 +141,30 @@ We replaced the paid Google Calendar OAuth2 integration with Cal.com REST API v2
 
 ---
 
+## Prisma Client Type-Sync Fix (August 2026)
+
+Resolved a TypeScript compile error in the Cal.com controller caused by a stale Prisma Client.
+
+### Problem
+After adding `calComApiKey String?` to the `Lawyer` model in [`backend/prisma/schema.prisma`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/backend/prisma/schema.prisma), the following TypeScript error appeared in [`backend/src/controllers/calComController.ts`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/backend/src/controllers/calComController.ts) at the `prisma.lawyer.findUnique({ select: { calComApiKey: true } })` call:
+
+> `Object literal may only specify known properties, and 'calComApiKey' does not exist in type 'LawyerSelect<DefaultArgs>'`
+
+**Root cause**: The Prisma Client TypeScript types (in `node_modules/@prisma/client`) are generated once and do **not** automatically update when `schema.prisma` changes. The schema had the new field but the client types were stale.
+
+### Fix
+Run `npx prisma generate` from the `/backend` directory after **any** schema change to regenerate the client types:
+
+```bash
+cd backend
+npx prisma generate
+```
+
+### Known Gotcha — Always Regenerate After Schema Changes
+> Whenever a field, model, or relation is added/modified in `schema.prisma`, you **must** run `npx prisma generate` before TypeScript will recognise the new fields. This applies even when using `tsx watch` (hot-reload does not re-run code generation).
+
+---
+
 ## Style Guidelines
 
 * **Colors**: Match the core system defined in [`frontend/src/app/globals.css`](file:///Users/harininandasena/Documents/SUSL%20ASSIGNMENTS/Capstone%20project/JusticePalNew/JusticePal-/frontend/src/app/globals.css):
