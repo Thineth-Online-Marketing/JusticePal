@@ -71,7 +71,7 @@ export const getClientAnalytics = async (req: Request, res: Response, next: Next
         lawyer: {
           include: {
             user: {
-              select: { name: true, profilePicture: true },
+              select: { name: true },
             },
           },
         },

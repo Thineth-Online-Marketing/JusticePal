@@ -58,7 +58,7 @@ export const getActiveAppointments = async (req: AuthRequest, res: Response, nex
         status: { in: ['scheduled', 'CONFIRMED'] }
       },
       include: {
-        lawyer: { select: { id: true, specialization: true, hourlyRate: true, user: { select: { name: true, profilePicture: true } } } }
+        lawyer: { select: { id: true, specialization: true, hourlyRate: true, profilePicture: true, user: { select: { name: true } } } }
       },
       orderBy: { scheduledAt: 'asc' }
     });
