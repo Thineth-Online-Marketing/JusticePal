@@ -8,7 +8,7 @@ import { auth } from "../lib/firebase";
 import { signInWithGoogle } from "../lib/googleAuth";
 import { createUserWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 
 export default function RegisterPage() {
   const [role, setRole] = useState<"client" | "lawyer">("client");

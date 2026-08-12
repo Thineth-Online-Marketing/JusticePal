@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 import {
   Users,
   Scale,

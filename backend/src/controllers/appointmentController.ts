@@ -151,11 +151,11 @@ export const createAppointment = async (req: AuthRequest, res: Response, next: N
         sendRealTimeNotification(lawyerUserId, savedNotification);
         
         // Broadcast dashboard update to lawyer
-        io.to(`user:${lawyerUserId}`).emit("dashboard_update", { type: "new_booking_received", appointment });
+        io?.to(`user:${lawyerUserId}`).emit("dashboard_update", { type: "new_booking_received", appointment });
       }
 
       // Broadcast dashboard update to client
-      io.to(`user:${userId}`).emit("dashboard_update", { type: "booking_created" });
+      io?.to(`user:${userId}`).emit("dashboard_update", { type: "booking_created" });
     } catch (notifErr) {
       console.error('Failed to create booking notification:', notifErr);
       // Don't fail the appointment creation if notification fails
@@ -226,7 +226,7 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response, n
         });
         
         sendRealTimeNotification(appointment.user.id, savedNotification);
-        io.to(`user:${appointment.user.id}`).emit("dashboard_update", { type: "booking_updated", appointment });
+        io?.to(`user:${appointment.user.id}`).emit("dashboard_update", { type: "booking_updated", appointment });
       }
     } catch (notifErr) {
       console.error('Failed to create booking status notification:', notifErr);
@@ -283,7 +283,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response, nex
           type: 'booking',
         });
         sendRealTimeNotification(lawyerUserId, savedNotification);
-        io.to(`user:${lawyerUserId}`).emit('dashboard_update', { type: 'booking_rescheduled', appointment: updated });
+        io?.to(`user:${lawyerUserId}`).emit('dashboard_update', { type: 'booking_rescheduled', appointment: updated });
       }
     } catch (notifErr) {
       console.error('Failed to send reschedule notification:', notifErr);

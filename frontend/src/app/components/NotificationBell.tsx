@@ -15,7 +15,7 @@ interface Notification {
   createdAt: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 const POLL_INTERVAL_MS = 30_000; // 30 seconds
 
 function getNotificationIcon(type: string) {
