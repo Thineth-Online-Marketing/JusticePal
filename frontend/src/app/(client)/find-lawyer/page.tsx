@@ -8,12 +8,13 @@ import { useLanguage } from "../../context/LanguageContext";
 import {
   Search, X, Sparkles, MapPin, Star, ChevronDown,
   SlidersHorizontal, CheckCircle2, ArrowUpDown, Shield,
-  Filter, Loader2
+  Filter, Loader2, BriefcaseBusiness, ChevronLeft, ChevronRight
 } from "lucide-react";
 import Footer from "../../components/Footer";
 import { useAuth } from "../../context/AuthContext";
 import { useUI } from "../../context/UIContext";
 import LawyerCardSkeleton from "../../components/LawyerCardSkeleton";
+import { getLawyers } from "../../../data/lawyers";
 
 // ---------------------------------------------------------------------------
 // AI Service URL (FastAPI microservice)
@@ -249,6 +250,14 @@ export default function FindLawyerPage() {
   const [matchLoading, setMatchLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
+  // --- Verified lawyers browse state ---
+  const [verifiedLawyers, setVerifiedLawyers] = useState<any[]>([]);
+  const [verifiedLoading, setVerifiedLoading] = useState(true);
+  const [verifiedSearch, setVerifiedSearch] = useState("");
+  const [verifiedFilter, setVerifiedFilter] = useState("All");
+  const [verifiedPage, setVerifiedPage] = useState(1);
+  const VERIFIED_PER_PAGE = 8;
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -290,6 +299,38 @@ export default function FindLawyerPage() {
 
     verifyClientRole();
   }, [user, authLoading, router]);
+
+  // -----------------------------------------------------------------------
+  // Fetch verified lawyers for browse section
+  // -----------------------------------------------------------------------
+  useEffect(() => {
+    const fetchVerifiedLawyers = async () => {
+      setVerifiedLoading(true);
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/lawyers`);
+        if (res.ok) {
+          const data = await res.json();
+          const mapped = data.map((l: any) => ({
+            id: l.id,
+            name: l.user?.name || "Anonymous",
+            specialization: l.specialization?.[0] || (lang === "si" ? "නීතිඥ" : "Attorney-at-Law"),
+            location: l.location || (lang === "si" ? "කොළඹ, ශ්‍රී ලංකාව" : "Colombo, Sri Lanka"),
+            experience: l.workExperience || (lang === "si" ? "වසර 5+ ක පළපුරුද්ද" : "5+ Years Experience"),
+            rating: 4.9,
+            reviews: 14,
+            image: l.profilePicture || "",
+            tags: l.specialization || ["Lawyer"],
+          }));
+          setVerifiedLawyers(mapped);
+        }
+      } catch (error) {
+        console.error("Error fetching verified lawyers", error);
+      } finally {
+        setVerifiedLoading(false);
+      }
+    };
+    fetchVerifiedLawyers();
+  }, [lang]);
 
   // -----------------------------------------------------------------------
   // Debounced AI extraction: 800ms after the user stops typing
@@ -1080,6 +1121,255 @@ export default function FindLawyerPage() {
             </div>
           </>
         )}
+
+        {/* ============================================================= */}
+        {/* VERIFIED LAWYERS BROWSE SECTION                                */}
+        {/* ============================================================= */}
+        {(() => {
+          const mockLawyers = getLawyers(lang);
+          const allVerified = [...verifiedLawyers, ...mockLawyers];
+
+          const verifiedFilterOptions = [
+            lang === "si" ? "සියල්ල" : "All",
+            lang === "si" ? "අපරාධ නීතිය" : "Criminal Law",
+            lang === "si" ? "පවුල් නීතිය" : "Family Law",
+            lang === "si" ? "වාණිජ නීතිය" : "Corporate",
+            lang === "si" ? "දේපළ නීතිය" : "Property Law",
+            lang === "si" ? "සිවිල් නඩු" : "Civil Litigation",
+          ];
+
+          const filteredVerified = allVerified.filter((lawyer) => {
+            const q = verifiedSearch.toLowerCase();
+            const matchesSearch =
+              lawyer.name.toLowerCase().includes(q) ||
+              lawyer.specialization.toLowerCase().includes(q) ||
+              lawyer.location.toLowerCase().includes(q);
+
+            const isAll = verifiedFilter === "All" || verifiedFilter === "සියල්ල";
+            const matchesFilter =
+              isAll ||
+              lawyer.specialization.toLowerCase().includes(verifiedFilter.toLowerCase()) ||
+              (lawyer.tags || []).some((tag: string) => tag.toLowerCase().includes(verifiedFilter.toLowerCase()));
+
+            return matchesSearch && matchesFilter;
+          });
+
+          const totalVerifiedPages = Math.ceil(filteredVerified.length / VERIFIED_PER_PAGE);
+          const paginatedVerified = filteredVerified.slice(
+            (verifiedPage - 1) * VERIFIED_PER_PAGE,
+            verifiedPage * VERIFIED_PER_PAGE
+          );
+
+          return (
+            <section className="mt-14 mb-4">
+              {/* Section Header */}
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Shield className="w-5 h-5 text-[#1B3A6B]" />
+                    <h2 className="text-xl md:text-2xl font-extrabold text-[#111827] tracking-tight">
+                      {lang === "si" ? "තහවුරු කළ නීතිඥයින්" : "Verified Lawyers"}
+                    </h2>
+                  </div>
+                  <p className="text-sm text-gray-400">
+                    {lang === "si"
+                      ? "අපගේ වේදිකාවේ සත්‍යාපිත නීතිඥයින් බ්‍රවුස් කරන්න"
+                      : "Browse verified legal professionals on our platform"}
+                  </p>
+                </div>
+                <span className="text-xs font-semibold text-gray-400">
+                  {filteredVerified.length} {lang === "si" ? "නීතිඥයින්" : "lawyers"}
+                </span>
+              </div>
+
+              {/* Search + Filter chips */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-5">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={verifiedSearch}
+                    onChange={(e) => { setVerifiedSearch(e.target.value); setVerifiedPage(1); }}
+                    placeholder={lang === "si" ? "නම, විශේෂත්වය හෝ නගරය..." : "Search by name, specialty, or city..."}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+                  />
+                  {verifiedSearch && (
+                    <button
+                      onClick={() => { setVerifiedSearch(""); setVerifiedPage(1); }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 mb-6">
+                {verifiedFilterOptions.map((filter) => {
+                  const isActive = verifiedFilter === filter || (filter === (lang === "si" ? "සියල්ල" : "All") && (verifiedFilter === "All" || verifiedFilter === "සියල්ල"));
+                  return (
+                    <button
+                      key={filter}
+                      onClick={() => { setVerifiedFilter(filter === (lang === "si" ? "සියල්ල" : "All") ? "All" : filter); setVerifiedPage(1); }}
+                      className={`px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
+                        isActive
+                          ? "bg-[#1B3A6B] text-white shadow-sm"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Compact Cards Grid */}
+              {verifiedLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 animate-pulse">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-200" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3.5 bg-gray-200 rounded w-3/4" />
+                          <div className="h-2.5 bg-gray-100 rounded w-1/2" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-2.5 bg-gray-100 rounded w-full" />
+                        <div className="h-2.5 bg-gray-100 rounded w-2/3" />
+                      </div>
+                      <div className="mt-3 h-8 bg-gray-100 rounded-lg" />
+                    </div>
+                  ))}
+                </div>
+              ) : paginatedVerified.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-10 text-center">
+                  <Search className="w-6 h-6 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500 font-medium">
+                    {lang === "si" ? "නීතිඥයින් හමු නොවීය." : "No lawyers match your search."}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {paginatedVerified.map((lawyer, index) => {
+                    const initials = lawyer.name
+                      .split(" ")
+                      .map((n: string) => n.charAt(0))
+                      .join("")
+                      .slice(0, 2);
+                    const colorPalette = [
+                      "bg-blue-600", "bg-indigo-600", "bg-emerald-600", "bg-rose-600",
+                      "bg-violet-600", "bg-amber-600", "bg-cyan-600", "bg-teal-600",
+                    ];
+                    const bgColor = colorPalette[index % colorPalette.length];
+
+                    return (
+                      <div
+                        key={`verified-${lawyer.id}-${index}`}
+                        className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all p-4 flex flex-col group cursor-pointer"
+                        onClick={() => router.push(`/lawyers/${lawyer.id}`)}
+                      >
+                        {/* Header: avatar + name */}
+                        <div className="flex items-center gap-3 mb-3">
+                          {lawyer.image ? (
+                            <img
+                              src={lawyer.image}
+                              alt={lawyer.name}
+                              className="w-10 h-10 rounded-full object-cover shrink-0 ring-2 ring-gray-100"
+                            />
+                          ) : (
+                            <div className={`w-10 h-10 rounded-full ${bgColor} text-white flex items-center justify-center font-bold text-xs shrink-0`}>
+                              {initials}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-bold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+                              {lawyer.name}
+                            </h3>
+                            <p className="text-[11px] font-semibold text-blue-600 truncate">
+                              {lawyer.specialization}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Meta info */}
+                        <div className="space-y-1.5 mb-3">
+                          <div className="flex items-center gap-1.5 text-gray-500">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            <span className="text-[11px] truncate">{lawyer.location}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-gray-500">
+                            <BriefcaseBusiness className="w-3 h-3 shrink-0" />
+                            <span className="text-[11px] truncate">{lawyer.experience}</span>
+                          </div>
+                        </div>
+
+                        {/* Rating + Verified badge */}
+                        <div className="flex items-center justify-between mt-auto pt-2.5 border-t border-gray-50">
+                          <div className="flex items-center gap-1">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <span className="text-xs font-bold text-gray-800">{lawyer.rating?.toFixed(1)}</span>
+                            <span className="text-[10px] text-gray-400">({lawyer.reviews})</span>
+                          </div>
+                          <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+                            <CheckCircle2 className="w-2.5 h-2.5" />
+                            {lang === "si" ? "සත්‍යාපිත" : "Verified"}
+                          </span>
+                        </div>
+
+                        {/* View Profile button */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); router.push(`/lawyers/${lawyer.id}`); }}
+                          className="w-full mt-3 bg-[#1B3A6B] hover:bg-[#112549] text-white font-semibold py-2 rounded-lg text-xs transition-colors"
+                        >
+                          {lang === "si" ? "පැතිකඩ බලන්න" : "View Profile"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Pagination */}
+              {totalVerifiedPages > 1 && (
+                <div className="flex justify-center items-center gap-1.5 mt-8">
+                  <button
+                    onClick={() => { setVerifiedPage(Math.max(verifiedPage - 1, 1)); }}
+                    disabled={verifiedPage === 1}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200 transition-colors ${
+                      verifiedPage === 1 ? "bg-gray-50 text-gray-300 cursor-not-allowed" : "bg-white text-gray-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {Array.from({ length: totalVerifiedPages }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setVerifiedPage(i + 1)}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-colors ${
+                        verifiedPage === i + 1
+                          ? "bg-[#1B3A6B] text-white shadow-sm"
+                          : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => { setVerifiedPage(Math.min(verifiedPage + 1, totalVerifiedPages)); }}
+                    disabled={verifiedPage === totalVerifiedPages}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200 transition-colors ${
+                      verifiedPage === totalVerifiedPages ? "bg-gray-50 text-gray-300 cursor-not-allowed" : "bg-white text-gray-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </section>
+          );
+        })()}
       </main>
 
       <Footer />
