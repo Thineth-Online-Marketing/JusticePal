@@ -1,33 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import admin from 'firebase-admin';
-import path from 'path';
+import admin from '../config/firebase';
 import prisma from '../lib/prisma';
-
-// Initialize Firebase Admin
-// On cloud (Render): reads FIREBASE_SERVICE_ACCOUNT_BASE64 env var (base64-encoded JSON)
-// Locally: falls back to firebase-key.json file
-if (!admin.apps.length) {
-  let serviceAccount: admin.ServiceAccount;
-
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
-    // Cloud deployment: decode from Base64 env var
-    const decoded = Buffer.from(
-      process.env.FIREBASE_SERVICE_ACCOUNT_BASE64,
-      'base64'
-    ).toString('utf-8');
-    serviceAccount = JSON.parse(decoded) as admin.ServiceAccount;
-  } else {
-    // Local development: load from file
-    const serviceAccountPath = path.resolve(__dirname, '../../firebase-key.json');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    serviceAccount = require(serviceAccountPath) as admin.ServiceAccount;
-  }
-
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "justicepal-a8bb3.firebasestorage.app",
-  });
-}
 
 export interface AuthRequest extends Request {
   user?: any;

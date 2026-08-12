@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useAuth } from "../../context/AuthContext";
 import {
   Brain,
   Plus,
@@ -25,7 +24,7 @@ import {
 } from "lucide-react";
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 
 // ─── Types ──────────────────────────────────────────────
 interface KnowledgeEntry {
@@ -74,7 +73,6 @@ const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> 
 
 // ─── Main Page Component ────────────────────────────────
 export default function KnowledgeBasePage() {
-  const { user } = useAuth();
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -112,14 +110,10 @@ export default function KnowledgeBasePage() {
 
   // ─── Fetch Knowledge ────────────────────────────
   const fetchKnowledge = async () => {
-    if (!user) return;
     try {
       setLoading(true);
       setError("");
-      const token = await user.getIdToken();
-      const res = await fetch(`${BACKEND_URL}/api/admin/knowledge`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(`${BACKEND_URL}/api/admin/knowledge`);
       if (!res.ok) throw new Error("Failed to fetch knowledge entries");
       const data = await res.json();
       setEntries(data.entries || []);
@@ -133,10 +127,8 @@ export default function KnowledgeBasePage() {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchKnowledge();
-    }
-  }, [user]);
+    fetchKnowledge();
+  }, []);
 
   // ─── Add Knowledge ─────────────────────────────
   const handleAdd = async (e: React.FormEvent) => {
@@ -150,16 +142,13 @@ export default function KnowledgeBasePage() {
       return;
     }
 
-    if (!user) return;
     try {
       setIsAdding(true);
       setAddError("");
-      const token = await user.getIdToken();
       const res = await fetch(`${BACKEND_URL}/api/admin/knowledge`, {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(addForm),
       });
@@ -189,15 +178,12 @@ export default function KnowledgeBasePage() {
 
   // ─── Delete Knowledge ──────────────────────────
   const handleDelete = async (id: string) => {
-    if (!user) return;
     try {
       setDeletingId(id);
-      const token = await user.getIdToken();
       const res = await fetch(
         `${BACKEND_URL}/api/admin/knowledge/${encodeURIComponent(id)}`,
         { 
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` }
+          method: "DELETE"
         }
       );
 

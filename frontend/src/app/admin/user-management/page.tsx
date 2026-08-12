@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 import {
   Users,
   Scale,
@@ -37,7 +36,6 @@ function getInitials(name: string) {
 /* ── component ───────────────────────────────────────────── */
 
 export default function UserManagementPage() {
-  const { user } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
@@ -49,13 +47,9 @@ export default function UserManagementPage() {
   useEffect(() => {
     let isMounted = true;
     const fetchUsers = async () => {
-      if (!user) return;
       try {
         setIsLoading(true);
-        const token = await user.getIdToken();
-        const res = await fetch(`${BACKEND_URL}/api/admin/users`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await fetch(`${BACKEND_URL}/api/admin/users`);
         if (!res.ok) throw new Error(`Failed to fetch users: ${res.status}`);
         const data = await res.json();
         
@@ -107,7 +101,7 @@ export default function UserManagementPage() {
       isMounted = false;
       clearTimeout(fallbackTimeout);
     };
-  }, [user?.uid]);
+  }, []);
 
   /* ── filtering & stats ─────────────────────────────────── */
 

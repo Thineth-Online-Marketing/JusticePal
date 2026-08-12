@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../context/AuthContext";
+
 import { useTranslation } from "../hooks/useTranslation";
 import Image from "next/image";
 import {
@@ -36,7 +36,7 @@ import {
   Cell,
 } from "recharts";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 
 /* ── mock chart data ─────────────────────────────────────── */
 const userGrowthData = [
@@ -67,7 +67,6 @@ const barColors = revenueData.map((_, i) => {
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user } = useAuth();
   const { t } = useTranslation();
   
   // Dynamic stats
@@ -89,23 +88,15 @@ export default function AdminDashboard() {
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchDashboardData();
-    }
-  }, [user]);
+    fetchDashboardData();
+  }, []);
 
   const fetchDashboardData = async () => {
-    if (!user) return;
     try {
       setLoadingData(true);
-      const idToken = await user.getIdToken();
       const [statsRes, pendingRes] = await Promise.all([
-        fetch(`${BACKEND_URL}/api/admin/stats`, {
-          headers: { Authorization: `Bearer ${idToken}` }
-        }),
-        fetch(`${BACKEND_URL}/api/admin/pending-lawyers`, {
-          headers: { Authorization: `Bearer ${idToken}` }
-        })
+        fetch(`${BACKEND_URL}/api/admin/stats`),
+        fetch(`${BACKEND_URL}/api/admin/pending-lawyers`)
       ]);
 
       if (statsRes.ok) {
@@ -128,15 +119,12 @@ export default function AdminDashboard() {
   };
 
   const handleVerify = async (lawyerId: string) => {
-    if (!user) return;
     try {
       setVerifyingId(lawyerId);
-      const idToken = await user.getIdToken();
       const res = await fetch(`${BACKEND_URL}/api/admin/verify-lawyer/${lawyerId}`, {
         method: "PATCH",
         headers: { 
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}` 
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ isVerified: true })
       });
