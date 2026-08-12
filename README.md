@@ -44,4 +44,4 @@ cd ai_service
 uvicorn main:app --reload
 ```
 .
-.
+
