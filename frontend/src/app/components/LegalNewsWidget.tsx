@@ -57,7 +57,7 @@ export default function LegalNewsWidget() {
           headers['Authorization'] = `Bearer ${idToken}`;
         }
         
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/legal-news`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/legal-news`, {
           headers
         });
         

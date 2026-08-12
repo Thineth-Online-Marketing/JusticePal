@@ -441,7 +441,7 @@ export default function LawyerDashboard() {
                                     e.stopPropagation();
                                     try {
                                       const idToken = await auth.currentUser?.getIdToken();
-                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments/${appt.id}/status`, {
+                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments/${appt.id}/status`, {
                                         method: 'PATCH',
                                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
                                         body: JSON.stringify({ status: 'CONFIRMED' })
@@ -463,7 +463,7 @@ export default function LawyerDashboard() {
                                     e.stopPropagation();
                                     try {
                                       const idToken = await auth.currentUser?.getIdToken();
-                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/appointments/${appt.id}/status`, {
+                                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/appointments/${appt.id}/status`, {
                                         method: 'PATCH',
                                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
                                         body: JSON.stringify({ status: 'REJECTED' })
