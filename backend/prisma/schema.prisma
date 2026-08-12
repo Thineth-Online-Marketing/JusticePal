@@ -55,6 +55,7 @@ model Lawyer {
   profilePicture   String?
   workExperience   String?
   rejectedReason   String?
+  calComApiKey     String?                         // Per-lawyer Cal.com API key
   appointments     Appointment[]
   cases            Case[]
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)

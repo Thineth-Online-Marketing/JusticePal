@@ -280,7 +280,7 @@ export default function ClientCalendarPage() {
 
               <button
                 onClick={() => router.push("/find-lawyer")}
-                className="px-5 py-2.5 bg-[#F97316] hover:bg-[#ea580c] text-white rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 hover:scale-[1.02]"
+                className="px-5 py-2.5 bg-[#0D9488] hover:bg-[#0F766E] text-white rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 hover:scale-[1.02]"
               >
                 + Book New Session
               </button>
@@ -385,7 +385,7 @@ export default function ClientCalendarPage() {
                     </div>
 
                     {hasJoinable && !selected && (
-                      <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#F97316] shadow-sm shadow-orange-300" />
+                      <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#0D9488] shadow-sm shadow-teal-300" />
                     )}
                   </button>
                 );
@@ -402,7 +402,7 @@ export default function ClientCalendarPage() {
                 </div>
               ))}
               <div className="flex items-center gap-1.5 ml-auto">
-                <div className="w-2 h-2 rounded-full bg-[#F97316]" />
+                <div className="w-2 h-2 rounded-full bg-[#0D9488]" />
                 <span className="text-[11px] font-semibold text-gray-500">Joinable today</span>
               </div>
             </div>
@@ -412,24 +412,24 @@ export default function ClientCalendarPage() {
           <div className="space-y-5">
 
             {/* Today highlight */}
-            <div className="bg-gradient-to-br from-[#F97316] to-[#ea6a0c] rounded-2xl p-5 text-white shadow-lg shadow-orange-200/50">
+            <div className="bg-gradient-to-br from-[#0D9488] to-[#0F766E] rounded-2xl p-5 text-white shadow-lg shadow-teal-200/50">
               <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="w-4 h-4 text-orange-200" />
-                <p className="text-xs font-black text-orange-100 uppercase tracking-widest">Today</p>
+                <Sparkles className="w-4 h-4 text-teal-200" />
+                <p className="text-xs font-black text-teal-100 uppercase tracking-widest">Today</p>
               </div>
               <p className="text-xl font-black">{new Date().toLocaleDateString("en-US", { weekday: "long" })}</p>
-              <p className="text-orange-200 text-sm font-semibold mt-0.5">
+              <p className="text-teal-200 text-sm font-semibold mt-0.5">
                 {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
               </p>
               {(() => {
                 const todayAppts = getAppointmentsForDate(new Date());
                 return todayAppts.length > 0 ? (
                   <div className="mt-3 pt-3 border-t border-white/20">
-                    <p className="text-xs font-bold text-orange-100">{todayAppts.length} appointment{todayAppts.length > 1 ? "s" : ""} today</p>
+                    <p className="text-xs font-bold text-teal-100">{todayAppts.length} appointment{todayAppts.length > 1 ? "s" : ""} today</p>
                   </div>
                 ) : (
                   <div className="mt-3 pt-3 border-t border-white/20">
-                    <p className="text-xs font-medium text-orange-200">No appointments today</p>
+                    <p className="text-xs font-medium text-teal-200">No appointments today</p>
                   </div>
                 );
               })()}
@@ -493,7 +493,7 @@ export default function ClientCalendarPage() {
                           {canJoin && (
                             <button
                               onClick={(e) => { e.stopPropagation(); router.push(`/consultation?role=client&appointmentId=${appt.id}`); }}
-                              className="flex items-center gap-1 px-2.5 py-1 bg-[#F97316] text-white text-[10px] font-black rounded-lg hover:bg-[#ea6a0c] transition-colors shadow-sm shadow-orange-200"
+                              className="flex items-center gap-1 px-2.5 py-1 bg-[#0D9488] text-white text-[10px] font-black rounded-lg hover:bg-[#0F766E] transition-colors shadow-sm shadow-teal-200"
                             >
                               <Video className="w-3 h-3" />
                               Join
@@ -542,7 +542,7 @@ export default function ClientCalendarPage() {
                   {selectedAppts.length} appointment{selectedAppts.length !== 1 ? "s" : ""}
                 </span>
                 {isToday(selectedDate) && (
-                  <span className="text-xs font-black text-white bg-[#F97316] px-2 py-0.5 rounded-full">Today</span>
+                  <span className="text-xs font-black text-white bg-[#0D9488] px-2 py-0.5 rounded-full">Today</span>
                 )}
               </div>
 
@@ -597,7 +597,7 @@ export default function ClientCalendarPage() {
                             {canJoin && (
                               <button
                                 onClick={() => router.push(`/consultation?role=client&appointmentId=${appt.id}`)}
-                                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-[#F97316] to-[#ea6a0c] text-white text-sm font-black rounded-xl hover:from-[#ea6a0c] hover:to-[#d45e0a] transition-all shadow-md shadow-orange-200 active:scale-[0.98] mb-2"
+                                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white text-sm font-black rounded-xl hover:from-[#0F766E] hover:to-[#115e59] transition-all shadow-md shadow-teal-200 active:scale-[0.98] mb-2"
                               >
                                 <Video className="w-4 h-4" />
                                 Join Video Call
