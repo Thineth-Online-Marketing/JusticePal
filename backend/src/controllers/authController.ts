@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 import prisma from '../lib/prisma';
+import { sendWelcomeEmail, sendLawyerWelcomeEmail } from '../services/emailService';
 
 // @desc    Sync Firebase authenticated user to PostgreSQL database
 // @route   POST /api/auth/sync
@@ -42,6 +43,17 @@ export const syncUser = async (req: AuthRequest, res: Response, next: NextFuncti
         },
         include: { lawyerProfile: true },
       });
+
+      // ── Send welcome email (fire-and-forget, don't block response) ──
+      const userName = user.name || 'User';
+      if (resolvedEmail) {
+        if (isLawyer) {
+          sendLawyerWelcomeEmail({ toEmail: resolvedEmail, name: userName }).catch(() => {});
+        } else if (resolvedRole === 'client' || resolvedRole === 'user') {
+          sendWelcomeEmail({ toEmail: resolvedEmail, name: userName }).catch(() => {});
+        }
+      }
+
       res.status(201).json(user);
     } else {
       // If user exists but role changed (e.g. upgraded to admin via email pattern)
