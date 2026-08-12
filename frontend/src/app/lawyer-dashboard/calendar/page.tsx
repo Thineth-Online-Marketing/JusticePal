@@ -102,7 +102,7 @@ function CalendarContent() {
   const { lang } = useLanguage();
   const tx = content[lang as keyof typeof content] || content.en;
 
-  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justicepal-production.up.railway.app";
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://justice-pal-cjhn.vercel.app";
 
   const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Week');
   const [calConfigured, setCalConfigured] = useState(false);

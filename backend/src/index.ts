@@ -43,6 +43,7 @@ const allowedOrigins = [
   frontendUrl,
   'https://justicepal.akalankanime11.workers.dev',
   'https://justice-pal.vercel.app',
+  'https://justice-pal-rose.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001',
 ].filter(Boolean) as string[];
@@ -81,179 +82,188 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
-// ── Socket.io server ─────────────────────────────────────────────
-export const io = new SocketIOServer(httpServer, {
-  cors: {
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      const isAllowed =
-        allowedOrigins.includes(origin) ||
-        origin.endsWith('.workers.dev') ||
-        origin.endsWith('.pages.dev') ||
-        origin.endsWith('.vercel.app');
-      callback(null, isAllowed);
+// ── Detect Vercel serverless environment ─────────────────────────
+const isVercel = !!process.env.VERCEL;
+
+// ── Socket.io server (persistent environments only) ──────────────
+// Socket.io, WebSockets, and cron jobs cannot run on Vercel serverless.
+// They are only initialized when running as a traditional Node.js server.
+export let io: SocketIOServer | null = null;
+
+if (!isVercel) {
+  io = new SocketIOServer(httpServer, {
+    cors: {
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const isAllowed =
+          allowedOrigins.includes(origin) ||
+          origin.endsWith('.workers.dev') ||
+          origin.endsWith('.pages.dev') ||
+          origin.endsWith('.vercel.app');
+        callback(null, isAllowed);
+      },
+      credentials: true,
     },
-    credentials: true,
-  },
-});
+  });
 
-// Initialize global notification emitter
-initNotificationSocket(io);
+  // Initialize global notification emitter
+  initNotificationSocket(io);
 
-// Initialize background cron scheduler for appointment reminders
-initReminderScheduler();
+  // Initialize background cron scheduler for appointment reminders
+  initReminderScheduler();
 
-// Socket.io — authentication middleware (verify Firebase token)
-io.use(async (socket, next) => {
-  const token = socket.handshake.auth?.token;
-  if (!token) return next(new Error('Authentication error: no token'));
+  // Socket.io — authentication middleware (verify Firebase token)
+  io.use(async (socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (!token) return next(new Error('Authentication error: no token'));
 
-  try {
-    // Dev bypass
-    if (token === 'api-test-token') {
-      (socket as any).firebaseUid = 'test-uid-casefiles-2026';
-      (socket as any).userId = null;
-      return next();
+    try {
+      // Dev bypass
+      if (token === 'api-test-token') {
+        (socket as any).firebaseUid = 'test-uid-casefiles-2026';
+        (socket as any).userId = null;
+        return next();
+      }
+
+      const decoded = await admin.auth().verifyIdToken(token);
+      (socket as any).firebaseUid = decoded.uid;
+
+      // Fetch user from DB
+      const user = await prisma.user.findUnique({
+        where: { firebaseUid: decoded.uid },
+        select: { id: true, name: true, role: true },
+      });
+      if (!user) return next(new Error('User not found'));
+      (socket as any).userId = user.id;
+      (socket as any).userName = user.name;
+      next();
+    } catch (err) {
+      next(new Error('Authentication error: invalid token'));
+    }
+  });
+
+  // Socket.io — room events
+  io.on('connection', (socket) => {
+    const userId: string = (socket as any).userId;
+    const userName: string = (socket as any).userName;
+
+    if (userId) {
+      socket.join(`user:${userId}`);
+      console.log(`User [${userId}] connected to private notification room`);
     }
 
-    const decoded = await admin.auth().verifyIdToken(token);
-    (socket as any).firebaseUid = decoded.uid;
+    // ── Consultation Events ──────────────────────────────────────────
 
-    // Fetch user from DB
-    const user = await prisma.user.findUnique({
-      where: { firebaseUid: decoded.uid },
-      select: { id: true, name: true, role: true },
+    socket.on('join_consultation', async ({ appointmentId }: { appointmentId: string }) => {
+      try {
+        const appt = await prisma.appointment.findUnique({
+          where: { id: appointmentId },
+          include: { lawyer: { select: { userId: true } } },
+        });
+        if (!appt) return socket.emit('error', { message: 'Appointment not found' });
+
+        const isClient = appt.userId === userId;
+        const isLawyer = appt.lawyer?.userId === userId;
+        if (!isClient && !isLawyer) {
+          return socket.emit('error', { message: 'Access denied' });
+        }
+
+        const roomKey = `consultation:${appointmentId}`;
+        socket.join(roomKey);
+
+        socket.to(roomKey).emit('participant_joined', {
+          userId,
+          name: userName,
+          role: isLawyer ? 'lawyer' : 'client',
+        });
+
+        socket.emit('joined', { room: roomKey });
+      } catch (err) {
+        socket.emit('error', { message: 'Failed to join room' });
+      }
     });
-    if (!user) return next(new Error('User not found'));
-    (socket as any).userId = user.id;
-    (socket as any).userName = user.name;
-    next();
-  } catch (err) {
-    next(new Error('Authentication error: invalid token'));
-  }
-});
 
-// Socket.io — room events
-io.on('connection', (socket) => {
-  const userId: string = (socket as any).userId;
-  const userName: string = (socket as any).userName;
+    socket.on('send_message', async ({ appointmentId, text }: { appointmentId: string; text: string }) => {
+      try {
+        if (!text?.trim() || !appointmentId) return;
 
-  if (userId) {
-    socket.join(`user:${userId}`);
-    console.log(`User [${userId}] connected to private notification room`);
-  }
+        const appt = await prisma.appointment.findUnique({
+          where: { id: appointmentId },
+          include: { lawyer: { select: { userId: true } } },
+        });
+        if (!appt) return socket.emit('error', { message: 'Appointment not found' });
 
-  // ── Consultation Events ──────────────────────────────────────────
+        const isLawyer = appt.lawyer?.userId === userId;
+        const isClient = appt.userId === userId;
+        if (!isClient && !isLawyer) return socket.emit('error', { message: 'Access denied' });
 
-  socket.on('join_consultation', async ({ appointmentId }: { appointmentId: string }) => {
-    try {
-      const appt = await prisma.appointment.findUnique({
-        where: { id: appointmentId },
-        include: { lawyer: { select: { userId: true } } },
-      });
-      if (!appt) return socket.emit('error', { message: 'Appointment not found' });
+        const senderRole = isLawyer ? 'lawyer' : 'client';
 
-      const isClient = appt.userId === userId;
-      const isLawyer = appt.lawyer?.userId === userId;
-      if (!isClient && !isLawyer) {
-        return socket.emit('error', { message: 'Access denied' });
+        let room = await prisma.consultationRoom.findUnique({ where: { appointmentId } });
+        if (!room) {
+          room = await prisma.consultationRoom.create({ data: { appointmentId } });
+        }
+
+        const message = await prisma.consultationMessage.create({
+          data: {
+            roomId: room.id,
+            senderUserId: userId,
+            senderRole,
+            text: text.trim(),
+          },
+          include: { sender: { select: { id: true, name: true } } },
+        });
+
+        const roomKey = `consultation:${appointmentId}`;
+        io!.to(roomKey).emit('new_message', message);
+      } catch (err) {
+        console.error('[Socket] send_message error:', err);
+        socket.emit('error', { message: 'Failed to send message' });
       }
+    });
 
+    socket.on('typing', ({ appointmentId, isTyping }: { appointmentId: string; isTyping: boolean }) => {
       const roomKey = `consultation:${appointmentId}`;
-      socket.join(roomKey);
+      socket.to(roomKey).emit('participant_typing', { userId, name: userName, isTyping });
+    });
 
-      socket.to(roomKey).emit('participant_joined', {
-        userId,
-        name: userName,
-        role: isLawyer ? 'lawyer' : 'client',
-      });
+    // ── Inbox / Direct Messaging Events ─────────────────────────────
 
-      socket.emit('joined', { room: roomKey });
-    } catch (err) {
-      socket.emit('error', { message: 'Failed to join room' });
-    }
-  });
+    socket.on('join_inbox', () => {
+      if (!userId) return;
+      const inboxRoom = `inbox_${userId}`;
+      socket.join(inboxRoom);
+      console.log(`User [${userId}] joined inbox room: ${inboxRoom}`);
+    });
 
-  socket.on('send_message', async ({ appointmentId, text }: { appointmentId: string; text: string }) => {
-    try {
-      if (!text?.trim() || !appointmentId) return;
+    socket.on('send_direct_message', async ({
+      conversationId,
+      receiverId,
+      messageData,
+    }: {
+      conversationId: string;
+      receiverId: string;
+      messageData: { id: string; text: string; senderId: string; createdAt: string };
+    }) => {
+      try {
+        if (!conversationId || !receiverId || !messageData) return;
 
-      const appt = await prisma.appointment.findUnique({
-        where: { id: appointmentId },
-        include: { lawyer: { select: { userId: true } } },
-      });
-      if (!appt) return socket.emit('error', { message: 'Appointment not found' });
-
-      const isLawyer = appt.lawyer?.userId === userId;
-      const isClient = appt.userId === userId;
-      if (!isClient && !isLawyer) return socket.emit('error', { message: 'Access denied' });
-
-      const senderRole = isLawyer ? 'lawyer' : 'client';
-
-      let room = await prisma.consultationRoom.findUnique({ where: { appointmentId } });
-      if (!room) {
-        room = await prisma.consultationRoom.create({ data: { appointmentId } });
+        // Broadcast to the receiver's inbox room only
+        io!.to(`inbox_${receiverId}`).emit('receive_direct_message', {
+          conversationId,
+          message: messageData,
+        });
+      } catch (err) {
+        console.error('[Socket] send_direct_message error:', err);
+        socket.emit('error', { message: 'Failed to relay direct message' });
       }
+    });
 
-      const message = await prisma.consultationMessage.create({
-        data: {
-          roomId: room.id,
-          senderUserId: userId,
-          senderRole,
-          text: text.trim(),
-        },
-        include: { sender: { select: { id: true, name: true } } },
-      });
+    // ── Disconnect ──────────────────────────────────────────────────
 
-      const roomKey = `consultation:${appointmentId}`;
-      io.to(roomKey).emit('new_message', message);
-    } catch (err) {
-      console.error('[Socket] send_message error:', err);
-      socket.emit('error', { message: 'Failed to send message' });
-    }
+    socket.on('disconnect', () => {});
   });
-
-  socket.on('typing', ({ appointmentId, isTyping }: { appointmentId: string; isTyping: boolean }) => {
-    const roomKey = `consultation:${appointmentId}`;
-    socket.to(roomKey).emit('participant_typing', { userId, name: userName, isTyping });
-  });
-
-  // ── Inbox / Direct Messaging Events ─────────────────────────────
-
-  socket.on('join_inbox', () => {
-    if (!userId) return;
-    const inboxRoom = `inbox_${userId}`;
-    socket.join(inboxRoom);
-    console.log(`User [${userId}] joined inbox room: ${inboxRoom}`);
-  });
-
-  socket.on('send_direct_message', async ({
-    conversationId,
-    receiverId,
-    messageData,
-  }: {
-    conversationId: string;
-    receiverId: string;
-    messageData: { id: string; text: string; senderId: string; createdAt: string };
-  }) => {
-    try {
-      if (!conversationId || !receiverId || !messageData) return;
-
-      // Broadcast to the receiver's inbox room only
-      io.to(`inbox_${receiverId}`).emit('receive_direct_message', {
-        conversationId,
-        message: messageData,
-      });
-    } catch (err) {
-      console.error('[Socket] send_direct_message error:', err);
-      socket.emit('error', { message: 'Failed to relay direct message' });
-    }
-  });
-
-  // ── Disconnect ──────────────────────────────────────────────────
-
-  socket.on('disconnect', () => {});
-});
+}
 
 // ── REST Routes ──────────────────────────────────────────────────
 app.get('/api/health', (req: Request, res: Response) => {
@@ -284,10 +294,12 @@ app.use('/api/cases', caseRoutes);
 // Error Handling Middleware
 app.use(errorHandler);
 
-// ── Native Node.js HTTP Listener ─────────────────────────────────
-httpServer.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-  console.log(`Socket.io is ready for real-time consultation chat`);
-});
+// ── Native Node.js HTTP Listener (non-Vercel only) ──────────────
+if (!isVercel) {
+  httpServer.listen(port, () => {
+    console.log(`Server is running at http://localhost:${port}`);
+    console.log(`Socket.io is ready for real-time consultation chat`);
+  });
+}
 
-export default app;
+export default app;
