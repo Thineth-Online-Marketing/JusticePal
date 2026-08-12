@@ -22,8 +22,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading) {
-      // Allow if it's an exact public route or starts with /admin (admin handles its own auth)
-      const isPublic = publicRoutes.includes(pathname) || pathname.startsWith("/admin");
+      // Allow if it's an exact public route, starts with /admin (admin handles its own auth), or starts with /lawyers
+      const isPublic = publicRoutes.includes(pathname) || pathname.startsWith("/admin") || pathname.startsWith("/lawyers");
       
       if (!user && !isPublic) {
         // Use router.replace to avoid building up a huge back stack of redirects
@@ -34,7 +34,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, pathname, router]);
 
-  const isPublic = publicRoutes.includes(pathname) || pathname.startsWith("/admin");
+  const isPublic = publicRoutes.includes(pathname) || pathname.startsWith("/admin") || pathname.startsWith("/lawyers");
 
   if (loading || (!isReady && !isPublic)) {
     return (
