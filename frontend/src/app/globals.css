@@ -33,8 +33,10 @@
   body {
     background: var(--background);
     color: var(--foreground);
+    font-family: var(--font-inter), Inter, Arial, Helvetica, sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
