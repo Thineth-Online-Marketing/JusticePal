@@ -4,7 +4,7 @@ import { createNotification } from './notificationController';
 import { sendRealTimeNotification } from '../utils/notificationHelper';
 import { io } from '../index';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { sendBookingConfirmation } from '../services/emailService';
+import { sendBookingConfirmation, sendBookingNotificationToLawyer } from '../services/emailService';
 
 
 // @desc    Get all appointments (Filtered by role)
@@ -169,18 +169,28 @@ export const createAppointment = async (req: AuthRequest, res: Response, next: N
       });
       const lawyerUser = await prisma.lawyer.findUnique({
         where: { id: lawyerId },
-        include: { user: { select: { name: true } } },
+        include: { user: { select: { name: true, email: true } } },
       });
       if (clientUser && lawyerUser) {
-        await sendBookingConfirmation({
+        // Email to client
+        sendBookingConfirmation({
           toEmail: clientUser.email,
           clientName: clientUser.name,
           lawyerName: lawyerUser.user.name,
           scheduledAt: new Date(scheduledAt),
-        });
+        }).catch(() => {});
+
+        // Email to lawyer
+        sendBookingNotificationToLawyer({
+          toEmail: lawyerUser.user.email,
+          lawyerName: lawyerUser.user.name,
+          clientName: clientUser.name,
+          scheduledAt: new Date(scheduledAt),
+          caseDescription: notes || undefined,
+        }).catch(() => {});
       }
     } catch (emailErr) {
-      console.error('Failed to send booking email:', emailErr);
+      console.error('Failed to send booking emails:', emailErr);
     }
 
     res.status(201).json(appointment);
