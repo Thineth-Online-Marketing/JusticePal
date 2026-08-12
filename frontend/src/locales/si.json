@@ -205,6 +205,7 @@
     }
   },
   "dashboardLawyer": {
+    "welcomeBack": "සාදරයෙන් පිළිගන්නවා",
     "dashboard": "උපකරණ පුවරුව",
     "analytics": "විශ්ලේෂණ",
     "downloadReport": "මූල්‍ය වාර්තාව බාගන්න",
